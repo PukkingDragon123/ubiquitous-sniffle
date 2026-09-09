@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CHEEZ-IT — File a Hole in This Game</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<canvas id="game"></canvas>
+
+<!-- HUD -->
+<div id="hud" class="hidden">
+  <div id="hud-left">
+    <div id="hp"></div>
+    <div id="bugs"><span class="ico">🪲</span><span id="bug-count">0/0</span></div>
+  </div>
+  <div id="hud-center">
+    <div id="level-name"></div>
+    <div id="timer">0:00.0</div>
+  </div>
+  <div id="hud-right">
+    <div id="techs"></div>
+  </div>
+  <div id="noclip-meter" class="hidden"><div id="noclip-fill"></div></div>
+  <div id="boss-bar" class="hidden"><div id="boss-name"></div><div class="bar"><div id="boss-fill"></div></div></div>
+</div>
+
+<!-- Tutorial sign text -->
+<div id="sign" class="hidden"></div>
+
+<!-- Dialog -->
+<div id="dialog" class="hidden">
+  <div class="portrait" id="dlg-portrait">🧀</div>
+  <div class="text-wrap">
+    <div class="who" id="dlg-who">YOU</div>
+    <div class="text" id="dlg-text"></div>
+    <div class="hint">SPACE / ENTER ▸</div>
+  </div>
+</div>
+
+<!-- Ability unlock -->
+<div id="unlock" class="hidden">
+  <div class="card">
+    <div class="eyebrow">⚠ EXPLOIT FOUND ⚠</div>
+    <div class="ico" id="unlock-ico">⏭</div>
+    <div class="name" id="unlock-name">FRAME SKIP</div>
+    <div class="desc" id="unlock-desc"></div>
+    <div class="key" id="unlock-key"></div>
+    <div class="hint">SPACE to continue</div>
+  </div>
+</div>
+
+<!-- Title -->
+<div id="title">
+  <div class="logo">
+    <div class="cheez">CHEEZ<span>-</span>IT</div>
+    <div class="sub">FILE A HOLE IN THIS GAME</div>
+  </div>
+  <div class="menu">
+    <button id="btn-play" class="big">▶ NEW GAME</button>
+    <button id="btn-continue" class="big hidden">▶ CONTINUE</button>
+    <button id="btn-levels">LEVEL SELECT</button>
+    <button id="btn-controls">CONTROLS</button>
+  </div>
+  <div class="foot">A game about breaking games. Made with Three.js. <span id="best-time"></span></div>
+</div>
+
+<!-- Level select -->
+<div id="levelselect" class="panel hidden">
+  <h2>LEVEL SELECT</h2>
+  <div id="level-list"></div>
+  <button class="back" data-back>BACK</button>
+</div>
+
+<!-- Controls -->
+<div id="controls" class="panel hidden">
+  <h2>CONTROLS</h2>
+  <table>
+    <tr><td>Move</td><td>← → / A D</td></tr>
+    <tr><td>Jump</td><td>SPACE / Z / W / ↑ (hold for higher)</td></tr>
+    <tr><td>Frame Skip (double jump)</td><td>Jump again in the air</td></tr>
+    <tr><td>Clip Dash</td><td>SHIFT / X (+ direction)</td></tr>
+    <tr><td>Wall Clip</td><td>Hold toward a wall, then Jump</td></tr>
+    <tr><td>Crash Dive</td><td>↓ / S in the air</td></tr>
+    <tr><td>Hook Exploit</td><td>C / E near a blue hook node</td></tr>
+    <tr><td>Noclip</td><td>Hold V / Q</td></tr>
+    <tr><td>Pause</td><td>ESC / P</td></tr>
+    <tr><td>Mute</td><td>M</td></tr>
+    <tr><td>Restart at checkpoint</td><td>R</td></tr>
+  </table>
+  <p class="tip">Pro tech: dash then jump immediately to keep dash speed (wavedash). Dash into enemies to delete them. Gamepads work too.</p>
+  <button class="back" data-back>BACK</button>
+</div>
+
+<!-- Pause -->
+<div id="pause" class="panel hidden">
+  <h2>PAUSED</h2>
+  <button id="btn-resume">RESUME</button>
+  <button id="btn-restart">RESTART LEVEL</button>
+  <button id="btn-quit">QUIT TO TITLE</button>
+</div>
+
+<!-- Level complete -->
+<div id="complete" class="panel hidden">
+  <h2 id="complete-title">LEVEL CLEARED</h2>
+  <div id="complete-stats"></div>
+  <button id="btn-next">NEXT ▸</button>
+</div>
+
+<!-- Ending -->
+<div id="ending" class="panel hidden">
+  <h2>🍎 YOU ARE HUMAN AGAIN</h2>
+  <div id="ending-text"></div>
+  <div id="ending-stats"></div>
+  <button id="btn-ending-title">BACK TO TITLE</button>
+</div>
+
+<div id="flash"></div>
+<div id="toast" class="hidden"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.0/three.min.js"></script>
+<script src="js/util.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/input.js"></script>
+<script src="js/levels.js"></script>
+<script src="js/effects.js"></script>
+<script src="js/level.js"></script>
+<script src="js/player.js"></script>
+<script src="js/enemies.js"></script>
+<script src="js/bosses.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>

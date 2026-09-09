@@ -1,0 +1,88 @@
+@import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Rubik+Mono+One&display=swap');
+
+:root{
+  --yellow:#ffcc33; --orange:#ff8a1f; --deep:#c94f10; --cream:#fff3c4;
+  --ink:#2b1a0e; --sky:#7fd0ff; --green:#39ff88; --purple:#b455ff; --blue:#43b8ff; --red:#ff4b5c;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;overflow:hidden;background:#1a1023;font-family:'Fredoka',system-ui,sans-serif;color:var(--cream);user-select:none;-webkit-user-select:none}
+canvas#game{position:fixed;inset:0;width:100%;height:100%;display:block}
+.hidden{display:none !important}
+
+/* HUD */
+#hud{position:fixed;inset:0;pointer-events:none;padding:14px 18px;display:grid;grid-template-columns:1fr auto 1fr;align-items:start;font-weight:700}
+#hud-left{display:flex;flex-direction:column;gap:8px}
+#hp{display:flex;gap:6px}
+#hp .heart{width:34px;height:34px;border-radius:8px;background:var(--yellow);border:3px solid var(--ink);box-shadow:0 3px 0 var(--ink);display:grid;place-items:center;font-size:20px;transition:transform .15s}
+#hp .heart.lost{background:#4a3b33;opacity:.5;transform:scale(.85)}
+#bugs{display:flex;align-items:center;gap:6px;background:rgba(43,26,14,.75);padding:4px 10px;border-radius:12px;width:max-content;font-size:18px;border:2px solid var(--ink)}
+#hud-center{text-align:center}
+#level-name{font-family:'Rubik Mono One',monospace;font-size:16px;letter-spacing:1px;color:var(--yellow);text-shadow:2px 2px 0 var(--ink)}
+#timer{font-size:16px;opacity:.85;font-variant-numeric:tabular-nums}
+#hud-right{display:flex;justify-content:flex-end}
+#techs{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;max-width:360px}
+.tech{background:rgba(43,26,14,.8);border:2px solid var(--ink);border-radius:10px;padding:4px 8px;font-size:13px;display:flex;flex-direction:column;align-items:center;min-width:56px}
+.tech .k{font-size:11px;opacity:.75}
+.tech.locked{opacity:.25;filter:grayscale(1)}
+.tech.active{background:var(--green);color:var(--ink)}
+.tech.cd{opacity:.5}
+#noclip-meter{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);width:200px;height:14px;border:3px solid var(--ink);border-radius:8px;background:#2a1a3a;overflow:hidden}
+#noclip-fill{height:100%;width:100%;background:linear-gradient(90deg,var(--purple),#ff7bff);transition:width .05s linear}
+#boss-bar{position:fixed;left:50%;top:60px;transform:translateX(-50%);width:min(520px,80vw);text-align:center}
+#boss-name{font-family:'Rubik Mono One',monospace;color:var(--red);text-shadow:2px 2px 0 var(--ink);font-size:18px;margin-bottom:4px}
+#boss-bar .bar{height:18px;border:3px solid var(--ink);border-radius:10px;background:#3a1a1a;overflow:hidden}
+#boss-fill{height:100%;width:100%;background:linear-gradient(90deg,#ff2d55,#ff8a1f);transition:width .2s}
+
+/* Sign */
+#sign{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:var(--cream);color:var(--ink);padding:10px 18px;border-radius:14px;border:3px solid var(--ink);font-weight:600;font-size:17px;max-width:min(560px,90vw);text-align:center;box-shadow:0 5px 0 var(--ink);pointer-events:none;animation:pop .2s ease-out}
+@keyframes pop{from{transform:translateX(-50%) scale(.8);opacity:0}}
+
+/* Dialog */
+#dialog{position:fixed;left:50%;bottom:30px;transform:translateX(-50%);width:min(760px,94vw);display:flex;gap:16px;background:var(--cream);color:var(--ink);border:4px solid var(--ink);border-radius:20px;padding:16px 20px;box-shadow:0 8px 0 var(--ink);animation:pop .25s ease-out}
+#dialog .portrait{font-size:56px;width:84px;height:84px;display:grid;place-items:center;background:var(--yellow);border:3px solid var(--ink);border-radius:16px;flex-shrink:0}
+#dialog .who{font-family:'Rubik Mono One',monospace;font-size:14px;color:var(--deep);margin-bottom:4px}
+#dialog .text{font-size:20px;line-height:1.35;min-height:54px;font-weight:600}
+#dialog .hint{font-size:12px;opacity:.6;text-align:right;margin-top:6px}
+#dialog .text-wrap{flex:1}
+
+/* Unlock */
+#unlock{position:fixed;inset:0;display:grid;place-items:center;background:radial-gradient(circle,rgba(57,255,136,.25),rgba(0,0,0,.75))}
+#unlock .card{background:var(--cream);color:var(--ink);border:5px solid var(--ink);border-radius:24px;padding:28px 40px;text-align:center;width:min(560px,92vw);box-shadow:0 12px 0 var(--ink);animation:slam .35s cubic-bezier(.2,1.6,.4,1)}
+@keyframes slam{from{transform:scale(.3) rotate(-8deg);opacity:0}}
+#unlock .eyebrow{font-family:'Rubik Mono One',monospace;color:var(--red);letter-spacing:2px;font-size:14px}
+#unlock .ico{font-size:72px;margin:8px 0}
+#unlock .name{font-family:'Rubik Mono One',monospace;font-size:34px;color:var(--deep)}
+#unlock .desc{font-size:18px;margin:12px 0;line-height:1.4;font-weight:600}
+#unlock .key{display:inline-block;background:var(--ink);color:var(--green);padding:6px 14px;border-radius:10px;font-family:monospace;font-size:18px}
+#unlock .hint{margin-top:14px;opacity:.6;font-size:13px}
+
+/* Title */
+#title{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:28px;background:radial-gradient(ellipse at 50% 30%,#ffb347 0%,#ff7a1f 35%,#7a2a10 100%)}
+#title .logo{text-align:center;animation:bob 3s ease-in-out infinite}
+@keyframes bob{50%{transform:translateY(-8px) rotate(-1deg)}}
+#title .cheez{font-family:'Rubik Mono One',monospace;font-size:clamp(56px,12vw,120px);color:var(--yellow);text-shadow:4px 4px 0 var(--deep),8px 8px 0 var(--ink);line-height:1}
+#title .cheez span{color:var(--cream)}
+#title .sub{font-family:'Rubik Mono One',monospace;font-size:clamp(14px,2.4vw,22px);color:var(--cream);letter-spacing:3px;margin-top:10px;text-shadow:2px 2px 0 var(--ink)}
+#title .menu{display:flex;flex-direction:column;gap:12px;align-items:center}
+#title .foot{position:absolute;bottom:14px;font-size:13px;opacity:.75}
+button{font-family:inherit;font-weight:700;font-size:18px;background:var(--cream);color:var(--ink);border:4px solid var(--ink);border-radius:14px;padding:10px 26px;cursor:pointer;box-shadow:0 5px 0 var(--ink);transition:transform .08s,box-shadow .08s}
+button:hover{transform:translateY(-2px);box-shadow:0 7px 0 var(--ink);background:var(--yellow)}
+button:active{transform:translateY(3px);box-shadow:0 2px 0 var(--ink)}
+button.big{font-size:24px;padding:14px 40px;background:var(--yellow)}
+
+/* Panels */
+.panel{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);background:var(--cream);color:var(--ink);border:5px solid var(--ink);border-radius:24px;padding:26px 34px;min-width:min(520px,92vw);max-height:92vh;overflow:auto;display:flex;flex-direction:column;gap:12px;align-items:center;box-shadow:0 12px 0 var(--ink)}
+.panel h2{font-family:'Rubik Mono One',monospace;margin:0 0 6px;color:var(--deep)}
+.panel table{border-collapse:collapse;font-size:16px}
+.panel td{padding:5px 14px;border-bottom:2px dashed rgba(43,26,14,.2)}
+.panel td:first-child{font-weight:700}
+.panel .tip{font-size:14px;max-width:460px;text-align:center;opacity:.8}
+#level-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;width:100%}
+#level-list button{font-size:14px;padding:10px;display:flex;flex-direction:column;gap:4px;align-items:center}
+#level-list button .n{font-family:'Rubik Mono One',monospace;font-size:12px;opacity:.7}
+#level-list button:disabled{opacity:.35;cursor:not-allowed;filter:grayscale(1)}
+#complete-stats,#ending-stats{font-size:18px;text-align:center;line-height:1.6}
+#ending-text{font-size:18px;max-width:560px;line-height:1.5;text-align:center;font-weight:600}
+
+#flash{position:fixed;inset:0;pointer-events:none;background:#fff;opacity:0;transition:opacity .3s}
+#toast{position:fixed;top:120px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--yellow);padding:8px 18px;border-radius:12px;font-weight:700;font-size:16px;border:3px solid var(--yellow);animation:pop .2s}
