@@ -9,6 +9,10 @@ find holes in the game — every movement tech you unlock is an "exploit" the Go
 
 ## Play
 
+A single-file build is also available: run `node build.js` and open `dist/cheez-it.html`.
+
+### From the repo
+
 Open `index.html` in a browser (Chrome/Edge/Firefox), or serve the folder:
 
 ```
