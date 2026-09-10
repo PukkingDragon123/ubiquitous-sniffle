@@ -131,6 +131,37 @@ CZ.Tex = (() => {
       g.fillStyle = '#ffe066'; for (let i = 0; i < 14; i++) g.fillRect((r() * S) | 0, (r() * S) | 0, 2, 1);
       g.fillStyle = '#c94f10'; for (let i = 0; i < 16; i++) g.fillRect((r() * S) | 0, (r() * S) | 0, 2, 1);
     },
+    // mech armour: panel seams, rivets, vents, warning stripes, weathering
+    mech: (g, S, c) => {
+      const r = rng(419);
+      g.fillStyle = c.base; g.fillRect(0, 0, S, S);
+      // one clean panel inset with a shaded lip
+      g.fillStyle = c.alt; g.fillRect(2, 2, S - 4, S - 4);
+      g.fillStyle = c.light; g.fillRect(2, 2, S - 4, 1);
+      g.fillStyle = c.dark; g.fillRect(2, S - 3, S - 4, 1); g.strokeStyle = c.dark; g.lineWidth = 1;
+      g.strokeRect(2.5, 2.5, S - 5, S - 5);
+      // a seam across the middle
+      g.fillStyle = c.dark; g.fillRect(2, 18, S - 4, 1);
+      g.fillStyle = c.light; g.fillRect(2, 19, S - 4, 1);
+      // corner rivets
+      g.fillStyle = c.dark;
+      for (const [x, y] of [[5, 5], [S - 6, 5], [5, S - 6], [S - 6, S - 6]]) g.fillRect(x, y, 1, 1);
+      // three vent slits
+      for (let i = 0; i < 3; i++) { g.fillStyle = c.dark; g.fillRect(8, 23 + i * 2, 16, 1); }
+      // light weathering only
+      speck(g, S, c.light, 7, r); speck(g, S, c.dark, 9, r);
+    },
+    // grass: blades and dirt flecks for the battlefield ground
+    grass: (g, S, c) => {
+      const r = rng(523);
+      g.fillStyle = c.base; g.fillRect(0, 0, S, S);
+      for (let i = 0; i < 90; i++) {
+        const x = (r() * S) | 0, y = (r() * S) | 0;
+        g.fillStyle = r() < 0.45 ? c.light : r() < 0.8 ? c.alt : c.dark;
+        g.fillRect(x, y, 1, 1 + ((r() * 3) | 0));
+      }
+      g.fillStyle = c.dark; for (let i = 0; i < 12; i++) g.fillRect((r() * S) | 0, (r() * S) | 0, 2, 1);
+    },
     // wooden barrel / crate staves
     wood: (g, S, c) => {
       const r = rng(311);
@@ -150,6 +181,10 @@ CZ.Tex = (() => {
     vent: { base: '#8fa8c0', alt: '#6e88a2', dark: '#4d607a', light: '#b6cbdd' },
     marble: { base: '#efeaff', alt: '#dcd4f5', dark: '#b9aee0', light: '#ffffff' },
     timber: { base: '#7a4a22', alt: '#8f5a2c', dark: '#4a2a10', light: '#9a6636' },
+    mechBlue: { base: '#3f74c8', alt: '#345fa4', dark: '#1b3568', light: '#8fc0f5' },
+    mechRed: { base: '#c8384a', alt: '#a32b3c', dark: '#651320', light: '#ff9aa6' },
+    mechGrey: { base: '#8d95a3', alt: '#767e8c', dark: '#41474f', light: '#c8d0dc' },
+    meadow: { base: '#5d9a3a', alt: '#4b8230', dark: '#2f5a1f', light: '#8cc65b' },
   };
 
   // get('brick', 'stone') → cached THREE texture.

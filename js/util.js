@@ -33,6 +33,11 @@ CZ.P = {
   STAB_SPEED: 14,
   STAB_COOLDOWN: 0.3,
   RUN_ACCEL: 70,
+  ROLL_ACCEL: 46,          // a wheel takes a moment to get going
+  ROLL_FRICTION: 16,       // ...and keeps rolling once it does
+  SPIN_TIME: 0.26,
+  SPIN_SPEED: 17,
+  SPIN_COOLDOWN: 0.25,
   AIR_ACCEL: 46,
   GROUND_FRICTION: 60,
   AIR_FRICTION: 6,
@@ -56,45 +61,30 @@ CZ.P = {
   GRAPPLE_SPEED: 24,
   NOCLIP_MAX: 1.6,
   NOCLIP_REGEN: 1.2,
-  PLAYER_W: 0.9,
-  PLAYER_H: 1.0,
+  PLAYER_W: 1.24,
+  PLAYER_H: 1.24,
   MAX_HP: 3,
   IFRAMES: 1.1,
 };
 
 // Ability metadata: id → display.
 CZ.ABILITIES = {
-  // Two of these are not pickups at all: they are bugs in the game you are inside.
-  rapidJump: { name: 'JUMP QUEUE', ico: 'tech-mash', key: 'Mash JUMP as fast as you can',
-    desc: 'The grounded check only runs once per jump, so if you queue jumps faster than it can clear, it never clears. Mash to keep going up.' },
-  menuClip: { name: 'MENU CLIP', ico: 'tech-menu', key: 'Pause facing a wall, then resume',
-    desc: 'Pausing parks your position outside the physics step. Resume against a wall and it puts you back on the wrong side of it.' },
-  doubleJump: { name: 'FRAME SKIP', ico: 'tech-jump', key: 'JUMP again in mid-air',
+  doubleJump: { name: 'SPRING LEGS', ico: 'tech-jump', key: 'JUMP again in mid-air',
     desc: 'The game only checks "grounded" once per jump. Nobody said you can\'t jump AGAIN.' },
-  dash: { name: 'CLIP DASH', ico: 'tech-dash', key: 'SHIFT / X  (+ direction)',
+  dash: { name: 'THRUSTER', ico: 'tech-dash', key: 'SHIFT / X  (+ direction)',
     desc: 'Hitboxes turn off for 9 frames. Dash through GLITCH WALLS (green) and straight through enemies. Dash on the ground, then jump right away to keep the speed.' },
-  wallJump: { name: 'WALL CLIP', ico: 'tech-wall', key: 'Hold toward a wall, then JUMP',
+  wallJump: { name: 'GRIP CLAWS', ico: 'tech-wall', key: 'Hold toward a wall, then JUMP',
     desc: 'Walls are just floors the dev rotated. Slide down them, kick off them.' },
-  pound: { name: 'CRASH DIVE', ico: 'tech-pound', key: 'DOWN / S  in the air',
+  pound: { name: 'HAMMER FIST', ico: 'tech-pound', key: 'DOWN / S  in the air',
     desc: 'Fall damage got applied to the FLOOR instead of you. Slam down to shatter CRACKED tiles, squish enemies and bounce.' },
-  grapple: { name: 'HOOK EXPLOIT', ico: 'tech-hook', key: 'C / E  near a blue node',
+  grapple: { name: 'WINCH ARM', ico: 'tech-hook', key: 'C / E  near a blue node',
     desc: 'The dev left their debug grapple hook in the build. Pull yourself to HOOK NODES (blue) and fling.' },
-  noclip: { name: 'NOCLIP', ico: 'tech-ghost', key: 'Hold V / Q',
+  noclip: { name: 'PHASE CORE', ico: 'tech-ghost', key: 'Hold V / Q',
     desc: 'You found the dev console. Phase through CORRUPT blocks (purple) while the meter lasts. Refills on solid ground.' },
 };
-CZ.ABILITY_ORDER = ['rapidJump', 'menuClip', 'doubleJump', 'dash', 'wallJump', 'pound', 'grapple', 'noclip'];
+CZ.ABILITY_ORDER = ['doubleJump', 'dash', 'wallJump', 'pound', 'grapple', 'noclip'];
 
-// Body parts. You start as a limbless wedge; each part changes how you move.
-CZ.LIMBS = {
-  forkArm: { name: 'FORK ARM', ico: 'fork', part: 'a stick with prongs',
-    desc: 'An arm! It is a fork, but it is an ARM. Press SHIFT to stab. Things you stab stop existing.' },
-  knifeArm: { name: 'KNIFE ARM', ico: 'knife', part: 'the other stick',
-    desc: 'A matching arm. Two arms means you no longer get hurt by walking into small things - you skewer them.' },
-  leg: { name: 'TOOTHPICK LEG', ico: 'leg', part: 'a leg',
-    desc: 'A LEG. You can RUN now. Full speed, higher jumps, actual dignity.' },
-};
-CZ.LIMB_ORDER = ['forkArm', 'knifeArm', 'leg'];
-CZ.TECH_KEYS = { rapidJump: 'MASH', menuClip: 'ESC', doubleJump: 'JUMP×2', dash: 'SHIFT', wallJump: 'WALL', pound: 'DOWN', grapple: 'C', noclip: 'V' };
+CZ.TECH_KEYS = { doubleJump: 'JUMP x2', dash: 'SHIFT', wallJump: 'WALL', pound: 'DOWN', grapple: 'C', noclip: 'V' };
 
 // Save data.
 CZ.SAVE_KEY = 'cheezit.save.v1';
@@ -102,4 +92,4 @@ CZ.loadSave = () => {
   try { return JSON.parse(localStorage.getItem(CZ.SAVE_KEY)) || null; } catch (e) { return null; }
 };
 CZ.writeSave = data => { try { localStorage.setItem(CZ.SAVE_KEY, JSON.stringify(data)); } catch (e) {} };
-CZ.newSave = () => ({ level: 0, abilities: {}, limbs: {}, bugs: {}, deaths: 0, time: 0, bestTime: null, completed: false, sawIntro: false });
+CZ.newSave = () => ({ level: 0, abilities: {}, bugs: {}, deaths: 0, time: 0, bestTime: null, completed: false, sawIntro: false });

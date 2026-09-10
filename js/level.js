@@ -8,7 +8,7 @@ CZ.Level = class Level {
     this.group = new THREE.Group(); scene.add(this.group);
     this.solids = []; this.hazards = []; this.bounces = []; this.winds = []; this.hooks = [];
     this.checks = []; this.bugs = []; this.abilities = []; this.signs = []; this.dialogs = [];
-    this.enemySpawns = []; this.exit = null; this.boss = null;
+    this.enemySpawns = []; this.exit = null; this.boss = null; this.levers = [];
     this.time = 0; this.windStreaks = []; this.drips = []; this.spinners = []; this.decos = [];
     this.build();
     this.buildScenery();
@@ -69,6 +69,18 @@ CZ.Level = class Level {
         const knob = new THREE.Mesh(new THREE.SphereGeometry(0.11, 8, 6), this.flat(0xd8c07a));
         knob.position.set(x + 0.9, -0.2, 2.2); mesh.add(knob);
       }
+    } else if (s.skin === 'gate') {
+      mesh = new THREE.Group();
+      const bar = new THREE.Mesh(new THREE.BoxGeometry(s.w, s.h, 3.4), new THREE.MeshToonMaterial({ map: CZ.Tex.tiled('mech', 'mechGrey', s.w, s.h, 2) }));
+      E.edges(bar); mesh.add(bar);
+      for (let y = -s.h / 2 + 1; y < s.h / 2; y += 2) {
+        const rivetRow = new THREE.Mesh(new THREE.BoxGeometry(s.w + 0.12, 0.22, 3.5), this.flat(0x41474f));
+        rivetRow.position.y = y; mesh.add(rivetRow);
+      }
+    } else if (s.crate) {
+      mesh = new THREE.Mesh(new THREE.BoxGeometry(s.w, s.h, 2.6), new THREE.MeshToonMaterial({ map: CZ.Tex.tiled('wood', 'timber', s.w, s.h) }));
+      mesh.castShadow = true; E.edges(mesh);
+      s.breakable = true;
     } else if (s.skin === 'drain') {
       mesh = new THREE.Mesh(new THREE.BoxGeometry(s.w, s.h, 4), this.flat(0x2b2229));
       mesh.receiveShadow = true;
@@ -183,7 +195,24 @@ CZ.Level = class Level {
       const disk = new THREE.Mesh(new THREE.PlaneGeometry(1.1, 1.1), new THREE.MeshBasicMaterial({ map: CZ.Tex.sprite('bug', 4), transparent: true, side: THREE.DoubleSide }));
       const back = new THREE.Mesh(new THREE.BoxGeometry(1.0, 1.0, 0.12), this.flat(0xffd700)); back.position.z = -0.09;
       mesh.add(disk, back); it.disk = mesh; mesh.position.set(it.x, it.y, 0.7);
-    } else if (kind === 'ability' && it.limb) {
+    } else if (kind === 'ability') {
+      // an upgrade machine: a frame, a spinning part and a landing pad
+      const frame = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.4, 2.4), new THREE.MeshToonMaterial({ map: CZ.Tex.tiled('mech', 'mechGrey', 2.4, 1, 1) }));
+      frame.position.y = -0.5; mesh.add(frame);
+      for (const sx of [-1, 1]) {
+        const post = new THREE.Mesh(new THREE.BoxGeometry(0.24, 2.4, 0.24), new THREE.MeshToonMaterial({ map: CZ.Tex.tiled('mech', 'mechGrey', 1, 2.4, 1) }));
+        post.position.set(sx * 1.05, 0.7, 0); mesh.add(post);
+      }
+      const head = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.5, 1.4), new THREE.MeshToonMaterial({ map: CZ.Tex.tiled('mech', 'mechGrey', 2.4, 1, 1) }));
+      head.position.y = 2.0; mesh.add(head);
+      const part = new THREE.Mesh(new THREE.PlaneGeometry(1.1, 1.1), new THREE.MeshBasicMaterial({ map: CZ.Tex.sprite(CZ.ABILITIES[it.id].ico, 6), transparent: true, side: THREE.DoubleSide }));
+      part.position.set(0, 0.9, 0.3); mesh.add(part); it.orb = part;
+      const halo = new THREE.Mesh(new THREE.RingGeometry(0.85, 1.0, 18), new THREE.MeshBasicMaterial({ color: 0x9fd4ff, transparent: true, opacity: 0.85, side: THREE.DoubleSide }));
+      halo.position.set(0, 0.9, 0.1); mesh.add(halo); it.rings = [halo];
+      mesh.add(new THREE.PointLight(0x9fd4ff, 6, 10));
+      it.limb = true;                       // reuse the simple animation path
+      mesh.position.set(it.x, it.y + 0.4, 0.4);
+    } else if (kind === 'ability' && false) {
       // a body part lying where it fell, spinning under a glow
       const spr = CZ.LIMBS[it.id].ico;
       const card = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 1.5), new THREE.MeshBasicMaterial({ map: CZ.Tex.sprite(spr, 6), transparent: true, side: THREE.DoubleSide }));
@@ -244,6 +273,7 @@ CZ.Level = class Level {
         case 'dialog': it.done = false; this.dialogs.push(it); break;
         case 'enemy': this.enemySpawns.push(it); break;
         case 'deco': this.addDeco(it); break;
+        case 'lever': this.addLever(it); break;
         case 'boss': this.boss = it; break;
       }
     }
@@ -372,6 +402,19 @@ CZ.Level = class Level {
     g.position.set(it.x, g.position.y + it.y, it.z !== undefined ? it.z : (DEPTH[it.kind] ?? -2));
     it.mesh = g; this.group.add(g);
     this.decos.push(it);
+  }
+
+  // A wall lever: poke it (or spin into it) to open the gate it is wired to.
+  addLever(it) {
+    const g = new THREE.Group();
+    const plate = new THREE.Mesh(new THREE.BoxGeometry(0.9, 1.4, 0.4), new THREE.MeshToonMaterial({ map: CZ.Tex.tiled('mech', 'mechGrey', 1, 1.4, 1) }));
+    plate.position.y = 0.9; g.add(plate); CZ.Effects.edges(plate);
+    const handle = new THREE.Group(); handle.position.set(0, 1.2, 0.3); g.add(handle);
+    const bar = new THREE.Mesh(new THREE.BoxGeometry(0.16, 1.1, 0.16), this.flat(0xc8d0dc)); bar.position.y = 0.55; handle.add(bar);
+    const knob = new THREE.Mesh(new THREE.SphereGeometry(0.22, 8, 6), this.flat(0xff4b5c)); knob.position.y = 1.1; handle.add(knob);
+    g.position.set(it.x, it.y, 0.9);
+    it.mesh = g; it.handle = handle; it.on = false;
+    this.group.add(g); this.levers.push(it);
   }
 
   // Enclosing shell for a level authored as one room.
@@ -631,6 +674,12 @@ CZ.Level = class Level {
   }
   blocking(f = {}) { const out = []; for (const s of this.solids) if (this.solidFor(s, f)) out.push(s); return out; }
 
+  breakCrate(s) {
+    if (s.broken) return; s.broken = true; s.mesh.visible = false;
+    CZ.Effects.burst(s.x + s.w / 2, s.y + s.h / 2, 0x8f5a2c, 20, { spread: 9, up: 6, life: 0.9, size: 1.3 });
+    CZ.Audio.sfx.crack(); CZ.Effects.shake(0.4);
+    CZ.Comic.pow('CRUNCH', [s.x + s.w / 2, s.y + s.h + 0.8, 0], { kind: 'hit', life: 0.5 });
+  }
   breakCracked(s) {
     if (s.broken) return; s.broken = true; s.mesh.visible = false;
     CZ.Effects.burst(s.x + s.w / 2, s.y + s.h / 2, 0x7a5f3a, 22, { spread: 9, up: 6, life: 1, size: 1.6 });

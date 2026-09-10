@@ -91,10 +91,9 @@ CZ.Touch = (() => {
       btn.addEventListener('contextmenu', e => e.preventDefault());
     }
 
-    // Tap anywhere on a story card to advance it.
-    for (const id of ['dialog', 'unlock']) {
-      $(id).addEventListener('pointerdown', e => { hold('confirm', true, MIN_HOLD); e.preventDefault(); });
-    }
+    // Tap the upgrade card to dismiss it.
+    const card = $('unlock');
+    if (card) card.addEventListener('pointerdown', e => { hold('confirm', true, MIN_HOLD); e.preventDefault(); });
 
     // Losing the window mid-hold must not leave a key stuck down.
     const panic = () => { holdTimers.forEach(clearTimeout); holdTimers.clear(); CZ.Input.clearTouch(); stickPointer = null; btnPointers.clear(); restBase(); root.querySelectorAll('.pressed').forEach(b => b.classList.remove('pressed')); };

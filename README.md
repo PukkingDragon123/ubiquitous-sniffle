@@ -1,20 +1,34 @@
 # CHEEZ-IT — File a Hole in This Game
 
-A cartoony 3D side-scrolling platformer about breaking games, built with Three.js and zero build tools.
+A 3D side-scrolling platformer about a wheel of cheese with a grudge, built with Three.js and no build tools.
 
-You were a mech pilot. You were losing. Then you noticed the arena floor had no collision, clipped through it,
-came up behind the red mech and took its head off. A rubber duck descended from the sky, introduced itself as the
-dev, and cursed you into a wedge of cheese with googly eyes and no limbs.
-
-You wake up in the dev's cheese and wine cellar. Find your arms (a fork and a knife), find a leg, learn to run, and
-break every wall between you and the door. The goal is the golden patch at the top of the factory, and a cheese mech
-of your own.
+You were a mech pilot, losing a duel on a grassland. Then you noticed the ground had no collision, clipped through
+it, came up behind the red mech and took its head off. A rubber duck descended, introduced itself as the dev, and
+turned you into a wheel of cheese. You are going to build your own mech out of whatever this cellar has.
 
 ## The opening
 
-A scripted cutscene runs before world 1: two mechs, a losing fight, the clip-through-the-floor glitch, a decapitation,
-and a rubber duck with a lightning bolt. Cinematic camera cuts, letterboxing and scanlines included. Tap or press
-JUMP to skip it.
+The game boots straight into the fight: two panelled mechs, a losing duel, limbs torn off and left tumbling in the
+grass, the clip-through-the-floor glitch, a decapitation, and a duck with a lightning bolt. Every line is a comic
+speech balloon, every hit is a comic impact word. There is no title screen and no dialogue box anywhere in this
+game. Tap or press JUMP to skip.
+
+## What you do
+
+You are a wheel. Four things, no tech trees:
+
+| Action | Key | What it does |
+| --- | --- | --- |
+| Roll | LEFT / RIGHT | Builds speed and keeps it, like a wheel should |
+| Jump | SPACE | Hold for height |
+| Spin | SHIFT | Spin attack: smashes crates, kills what it touches |
+| Poke | C | A toothpick pops out to flip levers and prod enemies |
+
+Damage is literal: every hit **cuts a wedge out of the wheel**, and the meter in the corner is the cheese itself.
+Stand near molten cheese and you **soften** - you sag, you slow down, and if you cook through you are a puddle.
+
+Upgrades come from machines in the world, not from floating orbs. Roll into a press and it bolts a part on:
+spring legs, a thruster, grip claws, a hammer fist, a winch arm, a phase core. By the last world you are a mech.
 
 ## Play
 
@@ -60,7 +74,7 @@ On-screen controls appear automatically on touch devices, and the HUD shrinks to
 
 Add the page to your home screen for a fullscreen, browser-chrome-free run.
 
-### Body parts
+## Body parts
 
 You start as a wedge that can barely hop. Each part changes how you move:
 
@@ -70,7 +84,7 @@ You start as a wedge that can barely hop. Each part changes how you move:
 | Knife arm | in the locked pantry | A second arm, so walking into small things skewers them instead of hurting you. |
 | Toothpick leg | on top of the cheese press | **Running.** Full speed, higher jumps, and the run-up you need for the floor drain. |
 
-### Glitches you find, not pickups
+## Glitches you find, not pickups
 
 Two of the techs are bugs in the game you are inside. Nobody hands them to you:
 
@@ -86,7 +100,7 @@ speed.
 ## Worlds
 
 1. **The Cheese Cellar** — one authored room: wine racks, barrels, a giant cheese press, cobwebs and spiders.
-   Find both arms and the leg; find the jump-queue and menu-clip bugs.
+   Learn to roll, spin through crates, poke a lever, and feed yourself into the first machine.
 2. **The Grater Line** — conveyors, graters, moving platforms. Unlock: Clip Dash.
 3. **The Melting Vats** — molten cheese and shafts. Unlock: Wall Clip.
 4. **The Packaging Plant** — presses and cracked floors. Unlock: Crash Dive. **Boss: RAT KING** (stomp the crown).
@@ -132,7 +146,9 @@ js/player.js    the cheese: movement controller + squash/stretch visuals
 js/enemies.js   rat, spore, blob, turret, projectiles
 js/bosses.js    Rat King, Anti-Cheat.exe, God of Games
 js/ui.js        DOM helpers
-js/cinematic.js the opening mech battle: scene, mechs, camera keyframes, timeline
+js/cinematic.js the opening mech battle: grassland, camera keyframes, timeline
+js/mech.js      the mech itself: panelled armour, procedural walk, detachable limbs
+js/comic.js     speech balloons, impact words, speed lines, halftone
 js/touch.js     on-screen thumbstick + buttons for touch devices
 js/main.js      game loop, camera, state machine, interactions, progress
 ```

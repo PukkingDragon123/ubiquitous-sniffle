@@ -16,15 +16,14 @@
 <div id="hud" class="hidden">
   <div id="hud-left">
     <div id="hp"></div>
-    <div id="bugs" class="tape-chip"><i class="spr" data-spr="bug"></i><span id="bug-count">0/0</span></div>
-    <div id="limbs"></div>
+    <div id="parts"></div>
   </div>
   <div id="hud-center">
     <div id="level-name"></div>
     <div id="timer">0:00.0</div>
   </div>
   <div id="hud-right">
-    <div id="techs"></div>
+    <div id="wheel-meter"><i></i></div>
   </div>
   <div id="noclip-meter" class="hidden"><div id="noclip-fill"></div></div>
   <div id="boss-bar" class="hidden"><div id="boss-name"></div><div class="bar"><div id="boss-fill"></div></div></div>
@@ -33,21 +32,10 @@
 <!-- In-world sign text -->
 <div id="sign" class="hidden"></div>
 
-<!-- Dialogue -->
-<div id="dialog" class="hidden">
-  <div class="portrait-frame"><i id="dlg-portrait" class="spr portrait-spr" data-spr="p-cheese"></i></div>
-  <div class="text-wrap">
-    <div class="who" id="dlg-who">YOU</div>
-    <div class="text" id="dlg-text"></div>
-    <div class="hint">PRESS JUMP</div>
-  </div>
-  <b class="drip-row"></b>
-</div>
-
 <!-- Ability unlock -->
 <div id="unlock" class="hidden">
   <div class="card dripping">
-    <div class="eyebrow" id="unlock-eyebrow">EXPLOIT FOUND</div>
+    <div class="eyebrow" id="unlock-eyebrow">UPGRADE INSTALLED</div>
     <i id="unlock-ico" class="spr ico-spr" data-spr="tech-jump"></i>
     <div class="name graffiti" id="unlock-name">FRAME SKIP</div>
     <div class="desc" id="unlock-desc"></div>
@@ -56,46 +44,31 @@
   </div>
 </div>
 
-<!-- Title -->
-<div id="title">
-  <div class="tag-wall"></div>
-  <div class="logo">
-    <h1 class="cheez wob" aria-label="CHEEZ-IT"><span>C</span><span>H</span><span>E</span><span>E</span><span>Z</span><span class="dash">-</span><span>I</span><span>T</span></h1>
-    <div class="logo-drips"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
-    <div class="sub">FILE A HOLE IN THIS GAME</div>
-  </div>
-  <div class="menu">
-    <button id="btn-play" class="big">NEW GAME</button>
-    <button id="btn-continue" class="big hidden">CONTINUE</button>
-    <button id="btn-levels">LEVEL SELECT</button>
-    <button id="btn-controls">CONTROLS</button>
-  </div>
-  <div class="foot">A GAME ABOUT BREAKING GAMES <span id="best-time"></span></div>
-</div>
-
 <!-- Level select -->
 <div id="levelselect" class="panel hidden">
-  <h2 class="graffiti">LEVEL SELECT</h2>
+  <h2 class="graffiti">CHEEZ-IT</h2>
+  <p class="tip">A wheel of cheese with a grudge. Pick a world.</p>
   <div id="level-list"></div>
-  <button class="back" data-back>BACK</button>
+  <button id="btn-controls">CONTROLS</button>
+  <button id="btn-replay-intro">REPLAY THE OPENING</button>
 </div>
 
 <!-- Controls -->
 <div id="controls" class="panel hidden">
   <h2 class="graffiti">CONTROLS</h2>
   <table>
-    <tr><td>MOVE</td><td>LEFT / RIGHT / A / D</td></tr>
+    <tr><td>ROLL</td><td>LEFT / RIGHT / A / D</td></tr>
     <tr><td>JUMP</td><td>SPACE / Z / W / UP (hold = higher)</td></tr>
-    <tr><td>FRAME SKIP</td><td>JUMP again in the air</td></tr>
-    <tr><td>CLIP DASH</td><td>SHIFT / X (+ direction)</td></tr>
-    <tr><td>WALL CLIP</td><td>Hold toward a wall, then JUMP</td></tr>
-    <tr><td>CRASH DIVE</td><td>DOWN / S in the air</td></tr>
-    <tr><td>HOOK EXPLOIT</td><td>C / E near a blue node</td></tr>
-    <tr><td>NOCLIP</td><td>Hold V / Q</td></tr>
+    <tr><td>SPIN</td><td>SHIFT / X - spin attack, smashes things</td></tr>
+    <tr><td>POKE</td><td>C / E - poke levers, valves and enemies</td></tr>
+    <tr><td>SPRING LEGS</td><td>JUMP again in the air (upgrade)</td></tr>
+    <tr><td>HAMMER FIST</td><td>DOWN / S in the air (upgrade)</td></tr>
+    <tr><td>WINCH ARM</td><td>C / E near a blue node (upgrade)</td></tr>
+    <tr><td>PHASE CORE</td><td>Hold V / Q (upgrade)</td></tr>
     <tr><td>PAUSE / MUTE / RETRY</td><td>ESC or P / M / R</td></tr>
   </table>
   <p class="tip mobile-only">ON A PHONE: drag the left stick to move, flick it down in the air to CRASH DIVE, and tap the buttons on the right. Buttons appear as you unlock each tech.</p>
-  <p class="tip">PRO TECH: dash, then jump straight away to keep the dash speed. Dash deletes enemies. Gamepads work too.</p>
+  <p class="tip">You are a wheel. Rolling builds speed and keeps it. Spin into crates, barrels and enemies. Poke anything that looks like it moves.</p>
   <button class="back" data-back>BACK</button>
 </div>
 
@@ -156,6 +129,8 @@
   <div class="scan"></div>
 </div>
 
+<div id="comic" class="hidden"></div>
+
 <div id="flash"></div>
 <div id="toast" class="hidden"></div>
 
@@ -167,6 +142,8 @@
 <script src="js/levels.js"></script>
 <script src="js/textures.js"></script>
 <script src="js/effects.js"></script>
+<script src="js/comic.js"></script>
+<script src="js/mech.js"></script>
 <script src="js/level.js"></script>
 <script src="js/player.js"></script>
 <script src="js/enemies.js"></script>
