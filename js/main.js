@@ -93,44 +93,8 @@ CZ.Game = class Game {
   setPaused(on) {
     if (on && this.state !== 'playing') return;
     if (!on && this.state !== 'paused') return;
-    if (on) this.clipTarget = this.findMenuClip();
     this.state = on ? 'paused' : 'playing'; CZ.UI.show('pause', on); CZ.Touch.setVisible(!on);
-    if (!on && this.clipTarget) { this.doMenuClip(this.clipTarget); this.clipTarget = null; }
   }
-  // Pausing parks the player outside the physics step. If they were pressed into a
-  // wall when that happened, resuming puts them down on the far side of it.
-  findMenuClip() {
-    const p = this.player; if (!p || p.dead || !this.level) return null;
-    const dir = p.facing;
-    const probe = { x: p.x + (dir > 0 ? p.w - 0.05 : -0.25), y: p.y + 0.15, w: 0.3, h: p.h - 0.3 };
-    const solids = this.level.blocking({});
-    for (const s of solids) {
-      if (!CZ.overlap(probe, s) || s.w > 4) continue;
-      const nx = dir > 0 ? s.x + s.w + 0.05 : s.x - p.w - 0.05;
-      if (nx < 0 || nx + p.w > this.level.data.width) continue;
-      const dest = { x: nx, y: p.y, w: p.w, h: p.h };
-      if (solids.some(o => CZ.overlap(dest, o))) continue;
-      return { x: nx, y: p.y };
-    }
-    return null;
-  }
-  doMenuClip(t) {
-    const p = this.player;
-    CZ.Effects.burst(p.cx(), p.cy(), 0xb455ff, 14, { spread: 6, up: 2, gravity: 0, life: 0.5 });
-    p.x = t.x; p.y = t.y; p.vx = 0; p.vy = 0; p.lastSafe = { x: p.x, y: p.y };
-    CZ.Effects.burst(p.cx(), p.cy(), 0x39ff88, 14, { spread: 6, up: 2, gravity: 0, life: 0.5 });
-    CZ.Audio.sfx.noclip(); CZ.Effects.shake(0.4);
-    this.discover('menuClip');
-  }
-  // Register a glitch the player just found for themselves; these are not pickups.
-  discover(id) {
-    if (this.abilities[id]) return;
-    this.abilities[id] = true; CZ.writeSave(this.save);
-    CZ.UI.techs(this.abilities, this.player);
-    CZ.UI.toast(`GLITCH FOUND  //  ${CZ.ABILITIES[id].name}`, 4200);
-    CZ.Audio.sfx.unlock();
-  }
-
   // ---------- level lifecycle ----------
   unloadLevel() {
     if (this.level) this.level.dispose();
