@@ -8,7 +8,7 @@ CZ.Level = class Level {
     this.group = new THREE.Group(); scene.add(this.group);
     this.solids = []; this.hazards = []; this.bounces = []; this.winds = []; this.hooks = [];
     this.checks = []; this.bugs = []; this.abilities = []; this.signs = []; this.dialogs = [];
-    this.enemySpawns = []; this.exit = null; this.boss = null; this.levers = [];
+    this.enemySpawns = []; this.exit = null; this.boss = null; this.levers = []; this.ramps = []; this.boosts = [];
     this.time = 0; this.windStreaks = []; this.drips = []; this.spinners = []; this.decos = [];
     this.build();
     this.buildScenery();
@@ -274,6 +274,8 @@ CZ.Level = class Level {
         case 'enemy': this.enemySpawns.push(it); break;
         case 'deco': this.addDeco(it); break;
         case 'lever': this.addLever(it); break;
+        case 'ramp': this.addRamp(it); break;
+        case 'boost': this.addBoost(it); break;
         case 'boss': this.boss = it; break;
       }
     }
@@ -402,6 +404,38 @@ CZ.Level = class Level {
     g.position.set(it.x, g.position.y + it.y, it.z !== undefined ? it.z : (DEPTH[it.kind] ?? -2));
     it.mesh = g; this.group.add(g);
     this.decos.push(it);
+  }
+
+  // A wedge you roll up or down. Rolling downhill builds real speed.
+  addRamp(it) {
+    const shape = new THREE.Shape();
+    if (it.dir > 0) { shape.moveTo(0, 0); shape.lineTo(it.w, 0); shape.lineTo(it.w, it.h); }
+    else { shape.moveTo(0, 0); shape.lineTo(it.w, 0); shape.lineTo(0, it.h); }
+    shape.closePath();
+    const geo = new THREE.ExtrudeGeometry(shape, { depth: 4, bevelEnabled: false });
+    geo.translate(0, 0, -2);
+    const mesh = new THREE.Mesh(geo, new THREE.MeshToonMaterial({ map: CZ.Tex.tiled(this.theme.tile[0], this.theme.tile[1], it.w, it.h) }));
+    mesh.castShadow = true; mesh.receiveShadow = true; CZ.Effects.edges(mesh);
+    mesh.position.set(it.x, it.y, 0);
+    const lip = new THREE.Mesh(new THREE.BoxGeometry(Math.hypot(it.w, it.h), 0.22, 4.06), this.flat(this.theme.plat));
+    lip.position.set(it.x + it.w / 2, it.y + it.h / 2, 0);
+    lip.rotation.z = Math.atan2(it.h * it.dir, it.w);
+    this.group.add(mesh, lip);
+    it.mesh = mesh; this.ramps.push(it);
+  }
+  // A pad that flings a wheel along the ground.
+  addBoost(it) {
+    const g = new THREE.Group();
+    const pad = new THREE.Mesh(new THREE.BoxGeometry(it.w, 0.4, 3.2), this.flat(0x39ff88));
+    pad.position.y = 0.2; g.add(pad); CZ.Effects.edges(pad);
+    it.arrows = [];
+    for (let i = 0; i < Math.max(2, Math.floor(it.w / 1.6)); i++) {
+      const a = new THREE.Mesh(new THREE.ConeGeometry(0.32, 0.7, 3), this.flat(0x0f3d22));
+      a.rotation.z = -Math.PI / 2 * Math.sign(it.speed); a.position.set(-it.w / 2 + 0.9 + i * 1.6, 0.45, 1.2);
+      g.add(a); it.arrows.push(a);
+    }
+    g.position.set(it.x + it.w / 2, it.y, 0);
+    it.mesh = g; this.group.add(g); this.boosts.push(it);
   }
 
   // A wall lever: poke it (or spin into it) to open the gate it is wired to.
@@ -638,6 +672,7 @@ CZ.Level = class Level {
       else { d.bulb.visible = false; d.stem.scale.y = 0.2; d.stem.position.y = -0.1; }
     }
     for (const b of this.bounces) b.pad.scale.y = CZ.damp(b.pad.scale.y, 1, 12, dt);
+    for (const bo of this.boosts) for (let i = 0; i < bo.arrows.length; i++) bo.arrows[i].position.y = 0.45 + Math.sin(t * 8 - i * 0.7) * 0.1;
     for (const w of this.winds) w.fan.rotation.y += dt * 14;
     for (const st of this.windStreaks) { st.m.position.y += st.s * dt; if (st.m.position.y > st.h / 2) st.m.position.y = -st.h / 2; }
     for (const h of this.hooks) { h.ring.rotation.z += dt * 1.6; h.mesh.position.y = h.y + Math.sin(t * 2 + h.x) * 0.1; }
@@ -671,6 +706,17 @@ CZ.Level = class Level {
     if (s.glitch && (f.dashing || f.inGlitch)) return false;
     if (s.corrupt && (f.noclip || f.inCorrupt)) return false;
     return true;
+  }
+  // Height of the ramp surface under x, or null.
+  rampAt(x) {
+    let best = null;
+    for (const r of this.ramps) {
+      if (x < r.x || x > r.x + r.w) continue;
+      const t = (x - r.x) / r.w;
+      const y = r.y + (r.dir > 0 ? t : 1 - t) * r.h;
+      if (best === null || y > best.y) best = { y, slope: (r.dir > 0 ? 1 : -1) * (r.h / r.w), top: r.y + r.h, base: r.y };
+    }
+    return best;
   }
   blocking(f = {}) { const out = []; for (const s of this.solids) if (this.solidFor(s, f)) out.push(s); return out; }
 

@@ -8,6 +8,7 @@ CZ.PIXEL_HEIGHT = 540;
 CZ.clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 CZ.lerp = (a, b, t) => a + (b - a) * t;
 CZ.damp = (a, b, k, dt) => CZ.lerp(a, b, 1 - Math.exp(-k * dt));
+CZ.ease = t => t * t * (3 - 2 * t);   // smoothstep, for scripted camera moves
 CZ.sign = v => (v > 0 ? 1 : v < 0 ? -1 : 0);
 CZ.rand = (a = 1, b) => (b === undefined ? Math.random() * a : a + Math.random() * (b - a));
 CZ.pick = arr => arr[(Math.random() * arr.length) | 0];
@@ -34,7 +35,7 @@ CZ.P = {
   STAB_COOLDOWN: 0.3,
   RUN_ACCEL: 70,
   ROLL_ACCEL: 46,          // a wheel takes a moment to get going
-  ROLL_FRICTION: 16,       // ...and keeps rolling once it does
+  ROLL_FRICTION: 9,        // ...and keeps rolling once it does
   SPIN_TIME: 0.26,
   SPIN_SPEED: 17,
   SPIN_COOLDOWN: 0.25,

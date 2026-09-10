@@ -186,8 +186,11 @@ button:nth-of-type(even){transform:rotate(.7deg)}
   color:var(--paper);text-shadow:3px 3px 0 #000;text-align:center;max-width:86vw;
   padding:12px 20px;background:rgba(16,10,18,.55);border-left:var(--pix) solid var(--cheese);
   animation:slam .12s steps(2)}
-#cine-skip{position:absolute;right:22px;bottom:calc(11vh + 14px);font-family:var(--pixel);font-size:10px;
-  color:var(--paper);opacity:.4;letter-spacing:1px;animation:blink 2.4s steps(2) infinite}
+#cine-skip{position:absolute;right:20px;bottom:calc(11vh + 16px);pointer-events:auto;
+  font-family:var(--pixel);font-size:12px;letter-spacing:1px;padding:10px 16px;
+  background-color:rgba(20,13,7,.72);color:var(--paper);border:3px solid var(--paper);
+  box-shadow:none;transform:none;opacity:.65}
+#cine-skip:hover{background-color:var(--cheese);color:var(--ink);border-color:var(--ink);opacity:1;transform:none}
 #cine-flash{position:absolute;inset:0;background:#fff;opacity:0}
 #cine .scan{position:absolute;inset:0;opacity:.16;
   background:repeating-linear-gradient(0deg, rgba(0,0,0,.85) 0 2px, transparent 2px 5px)}
@@ -310,33 +313,20 @@ html.touch .mobile-only{display:block}
 #comic{position:fixed;inset:0;z-index:57;pointer-events:none;overflow:hidden}
 #comic.hidden{display:none !important}
 
+/* The balloon body is a pixel-art cloud drawn per bubble in comic.js. */
 .bubble{position:absolute;transform:translate(-50%,-100%);
-  background:var(--paper);color:var(--ink);border:var(--pix) solid var(--ink);
-  padding:12px 18px;max-width:min(420px,54vw);text-align:center;
-  font-family:var(--pixel);font-size:clamp(12px,1.5vw,18px);line-height:1.55;letter-spacing:.5px;
-  box-shadow:0 var(--pix) 0 var(--ink), 0 0 0 calc(var(--pix)*2) rgba(20,13,7,.16);
+  color:var(--ink);max-width:min(460px,58vw);text-align:center;
+  font-family:var(--pixel);font-size:clamp(15px,1.9vw,24px);line-height:1.7;letter-spacing:.5px;
+  background-repeat:no-repeat;image-rendering:pixelated;
   animation:bubblePop .16s steps(3);transition:opacity .22s}
-.bubble .tail{position:absolute;left:50%;bottom:calc(var(--pix)*-3);transform:translateX(-50%);
-  width:0;height:0;border-left:16px solid transparent;border-right:16px solid transparent;
-  border-top:20px solid var(--ink)}
-.bubble .tail::after{content:'';position:absolute;left:-11px;top:-24px;
-  width:0;height:0;border-left:11px solid transparent;border-right:11px solid transparent;
-  border-top:14px solid var(--paper)}
 .bubble.gone{opacity:0}
 @keyframes bubblePop{from{transform:translate(-50%,-100%) scale(.4)}to{transform:translate(-50%,-100%) scale(1)}}
-/* a shout is a jagged balloon */
-.bubble.shout{background:var(--cheese);font-size:clamp(13px,1.7vw,21px);
-  clip-path:polygon(0% 12%,6% 0%,14% 10%,24% 2%,34% 11%,46% 1%,58% 11%,70% 2%,82% 11%,92% 2%,100% 13%,
-    97% 30%,100% 46%,96% 62%,100% 80%,92% 88%,82% 80%,70% 90%,58% 80%,46% 92%,34% 80%,24% 90%,14% 80%,5% 90%,0% 74%,3% 58%,0% 42%,4% 26%);
-  border:0;padding:20px 26px;box-shadow:none;
-  filter:drop-shadow(0 0 0 var(--ink)) drop-shadow(3px 3px 0 var(--ink)) drop-shadow(-3px 0 0 var(--ink)) drop-shadow(0 -3px 0 var(--ink))}
-.bubble.shout .tail{display:none}
-.bubble.small{font-family:var(--body);font-size:clamp(13px,1.6vw,20px);text-transform:lowercase;
-  padding:8px 14px;opacity:.95}
+.bubble.shout{font-size:clamp(17px,2.3vw,30px)}
+.bubble.small{font-family:var(--body);font-size:clamp(16px,2vw,26px);text-transform:lowercase}
 
 .pow{position:absolute;transform:translate(-50%,-50%);
-  font-family:var(--graffiti);font-size:clamp(38px,7vw,96px);letter-spacing:2px;color:var(--cheese);
-  -webkit-text-stroke:9px var(--ink);paint-order:stroke fill;text-shadow:8px 8px 0 var(--wine);white-space:nowrap}
+  font-family:var(--graffiti);font-size:clamp(24px,3.4vw,46px);letter-spacing:1px;color:var(--cheese);
+  -webkit-text-stroke:6px var(--ink);paint-order:stroke fill;text-shadow:5px 5px 0 var(--wine);white-space:nowrap}
 .pow.slash{color:#fff;text-shadow:8px 8px 0 #2b6fd8}
 .pow.glitch{color:var(--glitch);text-shadow:8px 8px 0 var(--ink);animation:powGlitch .1s steps(2) infinite}
 @keyframes powGlitch{0%{transform:translate(-50%,-50%) translateX(-4px)}100%{transform:translate(-50%,-50%) translateX(5px)}}
@@ -365,5 +355,5 @@ html.touch .mobile-only{display:block}
   .part .spr{width:19px;height:19px}
   .bubble{font-size:11px;padding:8px 12px;max-width:62vw}
   .bubble.shout{font-size:12px;padding:14px 18px}
-  .pow{font-size:clamp(26px,8vw,52px);-webkit-text-stroke:6px var(--ink)}
+  .pow{font-size:clamp(18px,5vw,30px);-webkit-text-stroke:4px var(--ink)}
 }

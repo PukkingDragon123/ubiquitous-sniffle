@@ -13,8 +13,8 @@ CZ.UI = (() => {
     i.style.background = `conic-gradient(var(--cheese) 0turn ${frac}turn, rgba(20,13,7,.35) ${frac}turn 1turn)`;
     el.classList.toggle('low', frac <= 1 / max + 0.01);
   }
-  function timer(t) { $('timer').textContent = CZ.fmtTime(t); }
-  function levelName(n, sub) { $('level-name').textContent = n; $('level-name').title = sub || ''; }
+  function timer() {}
+  function levelName() {}
 
   // Mech parts you have bolted on.
   let partSig = '';
@@ -37,8 +37,8 @@ CZ.UI = (() => {
 
   function noclipMeter(on, frac) { show('noclip-meter', on); if (on) $('noclip-fill').style.width = `${Math.round(frac * 100)}%`; }
   function bossBar(boss) { show('boss-bar', !!boss); if (boss) { $('boss-name').textContent = boss.name; $('boss-fill').style.width = `${Math.max(0, boss.hp / boss.maxHp) * 100}%`; } }
-  function sign(text) { if (text === signShown) return; signShown = text; show('sign', !!text); if (text) $('sign').textContent = text; }
-  function toast(text, ms = 2600) { const el = $('toast'); el.textContent = text; show('toast', true); clearTimeout(toastTimer); toastTimer = setTimeout(() => show('toast', false), ms); }
+  function sign() {}
+  function toast() {}
   function flash(color) { const f = $('flash'); f.style.background = color; f.style.transition = 'none'; f.style.opacity = 1; requestAnimationFrame(() => { f.style.transition = 'opacity .35s'; f.style.opacity = 0; }); }
 
   // Cinematic overlay: letterbox caption plus a flash / glitch wash.
@@ -56,8 +56,7 @@ CZ.UI = (() => {
   function unlock(id) {
     const a = CZ.ABILITIES[id];
     const ico = $('unlock-ico'); ico.dataset.spr = a.ico; ico.dataset.sprPainted = ''; CZ.Spr.paint($('unlock'));
-    $('unlock-eyebrow').textContent = 'UPGRADE INSTALLED';
-    $('unlock-name').textContent = a.name; $('unlock-desc').textContent = a.desc;
+    $('unlock-name').textContent = a.name;
     $('unlock-key').textContent = a.key;
     show('unlock', true);
   }

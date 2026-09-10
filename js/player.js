@@ -64,14 +64,6 @@ CZ.Player = class Player {
       this.face.add(socket);
       this.eyes.push({ socket, pupil, px: 0, py: -0.05, vx: 0, vy: 0 });
     }
-    this.brows = [];
-    for (const bx of [-0.23, 0.23]) {
-      const brow = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.06, 0.05), new THREE.MeshBasicMaterial({ color: 0x2a1a0e }));
-      brow.position.set(bx, 0.28, 0.02); this.face.add(brow); this.brows.push(brow);
-    }
-    this.mouth = new THREE.Mesh(new THREE.BoxGeometry(0.19, 0.07, 0.05), new THREE.MeshBasicMaterial({ color: 0x2a1a0e }));
-    this.mouth.position.set(0, -0.26, 0.02); this.face.add(this.mouth);
-
     // the toothpick it pokes with
     this.poker = new THREE.Group(); this.poker.position.set(0, -0.05, 0.15); this.body.add(this.poker);
     const stick = new THREE.Mesh(new THREE.BoxGeometry(0.62, 0.09, 0.09), flat(0xe0c48a));
@@ -196,6 +188,20 @@ CZ.Player = class Player {
     else this.roll -= dt * 26 * (this.facing || 1);
     this.wheel.rotation.z = this.roll;
 
+    // crumbs off the rim, and a trail of them behind a fast roll
+    this.crumbT = (this.crumbT || 0) - dt;
+    const fast = Math.abs(this.vx);
+    if (this.crumbT <= 0 && (this.grounded && fast > 2.2 || this.spinning())) {
+      this.crumbT = this.spinning() ? 0.02 : CZ.clamp(0.16 - fast * 0.012, 0.03, 0.16);
+      const back = -Math.sign(this.vx || this.facing);
+      CZ.Effects.burst(this.cx() + back * this.r * 0.7, this.y + 0.12, this.heat > 0.3 ? 0xffb04a : 0xffe066,
+        this.spinning() ? 2 : 1,
+        { spread: 1.6 + fast * 0.12, up: 1.4 + fast * 0.1, life: 0.45, size: 0.55, gravity: 34, vx: back * fast * 0.35 });
+    }
+    if (this.grounded && fast > 6 && Math.random() < 0.5) {
+      CZ.Effects.burst(this.cx(), this.y + 0.05, 0xfff0b0, 1, { spread: 0.6, up: 0.6, life: 0.3, size: 0.4, gravity: 12 });
+    }
+
     // soft cheese sags and spreads
     const melt = this.heat;
     let sx = 1 + melt * 0.22, sy = 1 - melt * 0.3;
@@ -245,8 +251,9 @@ CZ.Player = class Player {
     }
   }
 
+  // Only eyes. No brows, no mouth: the googly pupils carry the whole performance.
   updateFace(dt) {
-    const mood = this.mood(), R = 0.062;
+    const mood = this.mood(), R = 0.075;
     for (const e of this.eyes) {
       e.vx += (-this.accelX * 0.05 - e.px * 26) * dt;
       e.vy += (-9 - (this.vy > 6 ? 8 : 0) - e.py * 26) * dt;
@@ -254,22 +261,14 @@ CZ.Player = class Player {
       e.px += e.vx * dt; e.py += e.vy * dt;
       const d = Math.hypot(e.px, e.py);
       if (d > R) { const k = R / d; e.px *= k; e.py *= k; e.vx *= -0.35; e.vy *= -0.35; }
-      if (mood === 'determined' || mood === 'poke') { e.px = CZ.damp(e.px, this.facing * R * 0.7, 18, dt); e.py = CZ.damp(e.py, 0, 18, dt); e.vx = e.vy = 0; }
+      if (mood === 'determined' || mood === 'poke') { e.px = CZ.damp(e.px, this.facing * R * 0.75, 18, dt); e.py = CZ.damp(e.py, 0, 18, dt); e.vx = e.vy = 0; }
       e.pupil.position.set(e.px, e.py, 0.026);
+      e.pupil.scale.setScalar(mood === 'scared' ? 0.62 : mood === 'melting' ? 1.2 : 1);
     }
     this.blinkT -= dt; if (this.blinkT < 0) this.blinkT = 1.6 + Math.random() * 3.4;
-    const open = this.blinkT < 0.11 ? 0.08 : mood === 'determined' || mood === 'poke' ? 0.6 : mood === 'melting' ? 0.5
-      : mood === 'scared' ? 1.15 : 1;
+    const open = this.blinkT < 0.11 ? 0.08 : mood === 'determined' || mood === 'poke' ? 0.58
+      : mood === 'melting' ? 0.45 : mood === 'scared' ? 1.2 : 1;
     for (const e of this.eyes) e.socket.scale.y = CZ.damp(e.socket.scale.y, open, 34, dt);
-    const brow = { idle: [0.1, 0.28], happy: [0.2, 0.31], determined: [-0.5, 0.23], poke: [-0.45, 0.23],
-      hurt: [0.45, 0.3], scared: [0.5, 0.32], strain: [-0.3, 0.25], melting: [0.4, 0.26] }[mood] || [0.1, 0.28];
-    this.brows[0].rotation.z = CZ.damp(this.brows[0].rotation.z, -brow[0], 14, dt);
-    this.brows[1].rotation.z = CZ.damp(this.brows[1].rotation.z, brow[0], 14, dt);
-    for (const br of this.brows) br.position.y = CZ.damp(br.position.y, brow[1], 14, dt);
-    const mo = { idle: [1, 1], happy: [1.8, 0.9], determined: [1.4, 0.8], poke: [0.7, 2.2],
-      hurt: [0.8, 2.2], scared: [1.1, 2.6], strain: [1.4, 0.7], melting: [1.6, 1.6] }[mood] || [1, 1];
-    this.mouth.scale.x = CZ.damp(this.mouth.scale.x, mo[0], 16, dt);
-    this.mouth.scale.y = CZ.damp(this.mouth.scale.y, mo[1], 16, dt);
   }
 
   partCount() { return CZ.ABILITY_ORDER.filter(id => this.has(id)).length; }
@@ -436,7 +435,7 @@ CZ.Player = class Player {
       if (axis !== 0) {
         const accel = (this.grounded ? P.ROLL_ACCEL : P.AIR_ACCEL) * (1 - this.heat * 0.5);
         if (!excess || CZ.sign(this.vx) !== axis) this.vx = CZ.clamp(this.vx + axis * accel * dt, -top, top);
-        else this.vx -= CZ.sign(this.vx) * (this.grounded ? 14 : P.AIR_FRICTION) * dt;
+        else this.vx -= CZ.sign(this.vx) * (this.grounded ? 8 : P.AIR_FRICTION) * dt;
       } else {
         const fr = (this.grounded ? P.ROLL_FRICTION : P.AIR_FRICTION) * (1 + this.heat * 3);
         const s = CZ.sign(this.vx); this.vx -= s * fr * dt; if (CZ.sign(this.vx) !== s) this.vx = 0;
@@ -521,6 +520,20 @@ CZ.Player = class Player {
       const probe = { x: this.x + 0.06, y: this.y - 0.1, w: this.w - 0.12, h: 0.12 };
       for (const s of solids) if (CZ.overlap(probe, s)) { landed = s; this.grounded = true; this.y = s.y + s.h; if (this.vy < 0) this.vy = 0; break; }
     }
+    // ramps: sit on the slope surface and let gravity pull you along it
+    const ramp = L.rampAt(this.cx());
+    if (ramp && this.vy <= 0.5 && this.y <= ramp.y + 0.35 && this.y + this.h > ramp.base) {
+      this.y = ramp.y; this.vy = 0; this.grounded = true; landed = landed || { x: this.x, y: ramp.y - 1, w: 1, h: 1, ramp: true };
+      this.onRamp = ramp.slope; this.rampTop = ramp.top;
+      this.vx += -ramp.slope * CZ.P.GRAVITY * 0.42 * dt;   // downhill acceleration
+    } else {
+      // rolling off the lip of an up-ramp throws you into the air
+      if (this.onRamp && this.onRamp * this.vx > 0 && this.vy <= 0.5 && this.y >= (this.rampTop || 0) - 0.6) {
+        this.vy = Math.max(this.vy, Math.abs(this.vx) * Math.abs(this.onRamp) * 1.15);
+        CZ.Effects.burst(this.cx(), this.y, 0xffe066, 5, { spread: 3, up: 2, life: 0.35, size: 0.6 });
+      }
+      this.onRamp = 0;
+    }
     if (!this.grounded) {
       const pr = { x: this.x - 0.08, y: this.y + 0.1, w: this.w + 0.16, h: this.h - 0.2 };
       for (const s of solids) if (CZ.overlap(pr, s)) { this.wallDir = this.cx() < s.x + s.w / 2 ? 1 : -1; break; }
@@ -562,6 +575,15 @@ CZ.Player = class Player {
       if (hz.kind === 'laser') { if (!this.dashing) this.damage(hz.x + hz.w / 2); }
       else if (hz.kind === 'goo') { this.heat = 1; this.die(); return; }
       else if (!(hz.kind === 'press' && this.dashing)) { this.die(); return; }
+    }
+    // boost pads: a wheel loves these
+    for (const bo of L.boosts) if (CZ.overlap({ x: box.x, y: box.y - 0.2, w: box.w, h: 0.5 }, { x: bo.x, y: bo.y, w: bo.w, h: 0.9 })) {
+      const dir = Math.sign(bo.speed);
+      if (Math.abs(this.vx) < Math.abs(bo.speed) || Math.sign(this.vx) !== dir) {
+        this.vx = bo.speed; this.facing = dir;
+        CZ.Audio.sfx.dash();
+        CZ.Effects.burst(this.cx(), this.y + 0.2, 0x39ff88, 6, { spread: 4, up: 2, life: 0.35, size: 0.7 });
+      }
     }
     for (const b of L.bounces) if (this.vy <= 0 && CZ.overlap({ x: box.x, y: box.y - 0.15, w: box.w, h: 0.4 }, { x: b.x, y: b.y, w: b.w, h: b.h + 0.2 })) {
       const wasPound = this.pounding; this.pounding = false; this.dashing = false;

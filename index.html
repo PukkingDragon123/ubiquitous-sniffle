@@ -18,10 +18,7 @@
     <div id="hp"></div>
     <div id="parts"></div>
   </div>
-  <div id="hud-center">
-    <div id="level-name"></div>
-    <div id="timer">0:00.0</div>
-  </div>
+  <div id="hud-center"></div>
   <div id="hud-right">
     <div id="wheel-meter"><i></i></div>
   </div>
@@ -30,17 +27,14 @@
 </div>
 
 <!-- In-world sign text -->
-<div id="sign" class="hidden"></div>
+
 
 <!-- Ability unlock -->
 <div id="unlock" class="hidden">
   <div class="card dripping">
-    <div class="eyebrow" id="unlock-eyebrow">UPGRADE INSTALLED</div>
     <i id="unlock-ico" class="spr ico-spr" data-spr="tech-jump"></i>
     <div class="name graffiti" id="unlock-name">FRAME SKIP</div>
-    <div class="desc" id="unlock-desc"></div>
     <div class="key" id="unlock-key"></div>
-    <div class="hint">PRESS JUMP TO CONTINUE</div>
   </div>
 </div>
 
@@ -124,7 +118,7 @@
   <div class="bar top"></div>
   <div class="bar bottom"></div>
   <div id="cine-caption" class="hidden"></div>
-  <div id="cine-skip">TAP OR PRESS JUMP TO SKIP</div>
+  <button id="cine-skip">SKIP</button>
   <div id="cine-flash"></div>
   <div class="scan"></div>
 </div>
@@ -132,7 +126,7 @@
 <div id="comic" class="hidden"></div>
 
 <div id="flash"></div>
-<div id="toast" class="hidden"></div>
+
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.0/three.min.js"></script>
 <script src="js/util.js"></script>
@@ -144,6 +138,7 @@
 <script src="js/effects.js"></script>
 <script src="js/comic.js"></script>
 <script src="js/mech.js"></script>
+<script src="js/ragdoll.js"></script>
 <script src="js/level.js"></script>
 <script src="js/player.js"></script>
 <script src="js/enemies.js"></script>

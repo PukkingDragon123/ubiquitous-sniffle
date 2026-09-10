@@ -1,16 +1,21 @@
-// The opening. A grassland, two mechs, one game-breaking glitch and a duck.
-// All speech is comic balloons (CZ.Comic); there is no dialogue box anywhere.
+// The opening is a fight you actually play: two ragdoll mechs on a grassland.
+// Hover height of the dev duck - low enough that it shares the frame with the mech.
+const DUCK_Y = 34;
+
+// Win or lose, it ends the same way - with a duck and a curse.
 CZ.Cinematic = class Cinematic {
   constructor(game) {
     this.game = game;
-    this.t = 0; this.done = false; this.shake = 0; this.flashT = 0; this.glitch = 0;
+    this.t = 0; this.phaseT = 0; this.phase = 'ready';
+    this.done = false; this.shake = 0; this.flashT = 0; this.glitch = 0;
     this.said = {};
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color(0x8ec9f0);
-    this.scene.fog = new THREE.Fog(0xa9d8f2, 120, 460);
+    this.scene.fog = new THREE.Fog(0xa9d8f2, 140, 480);
     this.camera = new THREE.PerspectiveCamera(46, 16 / 9, 0.5, 700);
     this.sparks = []; this.pool = [];
     this.build();
+    this.spawnFighters();
     CZ.Comic.setCamera(this.camera);
   }
 
@@ -59,13 +64,13 @@ CZ.Cinematic = class Cinematic {
       hill.scale.y = CZ.rand(0.3, 0.6); hill.receiveShadow = true; S.add(hill);
     }
     // grass blades near the fight, instanced and waving
-    const bladeGeo = new THREE.PlaneGeometry(0.5, 2.4);
-    bladeGeo.translate(0, 1.2, 0);
+    const bladeGeo = new THREE.PlaneGeometry(0.5, 1.5);
+    bladeGeo.translate(0, 0.75, 0);
     this.grass = new THREE.InstancedMesh(bladeGeo,
       new THREE.MeshToonMaterial({ color: 0x6db43f, side: THREE.DoubleSide }), 2600);
     const dummy = new THREE.Object3D(); this.grassPhase = [];
     for (let i = 0; i < 2600; i++) {
-      dummy.position.set(CZ.rand(-130, 130), 0, CZ.rand(-70, 60));
+      dummy.position.set(CZ.rand(-150, 150), 0, CZ.rand(-80, -4));
       dummy.rotation.y = CZ.rand(0, Math.PI); dummy.scale.setScalar(CZ.rand(0.7, 1.6));
       dummy.updateMatrix(); this.grass.setMatrixAt(i, dummy.matrix);
       this.grassPhase.push({ x: dummy.position.x, z: dummy.position.z, ry: dummy.rotation.y, s: dummy.scale.x, p: CZ.rand(0, 6.3) });
@@ -90,30 +95,28 @@ CZ.Cinematic = class Cinematic {
       rock.position.set(CZ.rand(-140, 140), r * 0.4, CZ.rand(-80, 50)); rock.castShadow = true; S.add(rock);
     }
 
-    // ── the fighters ──
-    this.blue = new CZ.Mech(S, { pal: 'mechBlue', glow: 0x9fd4ff, trim: 0xffd23f });
-    this.red = new CZ.Mech(S, { pal: 'mechRed', glow: 0xffb0b8, trim: 0x2a2f38 });
-    this.blue.root.position.set(-40, 0, 0);
-    this.red.root.position.set(40, 0, 0); this.red.root.rotation.y = Math.PI;
-    this.blue.onSpark = (x, y, z) => this.spark(x, y, z, 0x9fd4ff, 3, 10);
-    this.red.onSpark = (x, y, z) => this.spark(x, y, z, 0xffb0b8, 3, 10);
-
-    // the hole it clips through
-    this.hole = new THREE.Mesh(new THREE.CircleGeometry(9, 7), new THREE.MeshBasicMaterial({ color: 0x0a1408 }));
-    this.hole.rotation.x = -Math.PI / 2; this.hole.position.set(-40, 0.14, 0); this.hole.visible = false; S.add(this.hole);
-    this.holeRing = new THREE.Mesh(new THREE.RingGeometry(9, 10.8, 7), new THREE.MeshBasicMaterial({ color: 0x39ff88, side: THREE.DoubleSide }));
-    this.holeRing.rotation.x = -Math.PI / 2; this.holeRing.position.set(-40, 0.16, 0); this.holeRing.visible = false; S.add(this.holeRing);
-
     // ── the dev ──
     this.duck = this.makeDuck(); this.duck.visible = false; S.add(this.duck);
-    this.beam = new THREE.Mesh(new THREE.CylinderGeometry(7, 17, 190, 12, 1, true),
+    this.beam = new THREE.Mesh(new THREE.CylinderGeometry(6, 16, 120, 12, 1, true),
       new THREE.MeshBasicMaterial({ color: 0xfff3c0, transparent: true, opacity: 0, side: THREE.DoubleSide, depthWrite: false }));
-    this.beam.position.set(-40, 95, 0); S.add(this.beam);
-    this.bolt = new THREE.Mesh(new THREE.BoxGeometry(2.6, 150, 2.6), new THREE.MeshBasicMaterial({ color: 0xffffff }));
-    this.bolt.position.set(-40, 75, 0); this.bolt.visible = false; S.add(this.bolt);
+    this.beam.position.set(-40, 60, 0); S.add(this.beam);
+    this.bolt = new THREE.Mesh(new THREE.BoxGeometry(2.6, 42, 2.6), new THREE.MeshBasicMaterial({ color: 0xffffff }));
+    this.bolt.position.set(-40, 21, 0); this.bolt.visible = false; S.add(this.bolt);
     this.cheese = this.makeCheeseWheel(); this.cheese.visible = false; S.add(this.cheese);
   }
 
+
+  spawnFighters() {
+    this.blue = new CZ.RagMech(this.scene, { pal: 'mechBlue', glow: 0x9fd4ff, trim: 0xffd23f, x: -17, facing: 1 });
+    this.red = new CZ.RagMech(this.scene, { pal: 'mechRed', glow: 0xffb0b8, trim: 0x2a2f38, x: 17, facing: -1 });
+    this.blue.setSaber(false); this.red.setSaber(false);
+    this.blueHp = 3; this.redHp = 3;
+    this.swingT = 0; this.swingCd = 0;
+    this.aiT = 1.8; this.aiState = 'approach';
+    this.hitCd = 0; this.aiHitCd = 0;
+  }
+
+  // ---------- helpers ----------
   makeDuck() {
     const g = new THREE.Group();
     const body = new THREE.Mesh(new THREE.SphereGeometry(10, 14, 10), this.mat(0xffd23f)); body.scale.set(1.3, 1, 1.15); body.castShadow = true; g.add(body);
@@ -133,7 +136,7 @@ CZ.Cinematic = class Cinematic {
     this.duckHalo = new THREE.Mesh(new THREE.TorusGeometry(8, 0.6, 6, 20), new THREE.MeshBasicMaterial({ color: 0xfff3c0 }));
     this.duckHalo.position.set(7, 18, 0); this.duckHalo.rotation.x = Math.PI / 2.3; g.add(this.duckHalo);
     g.add(new THREE.PointLight(0xfff3c0, 6, 140));
-    g.scale.setScalar(1.5);
+    g.scale.setScalar(1.15);
     return g;
   }
 
@@ -154,11 +157,10 @@ CZ.Cinematic = class Cinematic {
     return g;
   }
 
-  // ---------- helpers ----------
   spark(x, y, z, color, n = 16, spread = 28) {
     for (let i = 0; i < n; i++) {
       let p = this.pool.pop();
-      if (!p) p = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.28, 0.28), new THREE.MeshBasicMaterial({ color }));
+      if (!p) p = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.3, 0.3), new THREE.MeshBasicMaterial({ color }));
       else p.material.color.set(color);
       p.position.set(x, y, z);
       p.userData = { vx: CZ.rand(-spread, spread), vy: CZ.rand(4, spread), vz: CZ.rand(-spread, spread), life: CZ.rand(0.3, 0.9) };
@@ -169,205 +171,111 @@ CZ.Cinematic = class Cinematic {
   cam(pos, look, fov) {
     this.camera.position.set(pos[0], pos[1], pos[2]);
     this.camera.lookAt(look[0], look[1], look[2]);
-    if (fov && this.camera.fov !== fov) { this.camera.fov = fov; this.camera.updateProjectionMatrix(); }
+    if (fov && Math.abs(this.camera.fov - fov) > 0.01) { this.camera.fov = fov; this.camera.updateProjectionMatrix(); }
   }
-  camLerp(a, b, k, ease = 'inout') {
-    const e = ease === 'out' ? 1 - Math.pow(1 - k, 3) : ease === 'in' ? k * k * k : k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2;
-    const mix = (u, w) => [u[0] + (w[0] - u[0]) * e, u[1] + (w[1] - u[1]) * e, u[2] + (w[2] - u[2]) * e];
-    this.cam(mix(a.pos, b.pos), mix(a.look, b.look), a.fov + (b.fov - a.fov) * e);
-  }
-  // Say a line once, as a balloon over a moving anchor.
-  say(id, text, anchor, opts) {
-    if (this.said[id]) return; this.said[id] = true;
-    CZ.Comic.bubble(text, anchor, opts);
-  }
+  say(id, text, anchor, opts) { if (this.said[id]) return; this.said[id] = true; CZ.Comic.bubble(text, anchor, opts); }
   once(id, fn) { if (this.said[id]) return; this.said[id] = true; fn(); }
-  headOf(m, dy = 0) { return () => { const v = new THREE.Vector3(); m.head.getWorldPosition(v); return [v.x, v.y + 7 + dy, v.z]; }; }
+  headAnchor(m, dy = 6) { return () => { const h = m.pts[m.i.head]; return [h.x, h.y + dy, 0]; }; }
 
-  // ---------- timeline ----------
+  // Point the camera at both fighters, backing off as they separate.
+  followCam(dt, tight = 0) {
+    const a = this.blue.pts[this.blue.i.chest], b = this.red.pts[this.red.i.chest];
+    // if one of them is flung far away, stay with the player and look that way
+    const spread = Math.abs(a.x - b.x), sep = Math.min(spread, 34);
+    const cx = spread > 34 ? a.x + Math.sign(b.x - a.x) * 17 : (a.x + b.x) / 2;
+    const cy = Math.max(10, (a.y + b.y) / 2 + 3);
+    const want = CZ.clamp(30 + sep * 1.0 - tight, 42, 66);
+    this.camX = this.camX === undefined ? cx : CZ.damp(this.camX, cx, 4, dt);
+    this.camY = this.camY === undefined ? cy : CZ.damp(this.camY, cy, 3, dt);
+    this.camZ = this.camZ === undefined ? want : CZ.damp(this.camZ, want, 2.4, dt);
+    this.cam([this.camX + this.sx, this.camY + this.sy, this.camZ], [this.camX, this.camY - 2, 0], 46);
+  }
+
+  // ---------- combat ----------
+  // The blade, as a segment from the hand outward.
+  blade(m) {
+    const h = m.pts[m.i.hdR], e = m.pts[m.i.elR];
+    const dx = h.x - e.x, dy = h.y - e.y, d = Math.hypot(dx, dy) || 1;
+    return { ax: h.x, ay: h.y, bx: h.x + dx / d * 13, by: h.y + dy / d * 13, speed: Math.hypot(h.x - h.px, h.y - h.py) };
+  }
+  // A swing connects if the moving blade sweeps close to a body point. Testing
+  // the whole blade, not just the tip, means a downward cut still finds a mech
+  // that is already on the ground.
+  tryHit(attacker, victim, onHit) {
+    if (attacker.armGone.R) return false;
+    const b = this.blade(attacker);
+    if (b.speed < 0.10) return false;
+    const vx = b.bx - b.ax, vy = b.by - b.ay, L = vx * vx + vy * vy || 1;
+    for (const key of ['head', 'chest', 'hip', 'elL', 'elR', 'knL', 'knR']) {
+      const p = victim.pts[victim.i[key]];
+      const t = CZ.clamp(((p.x - b.ax) * vx + (p.y - b.ay) * vy) / L, 0, 1);
+      const qx = b.ax + vx * t, qy = b.ay + vy * t;
+      if (Math.hypot(p.x - qx, p.y - qy) < 4.6) { onHit(key, p, { x: qx, y: qy }); return true; }
+    }
+    return false;
+  }
+  damage(victim, isPlayer, key, p) {
+    const hpKey = isPlayer ? 'blueHp' : 'redHp';
+    this[hpKey]--;
+    this.shake = 1.9; this.flashT = 0.16; CZ.Audio.sfx.bossHit(); CZ.Comic.flash();
+    this.spark(p.x, p.y, 0, isPlayer ? 0x9fd4ff : 0xffb0b8, 34, 26);
+    CZ.Comic.pow(CZ.pick(['WHAM!', 'KRAK!', 'THUD!', 'KLANG!']), [p.x, p.y + 5, 0], { kind: 'hit', life: 0.6 });
+    // knocked back away from whoever swung, not always to the right
+    const other = isPlayer ? this.red : this.blue;
+    const dir = Math.sign(victim.pts[victim.i.chest].x - other.pts[other.i.chest].x) || 1;
+    victim.impulse(victim.i.chest, dir * 12, 9, 1 / 60);
+    victim.impulse(victim.i.head, dir * 6, 3, 1 / 60);
+    // limbs come off as the damage adds up
+    const hp = this[hpKey];
+    const order = ['armL', 'legL', 'head'];
+    if (hp <= 2 && hp >= 0) {
+      const lost = victim.loseLimb(order[2 - hp] || 'head');
+      if (lost) {
+        this.spark(lost.x, lost.y, 0, 0xff8a1f, 40, 30);
+        CZ.Comic.pow('SHK!', [lost.x + 7, lost.y - 3, 0], { kind: 'slash', life: 0.6 });
+      }
+    }
+    if (hp <= 0) this.knockOut(isPlayer);
+  }
+  knockOut(isPlayer) {
+    if (this.phase !== 'fight') return;
+    this.phase = isPlayer ? 'glitch' : 'finish';
+    this.phaseT = 0;
+    this.flashT = 0.4; this.shake = 2.6; CZ.Audio.sfx.bossDie(); CZ.Comic.flash('white');
+    CZ.Comic.clearBubbles();
+  }
+
+  // ---------- update ----------
   update(dt) {
     if (this.done) return;
-    this.t += dt;
-    const t = this.t, B = this.blue, R = this.red;
-    const seg = (a, b) => CZ.clamp((t - a) / (b - a), 0, 1);
+    dt = Math.min(dt, 1 / 45);
+    this.t += dt; this.phaseT += dt;
+    const I = CZ.Input, B = this.blue, R = this.red;
+    // ambience
     for (const c of this.clouds) { c.position.x += c.userData.drift * dt; if (c.position.x > 460) c.position.x = -460; }
-    // grass wave
     const d = this.grassDummy;
-    for (let i = 0; i < this.grassPhase.length; i += 1) {
+    for (let i = 0; i < this.grassPhase.length; i++) {
       const g = this.grassPhase[i];
-      d.position.set(g.x, 0, g.z); d.rotation.set(Math.sin(t * 1.6 + g.p) * 0.22, g.ry, Math.sin(t * 2.1 + g.p) * 0.18);
+      d.position.set(g.x, 0, g.z); d.rotation.set(Math.sin(this.t * 1.6 + g.p) * 0.22, g.ry, Math.sin(this.t * 2.1 + g.p) * 0.18);
       d.scale.setScalar(g.s); d.updateMatrix(); this.grass.setMatrixAt(i, d.matrix);
     }
     this.grass.instanceMatrix.needsUpdate = true;
     this.duckHalo.rotation.z += dt * 1.4;
-    B.update(dt); R.update(dt);
+    this.sx = this.shake > 0.01 ? CZ.rand(-1, 1) * this.shake : 0;
+    this.sy = this.shake > 0.01 ? CZ.rand(-1, 1) * this.shake : 0;
 
-    if (t < 2.6) {                                   // stare-down
-      const k = seg(0, 2.6);
-      B.idle(dt); R.idle(dt);
-      this.say('a', 'LAST ONE STANDING.', this.headOf(R), { kind: 'shout', side: 1 });
-      this.camLerp({ pos: [0, 40, 170], look: [0, 14, 0], fov: 46 }, { pos: [0, 22, 116], look: [0, 12, 0], fov: 42 }, k);
-    } else if (t < 5.0) {                            // charge
-      const k = seg(2.6, 5.0);
-      B.root.position.x = -40 + k * 30; R.root.position.x = 40 - k * 30;
-      B.walk(dt, 2.4); R.walk(dt, 2.4);
-      B.setSaber(k > 0.25); R.setSaber(k > 0.25);
-      B.setThrust(true); R.setThrust(true);
-      CZ.Comic.speedLines(true);
-      this.camLerp({ pos: [0, 20, 110], look: [0, 12, 0], fov: 42 }, { pos: [0, 11, 56], look: [0, 11, 0], fov: 36 }, k, 'in');
-    } else if (t < 6.4) {                            // clash
-      const k = seg(5.0, 6.4);
-      CZ.Comic.speedLines(false);
-      this.once('clash', () => {
-        this.shake = 2; this.flashT = 0.2; CZ.Audio.sfx.bossHit(); CZ.Comic.flash();
-        this.spark(0, 14, 0, 0xffffff, 46, 40);
-        CZ.Comic.pow('KLANG!', [0, 14, 0], { kind: 'hit' });
-      });
-      B.root.position.x = -10 + Math.sin(t * 40) * 0.4; R.root.position.x = 10 - Math.sin(t * 40) * 0.4;
-      B.swing(0.45); R.swing(0.45);
-      B.setThrust(false); R.setThrust(false);
-      if (Math.random() < 0.5) this.spark(0, 14, CZ.rand(-2, 2), 0xffe066, 4, 24);
-      this.camLerp({ pos: [34, 20, 40], look: [0, 14, 0], fov: 34 }, { pos: [22, 16, 28], look: [0, 14, 0], fov: 30 }, k);
-    } else if (t < 8.4) {                            // red tears an arm off
-      const k = seg(6.4, 8.4);
-      this.once('arm1', () => {
-        this.shake = 1.8; CZ.Audio.sfx.poundLand(); CZ.Comic.flash();
-        B.detach('armL', { vx: -22, vy: 20, vz: 4 });
-        B.hit(-1);
-        this.spark(-8, 13, 0, 0x9fd4ff, 40, 26);
-        CZ.Comic.pow('WHAM!', [-6, 14, 0], { kind: 'hit' });
-      });
-      R.punch(Math.min(1, k * 3)); B.guard();
-      B.root.position.x = -10 - k * 5;
-      this.say('b', 'THAT WAS MY ARM.', this.headOf(B), { kind: 'say', life: 2 });
-      this.camLerp({ pos: [-34, 22, 40], look: [-8, 13, 0], fov: 32 }, { pos: [-26, 17, 30], look: [-10, 12, 0], fov: 30 }, k);
-    } else if (t < 10.0) {                           // blue answers
-      const k = seg(8.4, 10.0);
-      this.once('cut1', () => { this.shake = 1.2; CZ.Audio.sfx.laser(); this.spark(6, 15, 0, 0xffffff, 30, 24); CZ.Comic.pow('SHNK', [7, 15, 0], { kind: 'slash' }); });
-      B.swing(Math.min(1, k * 2.2)); R.guard();
-      this.camLerp({ pos: [26, 12, 40], look: [2, 14, 0], fov: 34 }, { pos: [16, 17, 30], look: [4, 13, 0], fov: 30 }, k);
-    } else if (t < 12.4) {                           // red kicks blue across the field
-      const k = seg(10.0, 12.4);
-      this.once('kick', () => {
-        this.shake = 2.2; CZ.Audio.sfx.bossHit(); CZ.Comic.flash();
-        CZ.Comic.pow('THUD!!', [-14, 12, 0], { kind: 'hit' });
-        B.detach('legL', { vx: -14, vy: 16, vz: -3 });
-      });
-      R.legs.R.hip.rotation.x = -1.5 + k * 0.8; R.legs.R.knee.rotation.x = 0.7;
-      B.setSaber(false);
-      B.root.position.x = -15 - k * 26;
-      B.root.position.y = Math.sin(k * Math.PI) * 11;
-      B.root.rotation.z = -k * 2.6;
-      if (k > 0.9) { this.once('crash', () => { this.shake = 1.6; this.spark(-40, 4, 0, 0x8cc65b, 34, 22); CZ.Comic.pow('CRSSH', [-40, 8, 0], { kind: 'hit' }); }); }
-      this.say('c', 'FINISH.', this.headOf(R), { kind: 'shout' });
-      this.camLerp({ pos: [-8, 30, 96], look: [-18, 12, 0], fov: 42 }, { pos: [-52, 20, 66], look: [-40, 8, 0], fov: 40 }, k, 'out');
-    } else if (t < 15.4) {                           // down, saber raised over it
-      const k = seg(12.4, 15.4);
-      B.root.rotation.z = 0; B.root.position.y = 0; B.root.position.x = -40;
-      B.kneel(1); B.visor.material.color.setHex(Math.floor(t * 12) % 2 ? 0xff3355 : 0x551122);
-      R.root.position.x = -40 + 20 - k * 4;
-      if (k < 0.7) R.walk(dt, 1.2); else R.swing(0.05);
-      R.setSaber(true);
-      CZ.Comic.halftone(true);
-      if (Math.random() < 0.3) this.spark(-40, 10, 2, 0xff8a1f, 2, 8);
-      this.say('d', 'wait.', this.headOf(B, -2), { kind: 'small', life: 2.2 });
-      this.camLerp({ pos: [-56, 20, 54], look: [-38, 10, 0], fov: 38 }, { pos: [-46, 11, 26], look: [-40, 8, 0], fov: 26 }, k);
-    } else if (t < 17.8) {                           // the glitch
-      const k = seg(15.4, 17.8);
-      CZ.Comic.halftone(false);
-      this.glitch = 1;
-      this.once('clip', () => { CZ.Audio.sfx.noclip(); this.hole.visible = this.holeRing.visible = true; });
-      B.root.position.y = -k * 30;
-      B.root.position.x = -40 + Math.sin(t * 60) * 0.4 * (1 - k);
-      B.body.traverse(o => { if (o.isMesh && o.material.wireframe !== undefined) o.material.wireframe = Math.floor(t * 18) % 2 === 0 && k < 0.8; });
-      this.holeRing.scale.setScalar(1 + Math.sin(t * 18) * 0.07);
-      if (Math.random() < 0.6) this.spark(-40, 2, 0, 0x39ff88, 3, 16);
-      this.say('e', 'no collision.', [-40, 9, 0], { kind: 'small', life: 2.4 });
-      this.camLerp({ pos: [-46, 11, 26], look: [-40, 8, 0], fov: 26 }, { pos: [-28, 8, 40], look: [-40, 3, 0], fov: 36 }, k);
-    } else if (t < 19.4) {                           // swing at nothing
-      const k = seg(17.8, 19.4);
-      this.glitch = 0;
-      B.root.visible = false;
-      B.body.traverse(o => { if (o.isMesh && o.material.wireframe !== undefined) o.material.wireframe = false; });
-      R.swing(Math.min(1, k * 2.4));
-      this.once('whiff', () => { CZ.Comic.pow('WHFF', [-40, 8, 0], { kind: 'slash' }); this.spark(-40, 2, 0, 0x8cc65b, 20, 18); });
-      R.head.rotation.y = k > 0.5 ? Math.sin((k - 0.5) * 18) * 0.7 : 0;
-      this.camLerp({ pos: [-28, 8, 40], look: [-40, 3, 0], fov: 36 }, { pos: [-14, 22, 48], look: [-38, 11, 0], fov: 40 }, k);
-    } else if (t < 21.2) {                           // reappear behind
-      const k = seg(19.4, 21.2);
-      this.once('back', () => {
-        B.root.visible = true; B.root.position.set(-54, -10, 0); B.root.rotation.y = 0;
-        B.kneel(0); this.spark(-54, 12, 0, 0x39ff88, 44, 30); CZ.Audio.sfx.dash();
-        CZ.Comic.pow('CLIP!', [-54, 18, 0], { kind: 'glitch' });
-      });
-      B.root.position.y = -10 + k * 10;
-      B.setSaber(k > 0.25); B.swing(0.1);
-      R.head.rotation.y = Math.sin(t * 6) * 0.6;
-      this.camLerp({ pos: [-14, 22, 48], look: [-44, 11, 0], fov: 40 }, { pos: [-74, 18, 40], look: [-46, 12, 0], fov: 34 }, k);
-    } else if (t < 23.6) {                           // the cut
-      const k = seg(21.2, 23.6);
-      B.root.position.y = 0;
-      B.swing(Math.min(1, k * 2.6));
-      this.once('kill', () => {
-        this.flashT = 0.35; this.shake = 2.4; CZ.Audio.sfx.bossDie(); CZ.Comic.flash('white');
-        R.detach('armR', { vx: 24, vy: 22, vz: 6 });
-        CZ.Comic.pow('KRAK!!', [-40, 16, 0], { kind: 'hit' });
-        this.spark(-40, 15, 0, 0xffb0b8, 50, 34);
-      });
-      if (k > 0.25) this.once('behead', () => {
-        const h = R.head; const wp = new THREE.Vector3(); h.getWorldPosition(wp);
-        h.parent.remove(h); this.scene.add(h); h.position.copy(wp);
-        this.flyingHead = { obj: h, vx: 16, vy: 26, rz: 8 };
-        this.spark(wp.x, wp.y, wp.z, 0xffb0b8, 40, 30);
-        CZ.Comic.pow('SHK!', [wp.x, wp.y + 4, wp.z], { kind: 'slash' });
-      });
-      if (this.flyingHead) {
-        const f = this.flyingHead; f.vy -= 46 * dt;
-        f.obj.position.x += f.vx * dt; f.obj.position.y += f.vy * dt; f.obj.rotation.z += f.rz * dt;
-        if (f.obj.position.y < 1.6) { f.obj.position.y = 1.6; f.vy *= -0.3; f.vx *= 0.5; f.rz *= 0.4; }
-      }
-      if (k > 0.35) {
-        R.body.rotation.z = CZ.damp(R.body.rotation.z, -1.5, 3, dt);
-        R.body.position.y = CZ.damp(R.body.position.y, 3.5, 2.2, dt);
-        if (Math.random() < 0.4) this.spark(-40, 9, 0, 0xff8a1f, 3, 12);
-      }
-      this.camLerp({ pos: [-74, 18, 40], look: [-46, 12, 0], fov: 34 }, { pos: [-66, 26, 62], look: [-40, 10, 0], fov: 42 }, k);
-    } else if (t < 27.6) {                           // the dev descends
-      const k = seg(23.6, 27.6);
-      this.beam.material.opacity = Math.min(0.24, k * 0.5);
-      this.hole.visible = this.holeRing.visible = false;
-      this.duck.visible = true;
-      this.duck.position.set(-40, 170 - k * 108, 0);
-      this.duck.rotation.y = Math.PI + Math.sin(t) * 0.1;
-      if (k > 0.45) this.say('f', 'NINE MONTHS ON THAT ARENA.', () => [this.duck.position.x + 6, this.duck.position.y + 22, 0], { kind: 'shout' });
-      const dy = this.duck.position.y;
-      this.camLerp({ pos: [-66, 26, 62], look: [-40, 20, 0], fov: 42 }, { pos: [-40, 46, 150], look: [-40, dy * 0.5 + 10, 0], fov: 46 }, k);
-    } else if (t < 31.0) {                           // the curse
-      const k = seg(27.6, 31.0);
-      this.duck.position.y = 62 + Math.sin(t * 1.5) * 1.4;
-      this.duckWing.rotation.x = -k * 1.5;
-      this.once('boltA', () => {});
-      if (k > 0.3 && k < 0.35) this.once('bolt', () => { this.bolt.visible = true; this.flashT = 0.45; this.shake = 2.4; CZ.Audio.sfx.thunder(); CZ.Comic.flash('white'); CZ.Comic.pow('ZAAP', [-40, 30, 0], { kind: 'glitch' }); });
-      if (k > 0.34) {
-        this.bolt.visible = Math.floor(t * 30) % 2 === 0 && k < 0.5;
-        const s = Math.max(0.001, 1 - (k - 0.34) * 3.6);
-        this.blue.root.scale.setScalar(s);
-        if (k > 0.62) { this.blue.root.visible = false; this.cheese.visible = true; }
-        if (Math.random() < 0.5) this.spark(-40, 8, 0, 0xffd23f, 4, 18);
-      }
-      if (k > 0.66) this.say('g', 'BE CHEESE.', () => [this.duck.position.x + 6, this.duck.position.y + 20, 0], { kind: 'shout' });
-      this.camLerp({ pos: [-40, 46, 150], look: [-40, 40, 0], fov: 46 }, { pos: [-33, 12, 42], look: [-40, 7, 0], fov: 34 }, k);
-    } else if (t < 34.4) {                           // left in the grass
-      const k = seg(31.0, 34.4);
-      this.duck.position.y = 62 + k * 110;
-      this.beam.material.opacity = Math.max(0, 0.24 - k * 0.5);
-      this.cheese.rotation.z = Math.sin(t * 3) * 0.16;
-      this.cheese.position.y = 4 + Math.abs(Math.sin(t * 3)) * 0.5;
-      if (k > 0.2) this.say('h', "I'LL BUILD MY OWN.", () => [this.cheese.position.x, this.cheese.position.y + 9, 0], { kind: 'say', life: 3 });
-      this.camLerp({ pos: [-33, 12, 42], look: [-40, 7, 0], fov: 34 }, { pos: [-39, 7, 20], look: [-40, 4.6, 0], fov: 30 }, k);
-    } else {
-      this.finish();
-    }
+    if (this.phase === 'ready') this.phaseReady(dt);
+    else if (this.phase === 'fight') this.phaseFight(dt);
+    else if (this.phase === 'glitch') this.phaseGlitch(dt);
+    else if (this.phase === 'finish') this.phaseFinish(dt);
+    else if (this.phase === 'duck') this.phaseDuck(dt);
+    else if (this.phase === 'curse') this.phaseCurse(dt);
+    else if (this.phase === 'outro') this.phaseOutro(dt);
+
+    // physics for whoever is still simulated
+    if (this.phase !== 'curse' && this.phase !== 'outro') { B.step(dt); R.step(dt); }
+    else R.step(dt);
+    B.syncBones(); R.syncBones();
 
     for (let i = this.sparks.length - 1; i >= 0; i--) {
       const p = this.sparks[i], u = p.userData;
@@ -377,13 +285,207 @@ CZ.Cinematic = class Cinematic {
     }
     if (this.shake > 0) this.shake = Math.max(0, this.shake - dt * 3.2);
     if (this.flashT > 0) this.flashT -= dt;
-    CZ.Comic.shakeFrame(this.shake > 0.6);
-    if (this.shake > 0.01) {
-      this.camera.position.x += CZ.rand(-1, 1) * this.shake;
-      this.camera.position.y += CZ.rand(-1, 1) * this.shake;
-    }
+    CZ.Comic.shakeFrame(this.shake > 0.7);
     CZ.UI.cineFx(this.flashT > 0 ? Math.min(1, this.flashT * 3) : 0, this.glitch);
     CZ.Comic.update(dt);
+  }
+
+  phaseReady(dt) {
+    const B = this.blue, R = this.red;
+    B.balance(dt, 0, 1); R.balance(dt, 0, 1);
+    this.followCam(dt);
+    this.say('a', 'LAST ONE STANDING.', this.headAnchor(R), { kind: 'shout' });
+    if (this.phaseT > 2.2) {
+      this.say('b', 'SWING WITH SHIFT.', this.headAnchor(B), { kind: 'say', life: 2.6 });
+      B.setSaber(true); R.setSaber(true);
+    }
+    if (this.phaseT > 3.4) { this.phase = 'fight'; this.phaseT = 0; }
+  }
+
+  // Two mechs cannot stand in the same place: shove the torsos apart so you
+  // duel at sword range instead of walking through each other.
+  separate() {
+    const B = this.blue, R = this.red;
+    for (const key of ['head', 'chest', 'hip']) {
+      const p = B.pts[B.i[key]], q = R.pts[R.i[key]];
+      const dx = q.x - p.x, d = Math.abs(dx);
+      if (d < 7 && d > 0.0001) {
+        const o = (7 - d) * 0.22 * Math.sign(dx);
+        p.x -= o; q.x += o;
+      }
+    }
+  }
+
+  phaseFight(dt) {
+    const I = CZ.Input, B = this.blue, R = this.red;
+    const bc = B.pts[B.i.chest], rc = R.pts[R.i.chest];
+    const toward = Math.sign(rc.x - bc.x) || 1;
+
+    // ── player ──
+    const axis = I.axisX();
+    B.balance(dt, axis * 0.55, 1);
+    if (axis) { B.accel(B.i.hip, axis * 150, 0); B.accel(B.i.chest, axis * 70, 0); }
+    if (I.pressed('jump') && B.grounded()) {
+      B.impulse(B.i.hip, 0, 26, dt); B.impulse(B.i.chest, 0, 20, dt);
+      B.impulse(B.i.ftL, 0, 12, dt); B.impulse(B.i.ftR, 0, 12, dt);
+      CZ.Audio.sfx.jump();
+    }
+    if (this.swingCd > 0) this.swingCd -= dt;
+    if (I.pressed('dash') && this.swingCd <= 0 && !B.armGone.R) {
+      this.swingT = 0.38; this.swingCd = 0.55; CZ.Audio.sfx.laser();
+    }
+    if (this.swingT > 0) {
+      this.swingT -= dt;
+      B.swingArc(1 - this.swingT / 0.38, toward);
+    }
+    // ── enemy ──
+    R.balance(dt, 0, 1);
+    this.aiT -= dt;
+    const gap = Math.abs(rc.x - bc.x);
+    const away = -toward;
+    if (this.aiState === 'approach') {
+      if (gap > 16) R.accel(R.i.hip, away * 120, 0);
+      else if (gap < 11) R.accel(R.i.hip, -away * 90, 0);
+      if (this.aiT <= 0 && gap < 20) { this.aiState = 'swing'; this.aiT = 0.42; }
+    } else if (this.aiState === 'swing') {
+      R.swingArc(1 - Math.max(0, this.aiT) / 0.42, away);
+      if (this.aiT <= 0) { this.aiState = 'approach'; this.aiT = CZ.rand(1.0, 2.0); }
+    }
+
+    // ── blades ──
+    if (this.hitCd > 0) this.hitCd -= dt;
+    if (this.aiHitCd > 0) this.aiHitCd -= dt;
+    if (this.swingT > 0.05 && this.hitCd <= 0) {
+      if (this.tryHit(B, R, (key, p) => { this.hitCd = 0.5; this.damage(R, false, key, p); })) { /* hit */ }
+    }
+    if (this.aiState === 'swing' && this.aiHitCd <= 0) {
+      if (this.tryHit(R, B, (key, p) => { this.aiHitCd = 0.6; this.damage(B, true, key, p); })) { /* hit */ }
+    }
+    if (Math.random() < 0.02) this.spark(rc.x, rc.y - 4, 0, 0x8cc65b, 1, 6);
+    this.separate();
+    this.followCam(dt, 6);
+  }
+
+  // The player lost: the floor turns out to be optional.
+  phaseGlitch(dt) {
+    const B = this.blue, R = this.red, k = this.phaseT;
+    R.balance(dt, 0, 1);
+    this.glitch = k < 2.2 ? 1 : 0;
+    this.once('clipStart', () => { CZ.Audio.sfx.noclip(); this.hole.visible = this.holeRing.visible = true; });
+    const c = B.pts[B.i.chest];
+    this.hole.position.set(c.x, 0.14, 0); this.holeRing.position.set(c.x, 0.16, 0);
+    if (k < 2.2) {
+      for (const p of B.pts) { p.y -= 14 * dt; p.py = p.y; }
+      B.group.traverse(o => { if (o.isMesh && o.material.wireframe !== undefined) o.material.wireframe = Math.floor(this.t * 18) % 2 === 0; });
+      if (Math.random() < 0.5) this.spark(c.x, 2, 0, 0x39ff88, 3, 16);
+      this.say('g1', 'no collision.', () => [c.x, 8, 0], { kind: 'small', life: 2.4 });
+    } else if (k < 3.0) {
+      B.group.visible = false;
+    } else {
+      this.once('reappear', () => {
+        B.group.visible = true;
+        B.group.traverse(o => { if (o.isMesh && o.material.wireframe !== undefined) o.material.wireframe = false; });
+        const rx = R.pts[R.i.chest].x;
+        const dx = rx - 22 - B.pts[B.i.chest].x;
+        for (const p of B.pts) { p.x += dx; p.y += 32; p.px = p.x; p.py = p.y; }
+        this.spark(rx - 22, 12, 0, 0x39ff88, 44, 30); CZ.Audio.sfx.dash();
+        CZ.Comic.pow('CLIP!', [rx - 22, 18, 0], { kind: 'glitch', life: 0.9 });
+      });
+      B.balance(dt, 0, 1);
+      if (k > 3.9) this.once('behead', () => {
+        const h = R.loseLimb('head');
+        R.loseLimb('armR');
+        if (h) { this.spark(h.x, h.y, 0, 0xffb0b8, 50, 34); h.px = h.x - 1.6; h.py = h.y - 1.2; }
+        this.flashT = 0.35; this.shake = 2.4; CZ.Audio.sfx.bossDie(); CZ.Comic.flash('white');
+        CZ.Comic.pow('KRAK!!', [R.pts[R.i.chest].x, 16, 0], { kind: 'hit', life: 0.9 });
+      });
+      if (k > 5.0) { this.phase = 'duck'; this.phaseT = 0; this.hole.visible = this.holeRing.visible = false; }
+    }
+    this.followCam(dt, 10);
+  }
+
+  // The player won.
+  phaseFinish(dt) {
+    const R = this.red, B = this.blue, k = this.phaseT;
+    this.blue.balance(dt, 0, 1);
+    this.once('fin', () => {
+      const h = R.loseLimb('head'); R.loseLimb('armR');
+      if (h) { h.px = h.x - 1.8; h.py = h.y - 1.4; this.spark(h.x, h.y, 0, 0xffb0b8, 50, 34); }
+      CZ.Comic.pow('KRAK!!', [R.pts[R.i.chest].x, 16, 0], { kind: 'hit', life: 0.9 });
+    });
+    if (Math.random() < 0.4) { const c = R.pts[R.i.chest]; this.spark(c.x, c.y, 0, 0xff8a1f, 3, 12); }
+    this.followCam(dt, 10);
+    if (k > 3.0) { this.phase = 'duck'; this.phaseT = 0; }
+  }
+
+  phaseDuck(dt) {
+    const k = this.phaseT, B = this.blue;
+    B.balance(dt, 0, 1);
+    const cx = B.pts[B.i.chest].x;
+    this.beam.position.x = cx; this.bolt.position.x = cx;
+    this.beam.material.opacity = Math.min(0.24, k * 0.35);
+    this.duck.visible = true;
+    // drops out of the sky and parks just above the mech, so both stay in shot
+    const dy = CZ.lerp(112, DUCK_Y, CZ.ease(Math.min(1, k / 2.8)));
+    this.duck.position.set(cx, dy, 0);
+    this.duck.rotation.y = Math.PI + Math.sin(this.t) * 0.1;
+    this.duckWing.rotation.x = Math.sin(this.t * 9) * 0.7 * (k < 2.8 ? 1 : 0.25);
+    if (k > 2.2) this.say('d1', 'NINE MONTHS ON THAT ARENA.', this.duckAnchor(), { kind: 'shout' });
+    // frame the pair: look between the mech's chest and the duck, pull back to fit
+    this.camX = CZ.damp(this.camX, cx, 3, dt);
+    this.camY = CZ.damp(this.camY, (dy + 18) * 0.5, 6, dt);
+    this.camZ = CZ.damp(this.camZ, CZ.clamp((dy + 42) * 1.35, 100, 220), 6, dt);
+    this.cam([this.camX + this.sx, this.camY + this.sy, this.camZ], [this.camX, this.camY, 0], 46);
+    if (k > 4.2) { this.phase = 'curse'; this.phaseT = 0; }
+  }
+
+  // beside the duck, not above it - the letterbox bars eat the top of the frame
+  duckAnchor() { return () => [this.duck.position.x + 30, this.duck.position.y + 4, 0]; }
+
+  phaseCurse(dt) {
+    const k = this.phaseT, B = this.blue;
+    const cx = B.pts[B.i.chest].x;
+    this.duck.position.y = DUCK_Y + Math.sin(this.t * 1.5) * 1.4;
+    this.duckWing.rotation.x = Math.sin(this.t * 6) * 0.35;
+    if (k > 0.8) this.once('bolt', () => {
+      this.bolt.visible = true; this.flashT = 0.45; this.shake = 2.6;
+      CZ.Audio.sfx.thunder(); CZ.Comic.flash('white');
+      CZ.Comic.pow('ZAAP', [cx + 8, 19, 0], { kind: 'glitch', life: 0.8 });
+    });
+    if (k > 0.9) {
+      this.bolt.visible = Math.floor(this.t * 30) % 2 === 0 && k < 1.5;
+      const s = Math.max(0.001, 1 - (k - 0.9) * 1.6);
+      B.group.scale.setScalar(s);
+      B.group.position.y = 0;
+      if (k > 1.5 && !this.cheese.visible) {
+        B.group.visible = false; this.cheese.visible = true; this.cheese.position.x = cx;
+        this.spark(cx, 6, 0, 0xffd23f, 40, 24);
+      }
+      if (Math.random() < 0.5) this.spark(cx, 8, 0, 0xffd23f, 3, 16);
+    }
+    // by now the shot is tight on what is left of the mech, so speak from above it
+    if (k > 2.0) this.say('d2', 'BE CHEESE.', [cx + 4, 17, 0], { kind: 'shout' });
+    // hold the duck in shot for the bolt, then push in on what is left of the mech
+    const wide = k < 1.7;
+    this.camX = CZ.damp(this.camX, cx, 3, dt);
+    this.camY = CZ.damp(this.camY, wide ? 27 : 11, 2.6, dt);
+    this.camZ = CZ.damp(this.camZ, wide ? 96 : 40, 2.2, dt);
+    this.cam([this.camX + this.sx, this.camY + this.sy, this.camZ], [this.camX, wide ? 26 : 6, 0], 42);
+    if (k > 3.4) { this.phase = 'outro'; this.phaseT = 0; }
+  }
+
+  phaseOutro(dt) {
+    const k = this.phaseT;
+    this.duck.position.y = DUCK_Y + k * 90;
+    this.duckWing.rotation.x = Math.sin(this.t * 12) * 0.9;
+    this.beam.material.opacity = Math.max(0, 0.24 - k * 0.3);
+    this.cheese.rotation.z = Math.sin(this.t * 3) * 0.18;
+    this.cheese.position.y = 4 + Math.abs(Math.sin(this.t * 3)) * 0.5;
+    if (k > 0.4) this.say('d3', "I'LL BUILD MY OWN.", () => [this.cheese.position.x, this.cheese.position.y + 9, 0], { kind: 'say', life: 2.6 });
+    this.camZ = CZ.damp(this.camZ, 24, 2, dt);
+    this.camY = CZ.damp(this.camY, 7, 3, dt);
+    this.cam([this.cheese.position.x + this.sx, this.camY + this.sy, this.camZ], [this.cheese.position.x, 4.6, 0], 34);
+    if (k > 3.2) this.finish();
   }
 
   finish() {

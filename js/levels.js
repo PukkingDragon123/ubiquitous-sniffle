@@ -28,6 +28,8 @@ CZ.LEVELS = (() => {
   const sign = (x, y, text) => ({ t: 'sign', x, y, text });
   const boss = (kind, x, w, h, o = {}) => ({ t: 'boss', kind, x, w, h, ...o });
   const lever = (x, y, opens) => ({ t: 'lever', x, y, opens });
+  const ramp = (x, y, w, h, dir) => ({ t: 'ramp', x, y, w, h, dir });
+  const boost = (x, y, w, speed) => ({ t: 'boost', x, y, w, speed });
   const gate = (x, y, w, h, id) => ({ t: 'solid', x, y, w, h, gate: id, skin: 'gate' });
   const deco = (kind, x, y, o = {}) => ({ t: 'deco', kind, x, y, ...o });
   const wood = (x, y, w, h, o = {}) => ({ t: 'solid', x, y, w, h, skin: 'wood', ...o });
@@ -39,57 +41,56 @@ CZ.LEVELS = (() => {
 
   return [
   // ───────────────────────── 1. THE CHEESE CELLAR ─────────────────────────
-  // A room to learn the wheel in: roll, jump, spin through crates, poke a lever,
-  // and feed yourself into the first machine.
-  { id: 'cellar', name: 'THE CHEESE CELLAR', sub: 'World 1 - Learn to roll', song: 'factory',
-    width: 168, deathY: -7, room: { top: 15, back: true },
+  // Built for a wheel: ramps to build speed on, crates to smash through, a
+  // lever to poke, and a press that bolts your first part on.
+  { id: 'cellar', name: 'THE CHEESE CELLAR', sub: 'World 1', song: 'factory',
+    width: 186, deathY: -7, room: { top: 15, back: true },
     theme: { tile: ['brick', 'stone'], prop: ['wood', 'timber'],
       sky: ['#20120c', '#4a2a16'], fog: '#2a1810', block: '#7a4f28', blockAlt: '#5c3a1c',
       plat: '#c08a4e', accent: '#ffcc33', bg: 'cellar' },
     spawn: [4, 0],
     intro: ['A cellar. Fine. I have wheels now.'],
     items: [
-      floor(0, 150, 0, 4), floor(155, 168, 0, 4),
-      solid(-2, 0, 2, 15), solid(168, 0, 2, 15),
+      floor(0, 166, 0, 4), floor(171, 186, 0, 4),
+      solid(-2, 0, 2, 15), solid(186, 0, 2, 15),
 
-      // roll and jump
+      // ── roll and jump ──
       deco('lamp', 10, 12.4), deco('rack', 7, 0), deco('web', 1.5, 13.6),
-      sign(5, 0, 'LEFT / RIGHT rolls. A wheel keeps its speed, so lean into it.'),
-      wood(22, 0, 3, 1.4), wood(28, 0, 3, 2.6),
-      sign(20, 0, 'SPACE to jump.'),
+      ramp(18, 0, 6, 3, 1), solid(24, 0, 6, 3),
+      ramp(30, 0, 6, 3, -1),
+      deco('crate', 34, 0), deco('cheesewheel', 38, 0),
 
-      // spin through a stack of crates
-      sign(38, 0, 'SHIFT spins. Spin into things that look breakable.'),
-      wood(44, 0, 2, 2, { crate: true }), wood(46, 0, 2, 2, { crate: true }), wood(48, 0, 2, 2, { crate: true }),
-      deco('crate', 52, 0, { stack: 2 }), deco('cheesewheel', 34, 0),
+      // ── smash a crate stack ──
+      wood(50, 0, 2, 2, { crate: true }), wood(52, 0, 2, 2, { crate: true }), wood(54, 0, 2, 2, { crate: true }),
+      wood(50, 2, 2, 2, { crate: true }), wood(52, 2, 2, 2, { crate: true }),
+      deco('crate', 58, 0, { stack: 2 }),
 
-      // barrels to roll over, spiders overhead
-      wood(58, 0, 5, 2.2, { skin: 'barrel' }),
-      wood(66, 0, 5, 3.2, { skin: 'barrel' }),
-      enemy('spider', 62, 9.5, { drop: 4.6, speed: 1.4 }),
-      enemy('bugcrawl', 74, 0, { min: 70, max: 84 }),
-      deco('rack', 72, 0), deco('lamp', 66, 12.4), deco('web', 78, 13.2),
+      // ── barrels, a boost pad and a long jump ──
+      boost(64, 0, 6, 20),
+      wood(76, 0, 5, 2.4, { skin: 'barrel' }),
+      ramp(84, 0, 7, 4, 1), solid(91, 0, 3, 4),
+      enemy('spider', 88, 10.5, { drop: 5, speed: 1.4 }),
+      enemy('bugcrawl', 100, 0, { min: 96, max: 110 }),
+      deco('rack', 98, 0), deco('lamp', 90, 12.4), deco('web', 104, 13.2),
 
-      // the gate: poke the lever
-      sign(86, 0, 'C pokes. Poke the lever.'),
-      lever(92, 0, 'g1'),
-      gate(98, 0, 2, 7, 'g1'),
-      deco('web', 100, 6.6),
+      // ── the gate ──
+      lever(116, 0, 'g1'),
+      gate(122, 0, 2, 7, 'g1'),
+      deco('web', 124, 6.6),
 
-      // the machine that bolts spring legs on
-      deco('press', 112, 0), deco('vat', 124, 0),
-      wood(106, 0, 4, 2.4), wood(112, 0, 4, 4.2),
-      ability(118, 4.2, 'doubleJump'),
-      sign(104, 0, 'Roll into the press. It will improve you.'),
-      enemy('spider', 118, 12.6, { drop: 3.6, speed: 1.8 }),
+      // ── the press: your first part ──
+      deco('press', 136, 0), deco('vat', 148, 0),
+      ramp(128, 0, 6, 3, 1), solid(134, 0, 5, 3),
+      ability(137, 3, 'doubleJump'),
+      enemy('spider', 145, 12.6, { drop: 3.6, speed: 1.8 }),
 
-      // the drain: a running jump, or two jumps now that you have legs
-      sign(140, 0, 'Get a run at it.'),
-      solid(150, -6.5, 5, 2, { skin: 'drain' }), hazard(150, -4.5, 5, 1, 'goo'),
-      deco('web', 152, 12.8), deco('lamp', 158, 12.4), deco('rack', 160, 0),
-      enemy('bugcrawl', 162, 0, { min: 156, max: 166 }),
-      deco('door', 164, 0),
-      exit(164),
+      // ── the drain: get a run at it ──
+      ramp(158, 0, 8, 4, 1),
+      solid(166, -6.5, 5, 2, { skin: 'drain' }), hazard(166, -4.5, 5, 1, 'goo'),
+      deco('web', 168, 12.8), deco('lamp', 176, 12.4), deco('rack', 178, 0),
+      enemy('bugcrawl', 180, 0, { min: 174, max: 184 }),
+      deco('door', 182, 0),
+      exit(182),
     ] },
 
   // ───────────────────────────── 2. THE GRATER LINE ─────────────────────────────
@@ -98,21 +99,19 @@ CZ.LEVELS = (() => {
     spawn: [3, 0],
     items: [
       floor(0, 30),
-      sign(4, 0, 'Conveyor belts. Ride them, or fight them.'),
+      ramp(14, 0, 6, 3, 1), solid(20, 0, 4, 3), ramp(24, 0, 6, 3, -1),
       conveyor(30, 50, 0, 6),
       solid(30, -3, 20, 2),
       // gap 50..55 (belt flings you)
       floor(55, 72),
       enemy('rat', 62, 0, { min: 56, max: 70 }),
-      bounce(64, 0), sign(60, 0, 'Bounce gel. Jump on it.'),
-      plat(66, 6.5, 4), // lift to upper deck
+      bounce(64, 0),      plat(66, 6.5, 4), // lift to upper deck
       mplat(73, 0.5, 4, 0, 4, 3.2),
       solid(80, 0, 22, 4), // deck top y=4
       grater(88, 4), grater(95, 4),
       enemy('spore', 92, 7.5, { amp: 1.2, speed: 2 }),
       conveyor(102, 120, 4, -7), solid(102, 0, 18, 3),
       grater(112, 4),
-      sign(104, 4, 'This belt runs the wrong way. Keep pushing.'),
       solid(120, 0, 22, 4), check(122, 4), 
       // drop to y=0 and moving platforms over goo
       floor(142, 152),
@@ -122,7 +121,6 @@ CZ.LEVELS = (() => {
       floor(172, 194),
       enemy('rat', 178, 0, { min: 173, max: 192 }),
       ability(184, 1, 'dash'),
-      sign(188, 0, 'CLIP DASH: SHIFT. Those green walls? Not real.'),
       glitch(194, 0, 3, 6), floor(194, 206),
       // gap 206..217 (dash + double jump)
       floor(217, 268),
@@ -132,7 +130,6 @@ CZ.LEVELS = (() => {
       // hidden pit under a glitch floor
       glitch(238, -3, 5, 3), solid(238, -10, 5, 1), bounce(238.5, -9, 1.6),
       solid(233, -9, 5, 6), solid(243, -9, 5, 6),
-      sign(248, 0, 'Level geometry is a suggestion.'),
       enemy('spore', 254, 3, { amp: 2, speed: 2.5 }),
       exit(262),
     ] },
@@ -143,7 +140,7 @@ CZ.LEVELS = (() => {
     spawn: [3, 0],
     items: [
       floor(0, 25),
-      sign(4, 0, 'Molten cheese. Deadly. Delicious. Deadly.'),
+      ramp(17, 0, 8, 3, 1),
       goo(25, 40, -1), solid(25, -5, 15, 3),
       solid(29, -3, 2, 3), solid(34.5, -3, 2, 3),
       floor(40, 60),
@@ -153,13 +150,11 @@ CZ.LEVELS = (() => {
       check(72),
       enemy('turret', 86, 0, { dir: -1, rate: 2.2 }),
       ability(80, 1, 'wallJump'),
-      sign(84, 0, 'WALL CLIP: hold toward a wall to slide, JUMP to kick off.'),
       // the shaft: walk under the left wall, climb between x=94 and x=98
       solid(92, 3, 2, 9),           // left wall, y 3..12
       solid(98, 0, 4, 10),          // right wall, y 0..10
       floor(92, 98),                // shaft floor
       solid(102, 7, 30, 3),         // upper floor top y=10
-      sign(104, 10, 'Told you. Walls are floors that got rotated.'),
       enemy('blob', 115, 10, { min: 104, max: 130 }),
       // pillar shaft descent over goo
       goo(132, 162, -1), solid(132, -5, 30, 3),
@@ -175,7 +170,6 @@ CZ.LEVELS = (() => {
       solid(204, 0, 2, 8), solid(210, 0, 2, 12), solid(216, 0, 2, 8), solid(222, 0, 2, 12),
       enemy('spore', 213, 6, { amp: 3, speed: 1.6 }),
       solid(226, 0, 24, 8),   // exit deck top y=8
-      sign(230, 8, 'Ok that one was actually intended. Probably.'),
       exit(245, 8),
     ] },
 
@@ -185,7 +179,7 @@ CZ.LEVELS = (() => {
     spawn: [3, 0],
     items: [
       floor(0, 60),
-      sign(4, 0, 'Presses. They box the cheese. You are the cheese.'),
+      ramp(6, 0, 6, 3, 1), ramp(12, 0, 5, 3, -1),
       press(18, 1, 3, 3, 4.5, 2.2, 0), press(30, 1, 3, 3, 4.5, 2.2, 1.1), press(42, 1, 3, 3, 4.5, 2.2, 0.5),
       enemy('rat', 50, 0, { min: 46, max: 58 }),
       plat(24, 6.5, 3), // belts + knives
@@ -199,7 +193,6 @@ CZ.LEVELS = (() => {
       solid(118, 0, 20, 5.5),      // deck top 5.5
       press(126, 6.5, 3, 3, 4, 1.8, 0),
       ability(133, 6.5, 'pound'),
-      sign(136, 5.5, 'CRASH DIVE: press DOWN in the air. Cracked tiles are a lie.'),
       cracked(138, 2.5, 6, 3),     // top y=5.5, falls into lower factory
       solid(144, 0, 4, 14),         // wall blocks the way, must go down
       // lower floor y=-8
@@ -207,12 +200,11 @@ CZ.LEVELS = (() => {
       solid(118, -11, 20, 11),      // solid mass under the deck
       enemy('rat', 150, -8, { min: 140, max: 160 }),
       enemy('rat', 165, -8, { min: 160, max: 180 }),
-      sign(150, -8, 'Land on enemies while diving to bounce off them.'),
       cracked(170, -8, 3, 3), // crack a block guarding a bug? (bug sits on top)
       solid(180, -8, 3, 2), cracked(186, -8, 4, 5), bounce(195, -8, 2.5),
       solid(198, -11, 4, 11),       // wall right of lower floor up to y=0
       floor(202, 232),
-      check(204),
+      check(204), boost(206, 0, 5, 22),
       enemy('turret', 220, 0, { dir: -1, rate: 1.6 }),
       cracked(212, 0, 3, 2), enemy('rat', 226, 0, { min: 216, max: 230 }),
       // boss arena
@@ -229,7 +221,6 @@ CZ.LEVELS = (() => {
     spawn: [3, 0],
     items: [
       floor(0, 26),
-      sign(4, 0, 'Fans. Jump in and float.'),
       wind(26, -8, 6, 24, 70), solid(26, -9, 6, 1),
       solid(32, 3, 20, 3),                // ledge top y=6
       enemy('spore', 40, 9, { amp: 1.2, speed: 2 }),
@@ -237,10 +228,10 @@ CZ.LEVELS = (() => {
       solid(57, 7, 18, 3),                // ledge top y=10
       enemy('rat', 64, 10, { min: 58, max: 74 }),
       plat(78, 6, 4), plat(85, 3, 4), floor(90, 120),
+      ramp(90, 0, 6, 3, 1), ramp(96, 0, 4, 3, -1),
       check(92),
       enemy('turret', 110, 0, { dir: -1, rate: 2 }),
       ability(100, 1, 'grapple'),
-      sign(104, 0, 'HOOK EXPLOIT: press C near a blue node. Release with JUMP for a fling.'),
       hook(124, 7), hook(133, 9), hook(142, 7),
       goo(120, 150, -1), solid(120, -5, 30, 3),
       floor(150, 172),
@@ -266,10 +257,10 @@ CZ.LEVELS = (() => {
     spawn: [3, 0],
     items: [
       floor(0, 40),
-      sign(4, 0, 'ANTI-CHEAT zone. Lasers on a timer. Watch, then go.'),
       laser(20, 0, 0.6, 6, 2.0, 0.9, 0), laser(28, 0, 0.6, 6, 2.0, 0.9, 1.0), laser(36, 0, 0.6, 6, 2.0, 0.9, 0.5),
       goo(40, 52, -1), solid(40, -5, 12, 3), hook(46, 7),
       floor(52, 84),
+      ramp(54, 0, 5, 3, 1), ramp(59, 0, 3, 3, -1),
       enemy('turret', 70, 0, { dir: -1, rate: 1.4 }), enemy('turret', 80, 0, { dir: -1, rate: 1.4, phase: 0.7 }),
       glitch(62, 0, 2, 4), check(54),
       solid(84, 0, 4, 6), solid(84, 6, 30, 0.6), floor(88, 118),   // tunnel roof y=6
@@ -277,7 +268,6 @@ CZ.LEVELS = (() => {
       enemy('rat', 110, 0, { min: 106, max: 116 }),
       floor(118, 140), check(120),
       ability(128, 1, 'noclip'),
-      sign(132, 0, 'NOCLIP: hold V. Purple blocks are corrupt data — walk through while the meter lasts.'),
       corrupt(140, 0, 5, 8), floor(140, 170),
       corrupt(152, 0, 4, 8), corrupt(160, 0, 8, 4),           // corridor full of corrupt data: hold noclip the whole way
       solid(160, 4, 8, 4),
@@ -306,7 +296,7 @@ CZ.LEVELS = (() => {
     spawn: [3, 0],
     items: [
       floor(0, 24),
-      sign(4, 0, 'The Pantry. Everything you learned. Go.'),
+      ramp(10, 0, 7, 3, 1), solid(17, 0, 4, 3), ramp(21, 0, 3, 3, 1),
       mplat(26, 0.5, 3, 0, 4, 3), mplat(33, 2, 3, 3, 0, 2.5, 1),
       plat(42, 4, 4), enemy('spore', 47, 7, { amp: 2, speed: 2.5 }),
       glitch(48, 4, 2, 5), plat(50, 4, 6),

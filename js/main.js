@@ -52,7 +52,7 @@ CZ.Game = class Game {
   showMenu() {
     const U = CZ.UI;
     this.unloadLevel();
-    if (this._skipTap) { window.removeEventListener('pointerdown', this._skipTap); this._skipTap = null; }
+    if (this._skipTap && this._skipBtn) { this._skipBtn.removeEventListener('pointerdown', this._skipTap); this._skipTap = null; }
     if (this.cine) { this.cine.dispose(); this.cine = null; }
     U.cineShow(false); U.cineFx(0, 0); CZ.Comic.show(false);
     U.show('hud', false); U.show('complete', false); U.show('ending', false); U.show('unlock', false); U.show('controls', false);
@@ -75,15 +75,16 @@ CZ.Game = class Game {
     this.cine.onDone = () => this.endIntro();
     this.state = 'intro';
     // tap or click anywhere to skip (the touch buttons are hidden during the cutscene)
-    const startedAt = performance.now();
-    this._skipTap = () => { if (this.state === 'intro' && this.cine && performance.now() - startedAt > 400) this.cine.skip(); };
-    window.addEventListener('pointerdown', this._skipTap);
+    const skipBtn = CZ.UI.$('cine-skip');
+    this._skipTap = () => { if (this.state === 'intro' && this.cine) this.cine.skip(); };
+    skipBtn.addEventListener('pointerdown', this._skipTap);
+    this._skipBtn = skipBtn;
     CZ.Audio.resume();
     CZ.Audio.playMusic('boss');
   }
   endIntro() {
     const U = CZ.UI;
-    if (this._skipTap) { window.removeEventListener('pointerdown', this._skipTap); this._skipTap = null; }
+    if (this._skipTap && this._skipBtn) { this._skipBtn.removeEventListener('pointerdown', this._skipTap); this._skipTap = null; }
     U.cineShow(false); U.cineFx(0, 0);
     if (this.cine) { this.cine.dispose(); this.cine = null; }
     this.save.sawIntro = true; CZ.writeSave(this.save);
@@ -227,7 +228,7 @@ CZ.Game = class Game {
     const I = CZ.Input, U = CZ.UI;
     if (I.pressed('mute')) U.toast(CZ.Audio.toggleMute() ? 'SOUND OFF' : 'SOUND ON');
     if (this.state === 'intro') {
-      if (I.pressed('confirm') || I.pressed('jump') || I.pressed('pause') || I.pressed('dash')) this.cine.skip();
+      if (I.pressed('pause')) this.cine.skip();
       else this.cine.update(dt);
       return;
     }
@@ -293,10 +294,14 @@ CZ.Game = class Game {
         CZ.Effects.burst(g.x + g.w / 2, g.y + g.h / 2, 0x8d95a3, 18, { spread: 7, up: 5 });
       }
     }
-    // signs
-    let signText = null, best = 3;
-    for (const s of L.signs) { const d = Math.abs(p.cx() - s.x); if (d < best && Math.abs(p.y - s.y) < 3.5) { best = d; signText = s.text; } }
-    U.sign(signText);
+    // hint posts: the cheese says the line once, as a balloon
+    for (const s of L.signs) {
+      if (s.said || !s.text) continue;
+      if (Math.abs(p.cx() - s.x) < 3 && Math.abs(p.y - s.y) < 4) {
+        s.said = true;
+        CZ.Comic.bubble(s.text, () => [p.cx(), p.cy() + 1.9, 0], { kind: 'small' });
+      }
+    }
     // dialog triggers
     for (const d of L.dialogs) if (!d.done && p.cx() > d.x) { d.done = true; this.sayLines(d.lines); }
     // boss
