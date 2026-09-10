@@ -29,19 +29,20 @@ CZ.LEVELS = (() => {
   const boss = (kind, x, w, h, o = {}) => ({ t: 'boss', kind, x, w, h, ...o });
   const talk = (x, lines) => ({ t: 'dialog', x, lines });
 
-  const YOU = '🧀', GOD = '👁️', RAT = '🐀', AC = '🛡️';
+  // Portraits are pixel sprites from CZ.Spr, never emoji.
+  const YOU = 'p-cheese', GOD = 'p-god', RAT = 'p-rat', AC = 'p-guard', HUMAN = 'p-human';
   const D = (who, portrait, text) => ({ who, portrait, text });
 
   return [
   // ───────────────────────────── 1. AGING CELLAR ─────────────────────────────
   { id: 'cellar', name: 'THE AGING CELLAR', sub: 'World 1 · Tutorial', song: 'factory', width: 200, deathY: -9,
-    theme: { sky: ['#3a1d12', '#c96a2a'], fog: '#5a2e18', block: '#8a5a2b', blockAlt: '#6f4520', plat: '#c98a4b', accent: '#ffcc33', bg: 'cellar' },
+    theme: { tile: ['brick', 'stone'], prop: ['wood', 'timber'], sky: ['#3a1d12', '#c96a2a'], fog: '#5a2e18', block: '#8a5a2b', blockAlt: '#6f4520', plat: '#c98a4b', accent: '#ffcc33', bg: 'cellar' },
     spawn: [3, 0],
     intro: [
-      D('YOU (HUMAN)', '🧑‍💻', 'Bug #4,097: clip through the final boss, skip the credits, break the leaderboard. Another game broken. Too easy.'),
+      D('YOU (HUMAN)', HUMAN, 'Bug #4,097: clip through the final boss, skip the credits, break the leaderboard. Another game broken. Too easy.'),
       D('???', GOD, 'E N O U G H .'),
       D('GOD OF GAMES', GOD, 'Every world I make, you break. Every wall, you clip through. Every boss, you skip. Do you know how long that boss took me?'),
-      D('YOU', '🧑‍💻', '...like a weekend?'),
+      D('YOU', HUMAN, '...like a weekend?'),
       D('GOD OF GAMES', GOD, 'A CURSE, then. You will be CHEESE. Trapped in MY Cheese Factory. Perfect code. Zero bugs. NO exploits.'),
       D('YOU', YOU, '...cheese. Okay. Cool. Cool cool cool.'),
       D('GOD OF GAMES', GOD, 'Escape the factory, reach my Pantry in the sky, touch the GOLDEN APPLE, and I will make you human again. But you will do it FAIRLY.'),
@@ -49,7 +50,7 @@ CZ.LEVELS = (() => {
     ],
     items: [
       floor(0, 42),
-      sign(4, 0, '← → to move.  SPACE to jump — hold it to jump higher.'),
+      sign(4, 0, 'LEFT / RIGHT to move.  SPACE to jump - hold it to jump higher.'),
       solid(20, 0, 4, 1.5), solid(30, 0, 3, 2.2),
       bug(31.5, 3.2),
       // gap 42..47
@@ -82,7 +83,7 @@ CZ.LEVELS = (() => {
 
   // ───────────────────────────── 2. THE GRATER LINE ─────────────────────────────
   { id: 'grater', name: 'THE GRATER LINE', sub: 'World 2 · Conveyors', song: 'factory', width: 268, deathY: -11,
-    theme: { sky: ['#1d3140', '#4f9bb0'], fog: '#3a6f80', block: '#6d7f95', blockAlt: '#54657a', plat: '#9fb3c8', accent: '#ffcc33', bg: 'factory' },
+    theme: { tile: ['plate', 'steel'], prop: ['plate', 'steel'], sky: ['#1d3140', '#4f9bb0'], fog: '#3a6f80', block: '#6d7f95', blockAlt: '#54657a', plat: '#9fb3c8', accent: '#ffcc33', bg: 'factory' },
     spawn: [3, 0],
     items: [
       floor(0, 30),
@@ -130,7 +131,7 @@ CZ.LEVELS = (() => {
 
   // ───────────────────────────── 3. MELTING VATS ─────────────────────────────
   { id: 'vats', name: 'THE MELTING VATS', sub: 'World 3 · Walls', song: 'lava', width: 250, deathY: -8,
-    theme: { sky: ['#2a0a0a', '#ff6a1f'], fog: '#7a2a10', block: '#4a3a3a', blockAlt: '#3a2a2a', plat: '#7a6a6a', accent: '#ffb347', bg: 'vats' },
+    theme: { tile: ['rock', 'magma'], prop: ['plate', 'steel'], sky: ['#2a0a0a', '#ff6a1f'], fog: '#7a2a10', block: '#4a3a3a', blockAlt: '#3a2a2a', plat: '#7a6a6a', accent: '#ffb347', bg: 'vats' },
     spawn: [3, 0],
     items: [
       floor(0, 25),
@@ -177,7 +178,7 @@ CZ.LEVELS = (() => {
 
   // ───────────────────────────── 4. PACKAGING PLANT ─────────────────────────────
   { id: 'packaging', name: 'THE PACKAGING PLANT', sub: 'World 4 · Boss: RAT KING', song: 'factory', width: 300, deathY: -16,
-    theme: { sky: ['#5aa8d8', '#c9ecff'], fog: '#8fc3e0', block: '#b8865a', blockAlt: '#96683f', plat: '#e0b080', accent: '#ff8a1f', bg: 'boxes' },
+    theme: { tile: ['card', 'cardboard'], prop: ['card', 'cardboard'], sky: ['#5aa8d8', '#c9ecff'], fog: '#8fc3e0', block: '#b8865a', blockAlt: '#96683f', plat: '#e0b080', accent: '#ff8a1f', bg: 'boxes' },
     spawn: [3, 0],
     items: [
       floor(0, 60),
@@ -228,7 +229,7 @@ CZ.LEVELS = (() => {
 
   // ───────────────────────────── 5. VENTILATION ─────────────────────────────
   { id: 'vents', name: 'THE VENTILATION DUCTS', sub: 'World 5 · Hooks', song: 'digital', width: 280, deathY: -9,
-    theme: { sky: ['#1a2230', '#5f7d9c'], fog: '#4a6a8a', block: '#8fa8c0', blockAlt: '#6e88a2', plat: '#c0d4e8', accent: '#43b8ff', bg: 'vents' },
+    theme: { tile: ['duct', 'vent'], prop: ['duct', 'vent'], sky: ['#1a2230', '#5f7d9c'], fog: '#4a6a8a', block: '#8fa8c0', blockAlt: '#6e88a2', plat: '#c0d4e8', accent: '#43b8ff', bg: 'vents' },
     spawn: [3, 0],
     items: [
       floor(0, 26),
@@ -269,7 +270,7 @@ CZ.LEVELS = (() => {
 
   // ───────────────────────────── 6. THE FIREWALL ─────────────────────────────
   { id: 'firewall', name: 'THE FIREWALL', sub: 'World 6 · Boss: ANTI-CHEAT.EXE', song: 'digital', width: 330, deathY: -9,
-    theme: { sky: ['#05030f', '#2a1a5a'], fog: '#1a1040', block: '#2c2a58', blockAlt: '#1f1d40', plat: '#4a4890', accent: '#39ff88', bg: 'digital' },
+    theme: { tile: ['circuit', 'data'], prop: ['circuit', 'data'], sky: ['#05030f', '#2a1a5a'], fog: '#1a1040', block: '#2c2a58', blockAlt: '#1f1d40', plat: '#4a4890', accent: '#39ff88', bg: 'digital' },
     spawn: [3, 0],
     items: [
       floor(0, 40),
@@ -316,7 +317,7 @@ CZ.LEVELS = (() => {
 
   // ───────────────────────────── 7. GOD'S PANTRY ─────────────────────────────
   { id: 'pantry', name: "GOD'S PANTRY", sub: 'Final · Boss: THE GOD OF GAMES', song: 'heaven', width: 340, deathY: -12,
-    theme: { sky: ['#ffb6d9', '#ffe9a8'], fog: '#ffd6a8', block: '#f6f2ff', blockAlt: '#dcd4f5', plat: '#ffffff', accent: '#ffd700', bg: 'heaven' },
+    theme: { tile: ['cloud', 'marble'], prop: ['cloud', 'marble'], sky: ['#ffb6d9', '#ffe9a8'], fog: '#ffd6a8', block: '#f6f2ff', blockAlt: '#dcd4f5', plat: '#ffffff', accent: '#ffd700', bg: 'heaven' },
     spawn: [3, 0],
     items: [
       floor(0, 24),

@@ -70,7 +70,26 @@ Add the page to your home screen for a fullscreen, browser-chrome-free run.
 6. **The Firewall** — lasers and corrupt data. Unlock: Noclip. **Boss: ANTI-CHEAT.EXE** (phase through its shield).
 7. **God's Pantry** — everything at once. **Final boss: THE GOD OF GAMES** (reach the Golden Apple while the floor gets deleted).
 
-Each world hides **bug reports** (🪲) to collect. Progress, unlocked techs and collectibles save to `localStorage`.
+Each world hides **bug reports** (bug reports) to collect. Progress, unlocked techs and collectibles save to `localStorage`.
+
+## Look and feel
+
+Everything is drawn at runtime. There are no image files in this repository, and the game uses **no emoji anywhere** -
+every icon, portrait and glyph is hand-authored pixel art.
+
+- **Pixel-art rendering.** The 3D world renders into a 288px-tall buffer and is upscaled with nearest-neighbour
+  filtering, so the whole game lands on a chunky pixel grid. Every surface carries a procedural pixel texture
+  generated on a 32px canvas: stone brick, riveted plate, corrugated cardboard, cracked magma, circuit board,
+  ducting, cloud marble, cheese, conveyor belts.
+- **Three depths per world.** A dithered sky, two parallax background layers of themed props, the play plane, and a
+  foreground layer of pipes, girders and chains that sweeps past in front of the camera.
+- **Cardboard UI.** Panels, buttons and dialogue boxes are corrugated cardboard with hard pixel borders and a drop
+  step instead of soft shadows, tilted slightly like taped-up signs.
+- **Graffiti type.** Rubik Spray Paint for the huge tags, Press Start 2P for pixel labels, Silkscreen for body text.
+  The title letters bob on a stagger, the boss name shudders, and prompts blink. All motion respects
+  `prefers-reduced-motion`.
+- **Cheese everywhere.** Drips ooze off the logo, off every panel, off the dialogue box, and off ledges in the
+  world itself, where they stretch, break and fall.
 
 ## Code layout
 
@@ -78,6 +97,8 @@ Each world hides **bug reports** (🪲) to collect. Progress, unlocked techs and
 index.html      DOM overlay (HUD, dialog, menus) + script tags
 css/style.css   UI styling
 js/util.js      constants (all physics tuning lives in CZ.P), ability metadata, save helpers
+js/sprites.js   hand-authored 16x16 pixel-art sprites: icons, portraits, glyphs (no emoji)
+js/textures.js  procedural pixel textures for every 3D surface
 js/audio.js     procedural WebAudio SFX + chiptune sequencer
 js/input.js     keyboard/gamepad → actions with press/hold edges
 js/levels.js    level data (a tiny DSL: floor/plat/hazard/mover/glitch/corrupt/cracked/hook/...)
@@ -91,4 +112,5 @@ js/touch.js     on-screen thumbstick + buttons for touch devices
 js/main.js      game loop, camera, state machine, interactions, progress
 ```
 
-Everything is plain classic scripts on a `CZ` namespace, so there is no build step. Physics runs at a fixed 120 Hz.
+Everything is plain classic scripts on a `CZ` namespace, so there is no build step. Physics runs at a fixed 120 Hz,
+independent of the render rate.

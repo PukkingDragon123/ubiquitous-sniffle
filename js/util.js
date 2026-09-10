@@ -1,6 +1,9 @@
 // Shared helpers + constants. Everything lives on window.CZ (classic scripts, no build step).
 window.CZ = window.CZ || {};
 
+// Internal render height for the pixel-art pass; everything upscales from this.
+CZ.PIXEL_HEIGHT = 288;
+
 CZ.clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 CZ.lerp = (a, b, t) => a + (b - a) * t;
 CZ.damp = (a, b, k, dt) => CZ.lerp(a, b, 1 - Math.exp(-k * dt));
@@ -52,17 +55,17 @@ CZ.P = {
 
 // Ability metadata: id → display.
 CZ.ABILITIES = {
-  doubleJump: { name: 'FRAME SKIP', ico: '⏭', key: 'JUMP again in mid-air',
+  doubleJump: { name: 'FRAME SKIP', ico: 'tech-jump', key: 'JUMP again in mid-air',
     desc: 'The game only checks "grounded" once per jump. Nobody said you can\'t jump AGAIN.' },
-  dash: { name: 'CLIP DASH', ico: '💨', key: 'SHIFT / X  (+ direction)',
+  dash: { name: 'CLIP DASH', ico: 'tech-dash', key: 'SHIFT / X  (+ direction)',
     desc: 'Hitboxes turn off for 9 frames. Dash through GLITCH WALLS (green) and straight through enemies. Dash on the ground, then jump right away to keep the speed.' },
-  wallJump: { name: 'WALL CLIP', ico: '🧗', key: 'Hold toward a wall, then JUMP',
+  wallJump: { name: 'WALL CLIP', ico: 'tech-wall', key: 'Hold toward a wall, then JUMP',
     desc: 'Walls are just floors the dev rotated. Slide down them, kick off them.' },
-  pound: { name: 'CRASH DIVE', ico: '💥', key: 'DOWN / S  in the air',
+  pound: { name: 'CRASH DIVE', ico: 'tech-pound', key: 'DOWN / S  in the air',
     desc: 'Fall damage got applied to the FLOOR instead of you. Slam down to shatter CRACKED tiles, squish enemies and bounce.' },
-  grapple: { name: 'HOOK EXPLOIT', ico: '🪝', key: 'C / E  near a blue node',
+  grapple: { name: 'HOOK EXPLOIT', ico: 'tech-hook', key: 'C / E  near a blue node',
     desc: 'The dev left their debug grapple hook in the build. Pull yourself to HOOK NODES (blue) and fling.' },
-  noclip: { name: 'NOCLIP', ico: '👻', key: 'Hold V / Q',
+  noclip: { name: 'NOCLIP', ico: 'tech-ghost', key: 'Hold V / Q',
     desc: 'You found the dev console. Phase through CORRUPT blocks (purple) while the meter lasts. Refills on solid ground.' },
 };
 CZ.ABILITY_ORDER = ['doubleJump', 'dash', 'wallJump', 'pound', 'grapple', 'noclip'];

@@ -35,24 +35,24 @@ CZ.Player = class Player {
     shape.moveTo(-0.5, -0.5); shape.lineTo(0.5, -0.5); shape.lineTo(0.0, 0.58); shape.closePath();
     const geo = new THREE.ExtrudeGeometry(shape, { depth: 0.8, bevelEnabled: true, bevelThickness: 0.06, bevelSize: 0.05, bevelSegments: 2 });
     geo.translate(0, 0, -0.4);
-    this.bodyMat = new THREE.MeshToonMaterial({ color: 0xffcc33, gradientMap: E.toon(0xffffff).gradientMap });
+    this.bodyMat = new THREE.MeshToonMaterial({ map: CZ.Tex.get('cheese', 'stone'), color: 0xffffff, gradientMap: E.toon(0xffffff).gradientMap });
     const wedge = new THREE.Mesh(geo, this.bodyMat); wedge.castShadow = true;
     this.wedge = wedge; this.body.add(wedge);
     this.outline = E.outline(wedge, 0.07);
     // rind stripe at the bottom
     const rind = E.box(1.02, 0.14, 0.9, 0xff8a1f); rind.position.y = -0.47; rind.castShadow = false; this.body.add(rind);
-    // holes
+    // square holes, drawn as pixels rather than smooth circles
     const holeMat = new THREE.MeshBasicMaterial({ color: 0xc9781a });
-    [[-0.22, -0.32, 0.09], [0.26, -0.28, 0.07], [0.05, 0.22, 0.06], [-0.1, -0.05, 0.05]].forEach(([hx, hy, r]) => {
-      const hole = new THREE.Mesh(new THREE.CircleGeometry(r, 12), holeMat); hole.position.set(hx, hy, 0.47); this.body.add(hole);
+    [[-0.22, -0.32, 0.16], [0.26, -0.28, 0.12], [0.05, 0.22, 0.1], [-0.1, -0.05, 0.09]].forEach(([hx, hy, r]) => {
+      const hole = new THREE.Mesh(new THREE.PlaneGeometry(r, r), holeMat); hole.position.set(hx, hy, 0.47); this.body.add(hole);
     });
     // face
     this.eyes = []; this.pupils = [];
     [[-0.16, -0.08], [0.16, -0.08]].forEach(([ex, ey]) => {
-      const eye = new THREE.Mesh(new THREE.SphereGeometry(0.13, 12, 12), new THREE.MeshBasicMaterial({ color: 0xffffff }));
-      eye.position.set(ex, ey, 0.44); eye.scale.z = 0.5;
-      const pupil = new THREE.Mesh(new THREE.SphereGeometry(0.065, 10, 10), new THREE.MeshBasicMaterial({ color: 0x1a0f0a }));
-      pupil.position.set(0, 0, 0.1); eye.add(pupil);
+      const eye = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.26, 0.1), new THREE.MeshBasicMaterial({ color: 0xffffff }));
+      eye.position.set(ex, ey, 0.45);
+      const pupil = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.14, 0.1), new THREE.MeshBasicMaterial({ color: 0x1a0f0a }));
+      pupil.position.set(0, 0, 0.06); eye.add(pupil);
       this.body.add(eye); this.eyes.push(eye); this.pupils.push(pupil);
     });
     this.brows = [];
@@ -106,7 +106,7 @@ CZ.Player = class Player {
     // materials
     const nc = this.noclip || this.inCorrupt;
     this.bodyMat.transparent = nc; this.bodyMat.opacity = nc ? 0.5 : 1;
-    this.bodyMat.color.set(nc ? 0xd9a3ff : 0xffcc33);
+    this.bodyMat.color.set(nc ? 0xd9a3ff : 0xffffff);
     this.outline.visible = !nc;
     m.visible = !this.dead && !(this.iframes > 0 && Math.floor(this.iframes * 18) % 2 === 0);
     // rope

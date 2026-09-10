@@ -96,7 +96,14 @@ CZ.Effects = (() => {
     } else { shakeX = shakeY = 0; shakeAmt = 0; }
   }
   function clear() { for (const p of particles) scene.remove(p); particles.length = 0; }
+  // Release the GPU geometry under an object tree. Materials and textures are
+  // shared through the caches above, so they are deliberately left alone.
+  function disposeTree(obj) {
+    if (!obj) return;
+    obj.traverse(o => { if (o.geometry) o.geometry.dispose(); });
+    if (obj.parent) obj.parent.remove(obj);
+  }
   const getShake = () => ({ x: shakeX, y: shakeY });
 
-  return { init, toon, basic, outline, edges, box, burst, shake, update, clear, getShake };
+  return { init, toon, basic, outline, edges, box, burst, shake, update, clear, disposeTree, getShake };
 })();

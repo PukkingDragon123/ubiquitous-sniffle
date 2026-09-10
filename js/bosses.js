@@ -33,11 +33,11 @@ CZ.Boss = class Boss {
   hurtboxes() { return this.hazards.filter(h => h.active); }
   weakspots() { return []; }
   cleanup() {
-    this.game.scene.remove(this.group);
-    const L = this.game.level;
-    for (const s of this.owned) { L.group.remove(s.mesh); const i = L.solids.indexOf(s); if (i >= 0) L.solids.splice(i, 1); }
-    for (const h of (this.ownedHooks || [])) { L.group.remove(h.mesh); const i = L.hooks.indexOf(h); if (i >= 0) L.hooks.splice(i, 1); }
-    for (const m of this.hazardMeshes) this.game.scene.remove(m);
+    const E = CZ.Effects, L = this.game.level;
+    E.disposeTree(this.group);
+    for (const s of this.owned) { E.disposeTree(s.mesh); const i = L.solids.indexOf(s); if (i >= 0) L.solids.splice(i, 1); }
+    for (const h of (this.ownedHooks || [])) { E.disposeTree(h.mesh); const i = L.hooks.indexOf(h); if (i >= 0) L.hooks.splice(i, 1); }
+    for (const m of this.hazardMeshes) E.disposeTree(m);
     this.hazardMeshes.length = 0;
   }
   think(dt) {}
@@ -47,7 +47,7 @@ CZ.Boss = class Boss {
     const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, 0.6), new THREE.MeshBasicMaterial({ color, transparent: true, opacity, depthWrite: false }));
     m.position.set(x + w / 2, y + h / 2, 0.2); this.game.scene.add(m); this.hazardMeshes.push(m); return m;
   }
-  removeMesh(m) { this.game.scene.remove(m); const i = this.hazardMeshes.indexOf(m); if (i >= 0) this.hazardMeshes.splice(i, 1); }
+  removeMesh(m) { CZ.Effects.disposeTree(m); const i = this.hazardMeshes.indexOf(m); if (i >= 0) this.hazardMeshes.splice(i, 1); }
 };
 
 // ───────────────────────── RAT KING ─────────────────────────
@@ -57,13 +57,13 @@ CZ.RatKing = class RatKing extends CZ.Boss {
     this.w = 3.6; this.h = 2.7; this.x = arena.x + arena.w - 10; this.y = 0.1; this.vx = 0; this.vy = 0; this.facing = -1;
     this.state = 'intro'; this.st = 0; this.next = 'charge'; this.speed = 9; this.color = 0x6a6a78;
     const E = CZ.Effects;
-    const body = new THREE.Mesh(new THREE.SphereGeometry(1.3, 16, 14), E.toon(0x6a6a78)); body.scale.set(1.35, 0.95, 1); body.castShadow = true; E.outline(body, 0.1); this.group.add(body); this.body = body;
-    const head = new THREE.Mesh(new THREE.SphereGeometry(0.85, 14, 12), E.toon(0x7a7a88)); head.position.set(-1.5, 0.5, 0); head.scale.set(1.25, 1, 1); E.outline(head, 0.08); this.group.add(head); this.head = head;
+    const body = new THREE.Mesh(new THREE.SphereGeometry(1.3, 8, 6), E.toon(0x6a6a78)); body.scale.set(1.35, 0.95, 1); body.castShadow = true; E.outline(body, 0.1); this.group.add(body); this.body = body;
+    const head = new THREE.Mesh(new THREE.SphereGeometry(0.85, 7, 5), E.toon(0x7a7a88)); head.position.set(-1.5, 0.5, 0); head.scale.set(1.25, 1, 1); E.outline(head, 0.08); this.group.add(head); this.head = head;
     const nose = new THREE.Mesh(new THREE.SphereGeometry(0.22, 8, 8), E.basic(0xff7a9a)); nose.position.set(-1.05, -0.1, 0); head.add(nose);
     [[-0.3, 0.7, 0.35], [-0.3, 0.7, -0.35]].forEach(p => { const ear = new THREE.Mesh(new THREE.SphereGeometry(0.34, 8, 8), E.toon(0xffaabb)); ear.position.set(...p); ear.scale.z = 0.4; head.add(ear); });
-    [[-0.45, 0.2, 0.62], [-0.45, 0.2, -0.62]].forEach(p => { const e = new THREE.Mesh(new THREE.SphereGeometry(0.2, 8, 8), E.basic(0xff2d2d)); e.position.set(...p); head.add(e); });
-    const crown = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.45, 0.5, 8), E.toon(0xffd700)); crown.position.set(-0.1, 1.05, 0); head.add(crown);
-    for (let i = 0; i < 6; i++) { const sp = new THREE.Mesh(new THREE.ConeGeometry(0.12, 0.35, 4), E.toon(0xffd700)); const a = i / 6 * Math.PI * 2; sp.position.set(Math.cos(a) * 0.5, 0.4, Math.sin(a) * 0.5); crown.add(sp); }
+    [[-0.45, 0.2, 0.62], [-0.45, 0.2, -0.62]].forEach(p => { const e = new THREE.Mesh(new THREE.BoxGeometry(0.36, 0.36, 0.12), E.basic(0xff2d2d)); e.position.set(...p); head.add(e); });
+    const crown = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.45, 0.5, 6), new THREE.MeshToonMaterial({ color: 0xffd700 })); crown.position.set(-0.1, 1.05, 0); head.add(crown);
+    for (let i = 0; i < 6; i++) { const sp = new THREE.Mesh(new THREE.ConeGeometry(0.14, 0.35, 4), E.toon(0xffd700)); const a = i / 6 * Math.PI * 2; sp.position.set(Math.cos(a) * 0.5, 0.4, Math.sin(a) * 0.5); crown.add(sp); }
     const tail = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.16, 2.6, 6), E.toon(0xffaabb)); tail.position.set(2.2, 0.2, 0); tail.rotation.z = Math.PI / 2 + 0.5; this.group.add(tail); this.tail = tail;
     this.shockMesh = this.column(0, 0, 1, 0.6, 0xffffff, 0.6); this.shockMesh.visible = false;
   }
@@ -131,13 +131,13 @@ CZ.AntiCheat = class AntiCheat extends CZ.Boss {
     super(game, arena); this.name = 'ANTI-CHEAT.EXE'; this.hp = this.maxHp = 3;
     this.cx = arena.x + arena.w / 2; this.cy = 6.5; this.w = 2.2; this.h = 2.2; this.ang = 0; this.spin = 1.4; this.attackT = 2.5; this.attackN = 0; this.rate = 3.4;
     const E = CZ.Effects;
-    this.core = new THREE.Mesh(new THREE.OctahedronGeometry(1.1, 0), new THREE.MeshToonMaterial({ color: 0xff2d55, emissive: 0x660011 })); E.outline(this.core, 0.1); this.group.add(this.core);
-    const eye = new THREE.Mesh(new THREE.SphereGeometry(0.45, 12, 12), E.basic(0xffffff)); eye.position.z = 0.9; this.group.add(eye);
-    const pupil = new THREE.Mesh(new THREE.SphereGeometry(0.22, 10, 10), E.basic(0x111)); pupil.position.z = 0.35; eye.add(pupil); this.pupil = pupil; this.eye = eye;
+    this.core = new THREE.Mesh(new THREE.OctahedronGeometry(1.1, 0), new THREE.MeshToonMaterial({ map: CZ.Tex.get('circuit', 'data'), color: 0xff5577, emissive: 0x660011 })); E.outline(this.core, 0.1); this.group.add(this.core);
+    const eye = new THREE.Mesh(new THREE.BoxGeometry(0.85, 0.85, 0.12), E.basic(0xffffff)); eye.position.z = 0.95; this.group.add(eye);
+    const pupil = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.4, 0.1), E.basic(0x111111)); pupil.position.z = 0.08; eye.add(pupil); this.pupil = pupil; this.eye = eye;
     this.panels = [];
     for (let i = 0; i < 4; i++) {
       const vert = i % 2 === 0;
-      const m = new THREE.Mesh(new THREE.BoxGeometry(vert ? 0.7 : 3.4, vert ? 3.4 : 0.7, 1.2), new THREE.MeshToonMaterial({ color: 0xb455ff, emissive: 0x3a0060, transparent: true, opacity: 0.9 }));
+      const m = new THREE.Mesh(new THREE.BoxGeometry(vert ? 0.7 : 3.4, vert ? 3.4 : 0.7, 1.2), new THREE.MeshToonMaterial({ map: CZ.Tex.get('circuit', 'data'), color: 0xd9a3ff, emissive: 0x3a0060, transparent: true, opacity: 0.9 }));
       const wire = new THREE.Mesh(m.geometry, new THREE.MeshBasicMaterial({ color: 0xff7bff, wireframe: true })); m.add(wire);
       this.group.add(m); this.panels.push({ m, vert, box: { x: 0, y: 0, w: vert ? 0.7 : 3.4, h: vert ? 3.4 : 0.7 } });
     }
@@ -219,17 +219,17 @@ CZ.GodOfGames = class GodOfGames extends CZ.Boss {
     const E = CZ.Effects;
     // face
     this.face = new THREE.Group(); this.group.add(this.face);
-    const head = new THREE.Mesh(new THREE.SphereGeometry(3.2, 20, 18), E.toon(0xffe0c0)); head.castShadow = true; E.outline(head, 0.12); this.face.add(head);
-    const beard = new THREE.Group(); for (let i = 0; i < 7; i++) { const s = new THREE.Mesh(new THREE.SphereGeometry(0.9 + Math.random() * 0.5, 10, 10), E.toon(0xffffff)); s.position.set((i - 3) * 0.8, -2.6 - Math.abs(i - 3) * -0.3 - Math.random() * 0.6, 1.2); beard.add(s); } this.face.add(beard);
-    this.eyesG = []; [[-1.1, 0.6], [1.1, 0.6]].forEach(([x, y]) => { const e = new THREE.Mesh(new THREE.SphereGeometry(0.6, 12, 12), E.basic(0xffffff)); e.position.set(x, y, 2.75); const p = new THREE.Mesh(new THREE.SphereGeometry(0.28, 10, 10), E.basic(0x1a0f0a)); p.position.z = 0.45; e.add(p); this.face.add(e); this.eyesG.push({ e, p }); });
+    const head = new THREE.Mesh(new THREE.SphereGeometry(3.2, 9, 7), E.toon(0xffe0c0)); head.castShadow = true; E.outline(head, 0.12); this.face.add(head);
+    const beard = new THREE.Group(); for (let i = 0; i < 7; i++) { const s = new THREE.Mesh(new THREE.BoxGeometry(1.4 + Math.random() * 0.7, 1.4 + Math.random() * 0.7, 1.6), new THREE.MeshToonMaterial({ map: CZ.Tex.get('cloud', 'marble') })); s.position.set((i - 3) * 0.8, -2.6 - Math.abs(i - 3) * -0.3 - Math.random() * 0.6, 1.2); beard.add(s); } this.face.add(beard);
+    this.eyesG = []; [[-1.1, 0.6], [1.1, 0.6]].forEach(([x, y]) => { const e = new THREE.Mesh(new THREE.BoxGeometry(1.1, 1.1, 0.2), E.basic(0xffffff)); e.position.set(x, y, 2.9); const p = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.5, 0.16), E.basic(0x1a0f0a)); p.position.z = 0.12; e.add(p); this.face.add(e); this.eyesG.push({ e, p }); });
     this.browsG = []; [[-1.1, 1.4, 1], [1.1, 1.4, -1]].forEach(([x, y, s]) => { const b = E.box(1.2, 0.22, 0.2, 0xffffff); b.position.set(x, y, 2.9); b.rotation.z = s * 0.25; this.face.add(b); this.browsG.push({ b, s }); });
     this.mouthG = E.box(1.2, 0.25, 0.2, 0x5a1a1a); this.mouthG.position.set(0, -1.1, 2.95); this.face.add(this.mouthG);
-    const halo = new THREE.Mesh(new THREE.TorusGeometry(3.8, 0.18, 8, 32), new THREE.MeshBasicMaterial({ color: 0xffd700 })); halo.position.y = 3.6; halo.rotation.x = Math.PI / 2.4; this.face.add(halo); this.halo = halo;
+    const halo = new THREE.Mesh(new THREE.TorusGeometry(3.8, 0.22, 4, 12), new THREE.MeshBasicMaterial({ color: 0xffd700 })); halo.position.y = 3.6; halo.rotation.x = Math.PI / 2.4; this.face.add(halo); this.halo = halo;
     // apple
     this.apple = new THREE.Group();
-    const ap = new THREE.Mesh(new THREE.SphereGeometry(0.75, 16, 14), new THREE.MeshToonMaterial({ color: 0xffd700, emissive: 0x806000 })); ap.scale.y = 1.05; E.outline(ap, 0.08); this.apple.add(ap);
+    const ap = new THREE.Mesh(new THREE.SphereGeometry(0.78, 7, 6), new THREE.MeshToonMaterial({ color: 0xffd700, emissive: 0x806000 })); ap.scale.y = 1.05; E.outline(ap, 0.08); this.apple.add(ap);
     const stem = E.box(0.1, 0.4, 0.1, 0x6b4a2a); stem.position.y = 0.85; this.apple.add(stem);
-    const leaf = new THREE.Mesh(new THREE.SphereGeometry(0.22, 8, 8), E.toon(0x39ff88)); leaf.scale.set(1.6, 0.6, 0.4); leaf.position.set(0.25, 0.95, 0); this.apple.add(leaf);
+    const leaf = new THREE.Mesh(new THREE.BoxGeometry(0.44, 0.2, 0.16), E.toon(0x39ff88)); leaf.scale.set(1.6, 0.6, 0.4); leaf.position.set(0.25, 0.95, 0); this.apple.add(leaf);
     const al = new THREE.PointLight(0xffd700, 12, 12); this.apple.add(al);
     this.group.add(this.apple);
     // hand

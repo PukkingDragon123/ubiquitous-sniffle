@@ -6,6 +6,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <title>CHEEZ-IT — File a Hole in This Game</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rubik+Spray+Paint&family=Press+Start+2P&family=Silkscreen:wght@400;700&display=swap">
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -15,7 +16,7 @@
 <div id="hud" class="hidden">
   <div id="hud-left">
     <div id="hp"></div>
-    <div id="bugs"><span class="ico">🪲</span><span id="bug-count">0/0</span></div>
+    <div id="bugs" class="tape-chip"><i class="spr" data-spr="bug"></i><span id="bug-count">0/0</span></div>
   </div>
   <div id="hud-center">
     <div id="level-name"></div>
@@ -28,77 +29,78 @@
   <div id="boss-bar" class="hidden"><div id="boss-name"></div><div class="bar"><div id="boss-fill"></div></div></div>
 </div>
 
-<!-- Tutorial sign text -->
+<!-- In-world sign text -->
 <div id="sign" class="hidden"></div>
 
-<!-- Dialog -->
+<!-- Dialogue -->
 <div id="dialog" class="hidden">
-  <div class="portrait" id="dlg-portrait">🧀</div>
+  <div class="portrait-frame"><i id="dlg-portrait" class="spr portrait-spr" data-spr="p-cheese"></i></div>
   <div class="text-wrap">
     <div class="who" id="dlg-who">YOU</div>
     <div class="text" id="dlg-text"></div>
-    <div class="hint">SPACE / ENTER ▸</div>
+    <div class="hint">PRESS JUMP</div>
   </div>
+  <b class="drip-row"></b>
 </div>
 
 <!-- Ability unlock -->
 <div id="unlock" class="hidden">
-  <div class="card">
-    <div class="eyebrow">⚠ EXPLOIT FOUND ⚠</div>
-    <div class="ico" id="unlock-ico">⏭</div>
-    <div class="name" id="unlock-name">FRAME SKIP</div>
+  <div class="card dripping">
+    <div class="eyebrow">EXPLOIT FOUND</div>
+    <i id="unlock-ico" class="spr ico-spr" data-spr="tech-jump"></i>
+    <div class="name graffiti" id="unlock-name">FRAME SKIP</div>
     <div class="desc" id="unlock-desc"></div>
     <div class="key" id="unlock-key"></div>
-    <div class="hint">SPACE to continue</div>
+    <div class="hint">PRESS JUMP TO CONTINUE</div>
   </div>
 </div>
 
 <!-- Title -->
 <div id="title">
+  <div class="tag-wall"></div>
   <div class="logo">
-    <div class="cheez">CHEEZ<span>-</span>IT</div>
+    <h1 class="cheez wob" aria-label="CHEEZ-IT"><span>C</span><span>H</span><span>E</span><span>E</span><span>Z</span><span class="dash">-</span><span>I</span><span>T</span></h1>
+    <div class="logo-drips"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
     <div class="sub">FILE A HOLE IN THIS GAME</div>
   </div>
   <div class="menu">
-    <button id="btn-play" class="big">▶ NEW GAME</button>
-    <button id="btn-continue" class="big hidden">▶ CONTINUE</button>
+    <button id="btn-play" class="big">NEW GAME</button>
+    <button id="btn-continue" class="big hidden">CONTINUE</button>
     <button id="btn-levels">LEVEL SELECT</button>
     <button id="btn-controls">CONTROLS</button>
   </div>
-  <div class="foot">A game about breaking games. Made with Three.js. <span id="best-time"></span></div>
+  <div class="foot">A GAME ABOUT BREAKING GAMES <span id="best-time"></span></div>
 </div>
 
 <!-- Level select -->
 <div id="levelselect" class="panel hidden">
-  <h2>LEVEL SELECT</h2>
+  <h2 class="graffiti">LEVEL SELECT</h2>
   <div id="level-list"></div>
   <button class="back" data-back>BACK</button>
 </div>
 
 <!-- Controls -->
 <div id="controls" class="panel hidden">
-  <h2>CONTROLS</h2>
+  <h2 class="graffiti">CONTROLS</h2>
   <table>
-    <tr><td>Move</td><td>← → / A D</td></tr>
-    <tr><td>Jump</td><td>SPACE / Z / W / ↑ (hold for higher)</td></tr>
-    <tr><td>Frame Skip (double jump)</td><td>Jump again in the air</td></tr>
-    <tr><td>Clip Dash</td><td>SHIFT / X (+ direction)</td></tr>
-    <tr><td>Wall Clip</td><td>Hold toward a wall, then Jump</td></tr>
-    <tr><td>Crash Dive</td><td>↓ / S in the air</td></tr>
-    <tr><td>Hook Exploit</td><td>C / E near a blue hook node</td></tr>
-    <tr><td>Noclip</td><td>Hold V / Q</td></tr>
-    <tr><td>Pause</td><td>ESC / P</td></tr>
-    <tr><td>Mute</td><td>M</td></tr>
-    <tr><td>Restart at checkpoint</td><td>R</td></tr>
+    <tr><td>MOVE</td><td>LEFT / RIGHT / A / D</td></tr>
+    <tr><td>JUMP</td><td>SPACE / Z / W / UP (hold = higher)</td></tr>
+    <tr><td>FRAME SKIP</td><td>JUMP again in the air</td></tr>
+    <tr><td>CLIP DASH</td><td>SHIFT / X (+ direction)</td></tr>
+    <tr><td>WALL CLIP</td><td>Hold toward a wall, then JUMP</td></tr>
+    <tr><td>CRASH DIVE</td><td>DOWN / S in the air</td></tr>
+    <tr><td>HOOK EXPLOIT</td><td>C / E near a blue node</td></tr>
+    <tr><td>NOCLIP</td><td>Hold V / Q</td></tr>
+    <tr><td>PAUSE / MUTE / RETRY</td><td>ESC or P / M / R</td></tr>
   </table>
-  <p class="tip mobile-only">On a phone or tablet: drag the left stick to move (flick down in the air to Crash Dive), and tap the right-hand buttons. Buttons appear as you unlock each tech.</p>
-  <p class="tip">Pro tech: dash then jump immediately to keep dash speed (wavedash). Dash into enemies to delete them. Gamepads work too.</p>
+  <p class="tip mobile-only">ON A PHONE: drag the left stick to move, flick it down in the air to CRASH DIVE, and tap the buttons on the right. Buttons appear as you unlock each tech.</p>
+  <p class="tip">PRO TECH: dash, then jump straight away to keep the dash speed. Dash deletes enemies. Gamepads work too.</p>
   <button class="back" data-back>BACK</button>
 </div>
 
 <!-- Pause -->
 <div id="pause" class="panel hidden">
-  <h2>PAUSED</h2>
+  <h2 class="graffiti">PAUSED</h2>
   <button id="btn-resume">RESUME</button>
   <button id="btn-restart">RESTART LEVEL</button>
   <button id="btn-quit">QUIT TO TITLE</button>
@@ -106,44 +108,53 @@
 
 <!-- Level complete -->
 <div id="complete" class="panel hidden">
-  <h2 id="complete-title">LEVEL CLEARED</h2>
+  <h2 class="graffiti" id="complete-title">LEVEL CLEARED</h2>
   <div id="complete-stats"></div>
-  <button id="btn-next">NEXT ▸</button>
+  <button id="btn-next">NEXT</button>
 </div>
 
 <!-- Ending -->
 <div id="ending" class="panel hidden">
-  <h2>🍎 YOU ARE HUMAN AGAIN</h2>
+  <i class="spr big-spr" data-spr="apple"></i>
+  <h2 class="graffiti">YOU ARE HUMAN AGAIN</h2>
   <div id="ending-text"></div>
   <div id="ending-stats"></div>
   <button id="btn-ending-title">BACK TO TITLE</button>
 </div>
 
-<!-- Touch controls (shown on touch devices) -->
+<!-- Touch controls -->
 <div id="touch" class="hidden">
   <div id="tc-stick">
     <div id="tc-stick-base"><div id="tc-stick-knob"></div></div>
     <div class="tc-hint">MOVE</div>
   </div>
   <div id="tc-buttons">
-    <button class="tc-btn tc-sm" id="tc-noclip" data-act="noclip"><span class="ico">👻</span><span class="lbl">NOCLIP</span></button>
-    <button class="tc-btn tc-sm" id="tc-grapple" data-act="grapple"><span class="ico">🪝</span><span class="lbl">HOOK</span></button>
-    <button class="tc-btn tc-sm" id="tc-dash" data-act="dash"><span class="ico">💨</span><span class="lbl">DASH</span></button>
-    <button class="tc-btn tc-lg" id="tc-jump" data-act="jump"><span class="ico">⤴</span><span class="lbl">JUMP</span></button>
+    <button class="tc-btn tc-sm" id="tc-noclip" data-act="noclip"><i class="spr" data-spr="tech-ghost"></i><span class="lbl">NOCLIP</span></button>
+    <button class="tc-btn tc-sm" id="tc-grapple" data-act="grapple"><i class="spr" data-spr="tech-hook"></i><span class="lbl">HOOK</span></button>
+    <button class="tc-btn tc-sm" id="tc-dash" data-act="dash"><i class="spr" data-spr="tech-dash"></i><span class="lbl">DASH</span></button>
+    <button class="tc-btn tc-lg" id="tc-jump" data-act="jump"><i class="spr" data-spr="arrow-up"></i><span class="lbl">JUMP</span></button>
   </div>
-  <button class="tc-corner" id="tc-pause" data-act="pause">❚❚</button>
+  <button class="tc-corner" id="tc-pause" data-act="pause"><i class="spr" data-spr="pause"></i></button>
 </div>
 
-<div id="rotate" class="hidden"><div class="inner"><div class="phone">📱</div><div>Turn your device sideways<br><span>(landscape plays much better)</span></div><button id="rotate-ok">PLAY ANYWAY</button></div></div>
+<div id="rotate" class="hidden">
+  <div class="inner">
+    <i class="spr big-spr rotating" data-spr="phone"></i>
+    <div>TURN YOUR DEVICE SIDEWAYS<br><span>LANDSCAPE PLAYS MUCH BETTER</span></div>
+    <button id="rotate-ok">PLAY ANYWAY</button>
+  </div>
+</div>
 
 <div id="flash"></div>
 <div id="toast" class="hidden"></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.0/three.min.js"></script>
 <script src="js/util.js"></script>
+<script src="js/sprites.js"></script>
 <script src="js/audio.js"></script>
 <script src="js/input.js"></script>
 <script src="js/levels.js"></script>
+<script src="js/textures.js"></script>
 <script src="js/effects.js"></script>
 <script src="js/level.js"></script>
 <script src="js/player.js"></script>

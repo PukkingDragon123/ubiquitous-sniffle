@@ -2,7 +2,7 @@
 CZ.Game = class Game {
   constructor() {
     const canvas = document.getElementById('game');
-    this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
+    this.renderer = new THREE.WebGLRenderer({ canvas, antialias: false, powerPreference: 'high-performance' });
     this.renderer.shadowMap.enabled = true; this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     this.renderer.outputColorSpace = THREE.SRGBColorSpace; this.renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
     this.scene = new THREE.Scene();
@@ -12,6 +12,18 @@ CZ.Game = class Game {
     this.sun.shadow.mapSize.set(2048, 2048); const sc = this.sun.shadow.camera; sc.left = -26; sc.right = 26; sc.top = 20; sc.bottom = -20; sc.near = 1; sc.far = 90; this.sun.shadow.bias = -0.0015;
     this.scene.add(this.sun); this.scene.add(this.sun.target);
     CZ.Effects.init(this.scene);
+
+    // ── pixel-art pipeline ──────────────────────────────────────────────
+    // The world renders into a small target and is blown up with NearestFilter,
+    // so every 3D surface lands on a chunky pixel grid instead of smooth edges.
+    this.rt = new THREE.WebGLRenderTarget(320, 180, {
+      minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter,
+      format: THREE.RGBAFormat, colorSpace: THREE.SRGBColorSpace, depthBuffer: true,
+    });
+    this.screenScene = new THREE.Scene();
+    this.screenCam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+    this.screenQuad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), new THREE.MeshBasicMaterial({ map: this.rt.texture }));
+    this.screenScene.add(this.screenQuad);
 
     this.save = CZ.loadSave() || CZ.newSave(); this.abilities = this.save.abilities;
     this.state = 'title'; this.level = null; this.player = null; this.enemies = []; this.projectiles = []; this.boss = null; this.bossStarted = false;
@@ -42,7 +54,7 @@ CZ.Game = class Game {
     const U = CZ.UI;
     const hasSave = this.save.level > 0 || Object.keys(this.save.abilities).length > 0;
     U.show('btn-continue', hasSave);
-    U.$('best-time').textContent = this.save.completed && this.save.bestTime ? `· Best full run: ${CZ.fmtTime(this.save.bestTime)}` : '';
+    U.$('best-time').textContent = this.save.completed && this.save.bestTime ? `BEST RUN ${CZ.fmtTime(this.save.bestTime)}` : '';
   }
   toTitle() {
     this.unloadLevel(); this.state = 'title';
@@ -58,10 +70,13 @@ CZ.Game = class Game {
   // ---------- level lifecycle ----------
   unloadLevel() {
     if (this.level) this.level.dispose();
-    for (const e of this.enemies) this.scene.remove(e.mesh);
+    for (const e of this.enemies) CZ.Effects.disposeTree(e.mesh);
     for (const p of this.projectiles) p.kill(false);
     if (this.boss) this.boss.cleanup();
-    if (this.player) { this.scene.remove(this.player.mesh); this.scene.remove(this.player.rope); for (const g of this.player.ghosts) this.scene.remove(g); }
+    if (this.player) {
+      CZ.Effects.disposeTree(this.player.mesh); CZ.Effects.disposeTree(this.player.rope);
+      for (const g of this.player.ghosts) { CZ.Effects.disposeTree(g); g.material.dispose(); }
+    }
     CZ.Effects.clear();
     this.level = null; this.enemies = []; this.projectiles = []; this.boss = null; this.bossStarted = false; this.player = null;
   }
@@ -83,14 +98,15 @@ CZ.Game = class Game {
     this.camX = this.player.cx(); this.camY = this.player.cy() + 2; this.camZ = 15;
     U.show('title', false); U.show('complete', false); U.show('hud', true); U.levelName(data.name, data.sub); U.bossBar(null); U.sign(null);
     U.hp(this.player.hp, CZ.P.MAX_HP); U.bugs(this.levelBugs, this.level.bugTotal); U.techs(this.abilities, this.player);
+    CZ.Spr.paint();
     CZ.Audio.playMusic(data.song);
     CZ.Touch.setVisible(true); CZ.Touch.syncAbilities(this.abilities);
     this.state = 'playing';
-    U.toast(`${data.name} — ${data.sub}`, 3200);
+    U.toast(`${data.name}  //  ${data.sub}`, 3200);
     if (withIntro && data.intro) { this.state = 'dialog'; U.dialog(data.intro, () => { this.state = 'playing'; }); }
   }
   spawnEnemies() {
-    for (const e of this.enemies) this.scene.remove(e.mesh);
+    for (const e of this.enemies) CZ.Effects.disposeTree(e.mesh);
     this.enemies = [];
     for (const d of this.level.enemySpawns) this.spawnEnemy(d);
   }
@@ -110,8 +126,11 @@ CZ.Game = class Game {
     const U = CZ.UI, data = this.level.data; this.state = 'complete'; CZ.Touch.setVisible(false); CZ.Audio.sfx.exit();
     this.save.level = Math.max(this.save.level, this.levelIndex + 1); this.save.time += this.levelTime; CZ.writeSave(this.save);
     U.complete(this.levelIndex === CZ.LEVELS.length - 1 ? 'FACTORY ESCAPED' : 'LEVEL CLEARED',
-      `<b>${data.name}</b><br>⏱ ${CZ.fmtTime(this.levelTime)} &nbsp; 💀 ${this.levelDeaths} deaths<br>🪲 Bug reports: ${this.levelBugs}/${this.level.bugTotal}`);
-    U.$('btn-next').textContent = this.levelIndex === CZ.LEVELS.length - 1 ? 'GET THE APPLE ▸' : 'NEXT ▸';
+      `<div class="stat"><span>${data.name}</span></div>`
+      + U.stat('clock', CZ.fmtTime(this.levelTime))
+      + U.stat('skull', `${this.levelDeaths} DEATHS`)
+      + U.stat('bug', `BUG REPORTS ${this.levelBugs}/${this.level.bugTotal}`));
+    U.$('btn-next').textContent = this.levelIndex === CZ.LEVELS.length - 1 ? 'GET THE APPLE' : 'NEXT';
   }
   nextLevel() {
     if (this.levelIndex + 1 < CZ.LEVELS.length) this.startLevel(this.levelIndex + 1, false);
@@ -122,8 +141,11 @@ CZ.Game = class Game {
     const total = CZ.LEVELS.reduce((n, l) => n + l.items.filter(x => x.t === 'bug').length, 0);
     const got = Object.values(this.save.bugs).reduce((n, a) => n + a.length, 0);
     this.save.completed = true; if (!this.save.bestTime || this.save.time < this.save.bestTime) this.save.bestTime = this.save.time; CZ.writeSave(this.save);
-    U.ending(`You touched the Golden Apple. Reality re-rendered. You're human again — and the God of Games just made you <b>lead QA</b> for the universe.<br><br>Somewhere in the Pantry, a floor is still deleted. You'll file it Monday.`,
-      `⏱ Total time: ${CZ.fmtTime(this.save.time)}<br>💀 Deaths: ${this.save.deaths}<br>🪲 Bug reports: ${got}/${total}${got === total ? ' — 100%! Certified Game Bugger.' : ''}`);
+    U.ending(`You touched the Golden Apple. Reality re-rendered. You are human again, and the God of Games just made you <b>lead QA</b> for the universe.<br><br>Somewhere in the Pantry a floor is still deleted. You will file it Monday.`,
+      U.stat('clock', `TOTAL ${CZ.fmtTime(this.save.time)}`)
+      + U.stat('skull', `${this.save.deaths} DEATHS`)
+      + U.stat('bug', `BUG REPORTS ${got}/${total}`)
+      + (got === total ? U.stat('apple', 'ALL BUGS FILED') : ''));
     CZ.Audio.playMusic('heaven');
   }
 
@@ -140,9 +162,9 @@ CZ.Game = class Game {
     this.boss = null; CZ.UI.bossBar(null); CZ.Effects.shake(1.5); this.flash('rgba(255,255,255,.8)');
     CZ.Audio.playMusic(this.level.data.song);
     const lines = {
-      ratking: [{ who: 'RAT KING', portrait: '🐀', text: 'Fine. FINE. The exit is that way. Tell no one a cheese did this.' }, { who: 'YOU', portrait: '🧀', text: 'Filed under: "boss can be stomped". Severity: crown.' }],
-      anticheat: [{ who: 'ANTI-CHEAT.EXE', portrait: '🛡️', text: 'B-BAN FAILED. PLAYER... IS... INSIDE... THE... SHIELD...' }, { who: 'YOU', portrait: '🧀', text: 'You checked WHERE I was. You never checked HOW I got there.' }],
-      god: [{ who: 'GOD OF GAMES', portrait: '👁️', text: 'The apple is yours. You are human again. ...but HOW did you stand on that platform? I DELETED it.' }, { who: 'YOU', portrait: '🧀', text: 'You deleted the mesh. You left the collision box. Classic. Want me to write it up?' }, { who: 'GOD OF GAMES', portrait: '👁️', text: '...yes. Please. My inbox is open. Take the exit.' }],
+      ratking: [{ who: 'RAT KING', portrait: 'p-rat', text: 'Fine. FINE. The exit is that way. Tell no one a cheese did this.' }, { who: 'YOU', portrait: 'p-cheese', text: 'Filed under: "boss can be stomped". Severity: crown.' }],
+      anticheat: [{ who: 'ANTI-CHEAT.EXE', portrait: 'p-guard', text: 'B-BAN FAILED. PLAYER... IS... INSIDE... THE... SHIELD...' }, { who: 'YOU', portrait: 'p-cheese', text: 'You checked WHERE I was. You never checked HOW I got there.' }],
+      god: [{ who: 'GOD OF GAMES', portrait: 'p-god', text: 'The apple is yours. You are human again. ...but HOW did you stand on that platform? I DELETED it.' }, { who: 'YOU', portrait: 'p-cheese', text: 'You deleted the mesh. You left the collision box. Classic. Want me to write it up?' }, { who: 'GOD OF GAMES', portrait: 'p-god', text: '...yes. Please. My inbox is open. Take the exit.' }],
     }[this.level.boss.kind];
     if (lines) { this.state = 'dialog'; CZ.UI.dialog(lines, () => { this.state = 'playing'; }); }
   }
@@ -163,7 +185,7 @@ CZ.Game = class Game {
   }
   update(dt) {
     const I = CZ.Input, U = CZ.UI;
-    if (I.pressed('mute')) U.toast(CZ.Audio.toggleMute() ? '🔇 MUTED' : '🔊 SOUND ON');
+    if (I.pressed('mute')) U.toast(CZ.Audio.toggleMute() ? 'SOUND OFF' : 'SOUND ON');
     if (this.state === 'title' || this.state === 'ending') return;
     if (I.pressed('pause')) { if (this.state === 'playing') this.setPaused(true); else if (this.state === 'paused') this.setPaused(false); }
     if (this.state === 'paused') return;
@@ -204,7 +226,7 @@ CZ.Game = class Game {
         b.taken = true; b.mesh.visible = false; this.levelBugs++; CZ.Audio.sfx.collect();
         CZ.Effects.burst(b.x, b.y, 0xffd700, 14, { spread: 6, up: 5, gravity: 12 });
         const arr = this.save.bugs[L.data.id] || (this.save.bugs[L.data.id] = []); if (!arr.includes(k)) arr.push(k); CZ.writeSave(this.save);
-        U.bugs(this.levelBugs, L.bugTotal); U.toast(`🪲 BUG REPORT FILED (${this.levelBugs}/${L.bugTotal})`);
+        U.bugs(this.levelBugs, L.bugTotal); U.toast(`BUG REPORT FILED  ${this.levelBugs}/${L.bugTotal}`);
       }
     });
     // abilities
@@ -275,9 +297,25 @@ CZ.Game = class Game {
     if (this.boss) U.bossBar(this.boss);
   }
   resize() {
-    const w = innerWidth, h = innerHeight; this.renderer.setSize(w, h, false); this.camera.aspect = w / h; this.camera.updateProjectionMatrix();
+    const w = innerWidth, h = innerHeight;
+    this.renderer.setSize(w, h, false);
+    this.camera.aspect = w / h; this.camera.updateProjectionMatrix();
+    // Fixed vertical resolution keeps the pixel size identical on every screen.
+    const ph = CZ.PIXEL_HEIGHT, pw = Math.max(2, Math.round(ph * (w / h)));
+    this.rt.setSize(pw, ph);
   }
-  render() { if (this.state === 'title' || this.state === 'ending') { this.renderer.setClearColor(0x1a1023); this.renderer.clear(); return; } this.renderer.render(this.scene, this.camera); }
+  render() {
+    if (this.state === 'title' || this.state === 'ending') { this.renderer.setRenderTarget(null); this.renderer.setClearColor(0x1a1023); this.renderer.clear(); return; }
+    this.renderer.setRenderTarget(this.rt);
+    this.renderer.clear();
+    this.renderer.render(this.scene, this.camera);
+    this.renderer.setRenderTarget(null);
+    this.renderer.render(this.screenScene, this.screenCam);
+  }
 };
 
-window.addEventListener('DOMContentLoaded', () => { window.game = new CZ.Game(); CZ.UI.$('title').addEventListener('pointerdown', () => CZ.Audio.playMusic('title'), { once: true }); });
+window.addEventListener('DOMContentLoaded', () => {
+  CZ.Spr.paint();
+  window.game = new CZ.Game();
+  CZ.UI.$('title').addEventListener('pointerdown', () => CZ.Audio.playMusic('title'), { once: true });
+});
