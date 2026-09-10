@@ -17,7 +17,7 @@ CZ.Game = class Game {
     this.state = 'title'; this.level = null; this.player = null; this.enemies = []; this.projectiles = []; this.boss = null; this.bossStarted = false;
     this.levelIndex = 0; this.levelTime = 0; this.levelDeaths = 0; this.levelBugs = 0; this.checkpoint = { x: 0, y: 0 };
     this.camX = 0; this.camY = 4; this.camZ = 15; this.acc = 0; this.last = performance.now(); this.deadT = 0; this.unlockingId = null;
-    this.bindUI(); this.resize(); window.addEventListener('resize', () => this.resize());
+    CZ.Touch.init(); this.bindUI(); this.resize(); window.addEventListener('resize', () => this.resize());
     requestAnimationFrame(t => this.loop(t));
   }
 
@@ -47,12 +47,12 @@ CZ.Game = class Game {
   toTitle() {
     this.unloadLevel(); this.state = 'title';
     const U = CZ.UI; U.show('title', true); U.show('hud', false); U.show('complete', false); U.show('ending', false); U.show('unlock', false); U.show('dialog', false); U.sign(null);
-    this.refreshTitle(); CZ.Audio.playMusic('title');
+    this.refreshTitle(); CZ.Touch.setVisible(false); CZ.Audio.playMusic('title');
   }
   setPaused(on) {
     if (on && this.state !== 'playing') return;
     if (!on && this.state !== 'paused') return;
-    this.state = on ? 'paused' : 'playing'; CZ.UI.show('pause', on);
+    this.state = on ? 'paused' : 'playing'; CZ.UI.show('pause', on); CZ.Touch.setVisible(!on);
   }
 
   // ---------- level lifecycle ----------
@@ -84,6 +84,7 @@ CZ.Game = class Game {
     U.show('title', false); U.show('complete', false); U.show('hud', true); U.levelName(data.name, data.sub); U.bossBar(null); U.sign(null);
     U.hp(this.player.hp, CZ.P.MAX_HP); U.bugs(this.levelBugs, this.level.bugTotal); U.techs(this.abilities, this.player);
     CZ.Audio.playMusic(data.song);
+    CZ.Touch.setVisible(true); CZ.Touch.syncAbilities(this.abilities);
     this.state = 'playing';
     U.toast(`${data.name} — ${data.sub}`, 3200);
     if (withIntro && data.intro) { this.state = 'dialog'; U.dialog(data.intro, () => { this.state = 'playing'; }); }
@@ -106,7 +107,7 @@ CZ.Game = class Game {
     this.state = 'playing';
   }
   completeLevel() {
-    const U = CZ.UI, data = this.level.data; this.state = 'complete'; CZ.Audio.sfx.exit();
+    const U = CZ.UI, data = this.level.data; this.state = 'complete'; CZ.Touch.setVisible(false); CZ.Audio.sfx.exit();
     this.save.level = Math.max(this.save.level, this.levelIndex + 1); this.save.time += this.levelTime; CZ.writeSave(this.save);
     U.complete(this.levelIndex === CZ.LEVELS.length - 1 ? 'FACTORY ESCAPED' : 'LEVEL CLEARED',
       `<b>${data.name}</b><br>⏱ ${CZ.fmtTime(this.levelTime)} &nbsp; 💀 ${this.levelDeaths} deaths<br>🪲 Bug reports: ${this.levelBugs}/${this.level.bugTotal}`);
@@ -117,7 +118,7 @@ CZ.Game = class Game {
     else this.showEnding();
   }
   showEnding() {
-    const U = CZ.UI; this.unloadLevel(); this.state = 'ending'; U.show('complete', false); U.show('hud', false);
+    const U = CZ.UI; this.unloadLevel(); this.state = 'ending'; CZ.Touch.setVisible(false); U.show('complete', false); U.show('hud', false);
     const total = CZ.LEVELS.reduce((n, l) => n + l.items.filter(x => x.t === 'bug').length, 0);
     const got = Object.values(this.save.bugs).reduce((n, a) => n + a.length, 0);
     this.save.completed = true; if (!this.save.bestTime || this.save.time < this.save.bestTime) this.save.bestTime = this.save.time; CZ.writeSave(this.save);
@@ -210,7 +211,7 @@ CZ.Game = class Game {
     for (const a of L.abilities) if (!a.taken && CZ.overlap(box, { x: a.x - 0.8, y: a.y - 0.2, w: 1.6, h: 1.8 })) {
       a.taken = true; a.mesh.visible = false; this.abilities[a.id] = true; CZ.writeSave(this.save);
       CZ.Audio.sfx.unlock(); CZ.Effects.burst(a.x, a.y + 0.6, 0x39ff88, 30, { spread: 10, up: 6, life: 1.2, size: 1.4 }); CZ.Effects.shake(0.5);
-      this.state = 'unlock'; U.unlock(a.id); U.techs(this.abilities, p);
+      this.state = 'unlock'; U.unlock(a.id); U.techs(this.abilities, p); CZ.Touch.syncAbilities(this.abilities);
       p.vx = 0; p.vy = Math.max(p.vy, 0);
     }
     // signs

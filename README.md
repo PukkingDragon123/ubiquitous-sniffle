@@ -38,6 +38,19 @@ Three.js is loaded from cdnjs, so an internet connection is needed the first tim
 
 Gamepads work too (A jump, B/RB dash, X grapple, Y noclip, D-pad/stick move).
 
+### Touch (phones and tablets)
+
+On-screen controls appear automatically on touch devices, and the HUD shrinks to fit a phone screen.
+
+- **Floating thumbstick** — press anywhere in the left half of the screen and the stick snaps to your thumb. Flick it
+  down in mid-air to Crash Dive; hold it up or down while dashing to aim the dash.
+- **Action buttons** on the right: a large JUMP, plus DASH, HOOK and NOCLIP. Each button appears only once you have
+  unlocked that tech, so the controls grow with the game.
+- **Pause** sits in the top-left corner; tapping a story card or the JUMP button advances dialogue.
+- Portrait mode shows a "turn sideways" nudge, but the game is fully playable either way if you dismiss it.
+
+Add the page to your home screen for a fullscreen, browser-chrome-free run.
+
 ### Movement tech
 
 - **Coyote time + jump buffering** so jumps feel fair.
@@ -74,6 +87,7 @@ js/player.js    the cheese: movement controller + squash/stretch visuals
 js/enemies.js   rat, spore, blob, turret, projectiles
 js/bosses.js    Rat King, Anti-Cheat.exe, God of Games
 js/ui.js        DOM helpers
+js/touch.js     on-screen thumbstick + buttons for touch devices
 js/main.js      game loop, camera, state machine, interactions, progress
 ```
 

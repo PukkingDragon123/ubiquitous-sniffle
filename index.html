@@ -2,7 +2,9 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
 <title>CHEEZ-IT — File a Hole in This Game</title>
 <link rel="stylesheet" href="css/style.css">
 </head>
@@ -89,6 +91,7 @@
     <tr><td>Mute</td><td>M</td></tr>
     <tr><td>Restart at checkpoint</td><td>R</td></tr>
   </table>
+  <p class="tip mobile-only">On a phone or tablet: drag the left stick to move (flick down in the air to Crash Dive), and tap the right-hand buttons. Buttons appear as you unlock each tech.</p>
   <p class="tip">Pro tech: dash then jump immediately to keep dash speed (wavedash). Dash into enemies to delete them. Gamepads work too.</p>
   <button class="back" data-back>BACK</button>
 </div>
@@ -116,6 +119,23 @@
   <button id="btn-ending-title">BACK TO TITLE</button>
 </div>
 
+<!-- Touch controls (shown on touch devices) -->
+<div id="touch" class="hidden">
+  <div id="tc-stick">
+    <div id="tc-stick-base"><div id="tc-stick-knob"></div></div>
+    <div class="tc-hint">MOVE</div>
+  </div>
+  <div id="tc-buttons">
+    <button class="tc-btn tc-sm" id="tc-noclip" data-act="noclip"><span class="ico">👻</span><span class="lbl">NOCLIP</span></button>
+    <button class="tc-btn tc-sm" id="tc-grapple" data-act="grapple"><span class="ico">🪝</span><span class="lbl">HOOK</span></button>
+    <button class="tc-btn tc-sm" id="tc-dash" data-act="dash"><span class="ico">💨</span><span class="lbl">DASH</span></button>
+    <button class="tc-btn tc-lg" id="tc-jump" data-act="jump"><span class="ico">⤴</span><span class="lbl">JUMP</span></button>
+  </div>
+  <button class="tc-corner" id="tc-pause" data-act="pause">❚❚</button>
+</div>
+
+<div id="rotate" class="hidden"><div class="inner"><div class="phone">📱</div><div>Turn your device sideways<br><span>(landscape plays much better)</span></div><button id="rotate-ok">PLAY ANYWAY</button></div></div>
+
 <div id="flash"></div>
 <div id="toast" class="hidden"></div>
 
@@ -130,6 +150,7 @@
 <script src="js/enemies.js"></script>
 <script src="js/bosses.js"></script>
 <script src="js/ui.js"></script>
+<script src="js/touch.js"></script>
 <script src="js/main.js"></script>
 </body>
 </html>

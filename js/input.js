@@ -1,4 +1,4 @@
-// Keyboard + gamepad → abstract actions with pressed/held/released edges.
+// Keyboard + gamepad + touch → abstract actions with pressed/held/released edges.
 CZ.Input = (() => {
   const keys = {};
   const map = {
@@ -10,9 +10,14 @@ CZ.Input = (() => {
     noclip: ['KeyV', 'KeyQ', 'KeyI'],
     pause: ['Escape', 'KeyP'], mute: ['KeyM'], restart: ['KeyR'], confirm: ['Space', 'Enter', 'KeyZ'],
   };
-  const state = {}, prev = {};
-  for (const a in map) { state[a] = false; prev[a] = false; }
+  const state = {}, prev = {}, touch = {};
+  for (const a in map) { state[a] = false; prev[a] = false; touch[a] = false; }
   let anyKeyCb = null;
+  // Analog stick value from a virtual thumbstick (-1..1); touch buttons set `touch` flags.
+  let stickX = 0, stickY = 0;
+  const setTouch = (a, on) => { if (a in touch) touch[a] = !!on; };
+  const setStick = (x, y) => { stickX = x; stickY = y; };
+  const clearTouch = () => { for (const a in touch) touch[a] = false; stickX = stickY = 0; };
 
   window.addEventListener('keydown', e => {
     if (e.repeat) return;
@@ -43,19 +48,23 @@ CZ.Input = (() => {
 
   function update() {
     const pb = pollPad();
+    const tl = stickX < -0.35, tr = stickX > 0.35, tu = stickY < -0.45, td = stickY > 0.45;
     for (const a in map) {
       prev[a] = state[a];
-      state[a] = map[a].some(k => keys[k]) || !!pb[a];
+      state[a] = map[a].some(k => keys[k]) || !!pb[a] || touch[a];
     }
+    if (tl) state.left = true; if (tr) state.right = true;
+    if (tu) state.up = true; if (td) state.down = true;
   }
   const held = a => !!state[a];
   const pressed = a => state[a] && !prev[a];
   const released = a => !state[a] && prev[a];
   const axisX = () => (held('left') ? -1 : 0) + (held('right') ? 1 : 0);
+  const stick = () => ({ x: stickX, y: stickY });
   // Consume a press so no other system reacts to it this frame.
   const consume = a => { prev[a] = true; };
   // After a physics substep, edges must not fire again in the same frame.
   const clearEdges = () => { for (const a in map) prev[a] = state[a]; };
   const onAnyKey = cb => { anyKeyCb = cb; };
-  return { update, held, pressed, released, axisX, consume, clearEdges, onAnyKey };
+  return { update, held, pressed, released, axisX, stick, consume, clearEdges, onAnyKey, setTouch, setStick, clearTouch };
 })();
