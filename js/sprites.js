@@ -14,17 +14,17 @@ CZ.Spr = (() => {
   const A = {
     // ── cheese wedge: hearts, the player portrait, the level-complete stamp ──
     cheese: [
-      '................', '.......kk.......', '......kyyk......', '.....kyyyyk.....',
-      '.....kyOyyk.....', '....kyyyyyyk....', '....kyyyOyyk....', '...kyOyyyyyyk...',
-      '...kyyyyyyyyk...', '..kyyyOyyyyyyk..', '..kyyyyyyyOyyk..', '.kyyyyOyyyyyyyk.',
+      '................', '.......kk.......', '......kYyk......', '.....kYyyyk.....',
+      '.....kYyOyk.....', '....kYyyyyyk....', '....kYyyyOyk....', '...kYyOyyyyyk...',
+      '...kYyyyyyyyk...', '..kYyyyOyyyyyk..', '..kYyyyyyyyOyk..', '.kYyyyyOyyyyyyk.',
       '.kooooooooooook.', '.kkkkkkkkkkkkkk.', '................', '................',
     ],
     // ── portraits ──
     'p-cheese': [
       '................', '.......kk.......', '......kyyk......', '.....kyyyyk.....',
-      '....kyyyyyyk....', '....kyyyyyyk....', '...kyywkkwyyk...', '...kywwkkwwyk...',
-      '..kyywwkkwwyyk..', '..kyyyyyyyyyyk..', '.kyyyOyykkyyyyk.', '.kyyyyykkyyyOyk.',
-      'kyyyyyyyyyyyyyyk', 'kooooooooooooook', 'kkkkkkkkkkkkkkkk', '................',
+      '....kyyyyyyk....', '...kywwkkwwyk...', '...kwwwkkwwwk...', '..kywwwkkwwwyk..',
+      '..kywwkkkkwwyk..', '..kyyywwwwyyyk..', '.kyyOyyyyyyOyyk.', '.kyykwwwwkyyyyk.', 
+      'kyyyykwwwwkyyyyk', 'kooooookkooooook', 'kkkkkkkkkkkkkkkk', '................',
     ],
     'p-human': [
       '................', '.....kkkkkk.....', '....kTTTTTTk....', '...kTTTTTTTTk...',
@@ -111,6 +111,70 @@ CZ.Spr = (() => {
       '..kkwwkkkkwwkk..', '..kkwwkkkkwwkk..', '..kkkkkkkkkkkk..', '..kkkkkkkkkkkk..',
       '..kkkkkkkkkkkk..', '..kkkkkkkkkkkk..', '..kkkkkkkkkkkk..', '..kkkkkkkkkkkk..',
       '..kk.kkkkkk.kk..', '..k...kkkk...k..', '................', '................',
+    ],
+    // ── body parts you collect ──
+    fork: [
+      '................', '...k..k..k..k...', '...kwk kwk kwk..', '...kwkkkwkkkwk..',
+      '...kwwwwwwwwwk..', '...kwwwwwwwwwk..', '....kwwwwwwwk...', '.....kwwwwwk....',
+      '......kwwwk.....', '.......kwk......', '.......kwk......', '.......kwk......',
+      '.......kwk......', '.......kwk......', '......kkwkk.....', '................',
+    ],
+    knife: [
+      '................', '.........kk.....', '........kwwk....', '.......kwwwk....',
+      '......kwwwnk....', '.....kwwwnk.....', '....kwwwnk......', '...kwwwnk.......',
+      '..kwwwnk........', '..kwnnk.........', '..kkkk..........', '..kTTk..........',
+      '..kTTk..........', '..kTTk..........', '..kkkk..........', '................',
+    ],
+    leg: [
+      '................', '.....kkkk.......', '....kwwwwk......', '...kwwwwwwk.....',
+      '...kwwwwwwk.....', '....kwwwwk......', '.....kwwk.......', '.....kwwk.......',
+      '......kwwk......', '......kwwk......', '.......kwwk.....', '.......kwwk.....',
+      '......kwwwwk....', '.....kwwwwwwk...', '.....kwwwwwwk...', '......kkkkkk....',
+    ],
+    // ── the dev ──
+    'p-duck': [
+      '................', '.......kkkk.....', '.....kkyyyykk...', '....kyyyyyyyyk..',
+      '...kyywwkyywwk..', '...kyywkkyywkk..', '..kyyyyyyyyyyyk.', '..kyyyyyyyyyyyk.',
+      'kkkyyyyyyyyyyyk.', 'kooookyyyyyyyk..', 'kooookyyyyyyyk..', '.kkkkkyyyyyyyk..',
+      '...kyyyyyyyyyk..', '...kyyyyyyyyk...', '....kkyyyykk....', '......kkkk......',
+    ],
+    duck: [
+      '................', '................', '......kkkk......', '....kkyyyykk....',
+      '...kyywkyywkk...', '...kyykkyykkk...', '..kyyyyyyyyyk...', '.okyyyyyyyyyk...', 
+      'ookkyyyyyyyyk...', '.okyyyyyyyyyk...', '..kyyyyyyyyyk...', '..kyyyyyyyyk....',
+      '...kkyyyykk.....', '.....kkkk.......', '................', '................',
+    ],
+    // ── mechs, for the intro ──
+    'p-mech-blue': [
+      '....kkkkkkkk....', '...kbbbbbbbbk...', '..kbbwwbbwwbbk..', '..kbbwwbbwwbbk..',
+      '..kbbbbbbbbbbk..', '...kkbbbbbbkk...', '.kkkbbbbbbbbkkk.', 'kBBkbbbbbbbbkBBk',
+      'kBBkbbbwwbbbkBBk', 'kBBkbbbwwbbbkBBk', 'kkkkbbbbbbbbkkkk', '...kbbbbbbbbk...',
+      '...kbbkkkkbbk...', '...kbbk..kbbk...', '..kkbbk..kbbkk..', '..kkkk....kkkk..',
+    ],
+    'p-mech-red': [
+      '....kkkkkkkk....', '...krrrrrrrrk...', '..krrRRrrRRrrk..', '..krrRRrrRRrrk..',
+      '..krrrrrrrrrrk..', '...kkrrrrrrkk...', '.kkkrrrrrrrrkkk.', 'kRRkrrrrrrrrkRRk',
+      'kRRkrrrRRrrrkRRk', 'kRRkrrrRRrrrkRRk', 'kkkkrrrrrrrrkkkk', '...krrrrrrrrk...',
+      '...krrkkkkrrk...', '...krrk..krrk...', '..kkrrk..krrkk..', '..kkkk....kkkk..',
+    ],
+    spider: [
+      '................', '..k..........k..', '..kk........kk..', '...kk.kkkk.kk...',
+      '.k..kkKKKKkk..k.', '.kk.kKKKKKKKk.kk', '..kkKKrKKrKKkk..', '...kKKKKKKKKk...',
+      '..kkKKKKKKKKkk..', '.kk.kKKKKKKk.kk.', '.k..kkKKKKkk..k.', '...kk.kkkk.kk...',
+      '..kk........kk..', '..k..........k..', '................', '................',
+    ],
+    // ── glitch techs ──
+    'tech-mash': [
+      '................', '.......kk.......', '......kkkk......', '.....kkkkkk....k',
+      '....kk.kk.kk...k', '...k...kk...k.kk', '.......kk.....k.', '.k.....kk.......',
+      'k......kk.......', 'k.kk...kk...kk..', '.k.kkkkkkkkkk.k.', '...kkkkkkkkkk...',
+      '...kk......kk...', '...kk......kk...', '................', '................',
+    ],
+    'tech-menu': [
+      '................', '..kkkkkkkkkk....', '..kwwwwwwwwk....', '..kwkkkkkkwk..k.',
+      '..kwwwwwwwwk.k..', '..kwkkkkkkwk.k..', '..kwwwwwwwwkk...', '..kwkkkkkkwk....',
+      '..kwwwwwwwwk.kk.', '..kkkkkkkkkk..k.', '.....k...k....k.', '....kkk.kkk...k.',
+      '...k..k.k..k.kk.', '..............k.', '................', '................',
     ],
     // ── controls / system ──
     pause: [

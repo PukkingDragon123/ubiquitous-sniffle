@@ -17,6 +17,7 @@
   <div id="hud-left">
     <div id="hp"></div>
     <div id="bugs" class="tape-chip"><i class="spr" data-spr="bug"></i><span id="bug-count">0/0</span></div>
+    <div id="limbs"></div>
   </div>
   <div id="hud-center">
     <div id="level-name"></div>
@@ -46,7 +47,7 @@
 <!-- Ability unlock -->
 <div id="unlock" class="hidden">
   <div class="card dripping">
-    <div class="eyebrow">EXPLOIT FOUND</div>
+    <div class="eyebrow" id="unlock-eyebrow">EXPLOIT FOUND</div>
     <i id="unlock-ico" class="spr ico-spr" data-spr="tech-jump"></i>
     <div class="name graffiti" id="unlock-name">FRAME SKIP</div>
     <div class="desc" id="unlock-desc"></div>
@@ -145,6 +146,16 @@
   </div>
 </div>
 
+<!-- Cinematic overlay -->
+<div id="cine" class="hidden">
+  <div class="bar top"></div>
+  <div class="bar bottom"></div>
+  <div id="cine-caption" class="hidden"></div>
+  <div id="cine-skip">TAP OR PRESS JUMP TO SKIP</div>
+  <div id="cine-flash"></div>
+  <div class="scan"></div>
+</div>
+
 <div id="flash"></div>
 <div id="toast" class="hidden"></div>
 
@@ -161,6 +172,7 @@
 <script src="js/enemies.js"></script>
 <script src="js/bosses.js"></script>
 <script src="js/ui.js"></script>
+<script src="js/cinematic.js"></script>
 <script src="js/touch.js"></script>
 <script src="js/main.js"></script>
 </body>

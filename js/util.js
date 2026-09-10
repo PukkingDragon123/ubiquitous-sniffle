@@ -1,8 +1,9 @@
 // Shared helpers + constants. Everything lives on window.CZ (classic scripts, no build step).
 window.CZ = window.CZ || {};
 
-// Internal render height for the pixel-art pass; everything upscales from this.
-CZ.PIXEL_HEIGHT = 288;
+// Internal render height. Higher = crisper; the world art is kept simple and flat
+// so it reads clearly at this resolution.
+CZ.PIXEL_HEIGHT = 540;
 
 CZ.clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 CZ.lerp = (a, b, t) => a + (b - a) * t;
@@ -23,6 +24,14 @@ CZ.overlapPad = (a, b, p) => a.x - p < b.x + b.w && a.x + a.w + p > b.x && a.y -
 CZ.P = {
   GRAVITY: 44,
   RUN_SPEED: 9.6,
+  WALK_SPEED: 4.6,        // limbless shuffle, before the leg
+  LEGLESS_JUMP: 0.86,     // jump velocity multiplier with no leg
+  RAPID_WINDOW: 0.42,     // mash this many presses inside this window to trip the jump queue
+  RAPID_PRESSES: 4,
+  RAPID_TIME: 3.0,        // how long the queue stays broken
+  STAB_TIME: 0.18,
+  STAB_SPEED: 14,
+  STAB_COOLDOWN: 0.3,
   RUN_ACCEL: 70,
   AIR_ACCEL: 46,
   GROUND_FRICTION: 60,
@@ -55,6 +64,11 @@ CZ.P = {
 
 // Ability metadata: id → display.
 CZ.ABILITIES = {
+  // Two of these are not pickups at all: they are bugs in the game you are inside.
+  rapidJump: { name: 'JUMP QUEUE', ico: 'tech-mash', key: 'Mash JUMP as fast as you can',
+    desc: 'The grounded check only runs once per jump, so if you queue jumps faster than it can clear, it never clears. Mash to keep going up.' },
+  menuClip: { name: 'MENU CLIP', ico: 'tech-menu', key: 'Pause facing a wall, then resume',
+    desc: 'Pausing parks your position outside the physics step. Resume against a wall and it puts you back on the wrong side of it.' },
   doubleJump: { name: 'FRAME SKIP', ico: 'tech-jump', key: 'JUMP again in mid-air',
     desc: 'The game only checks "grounded" once per jump. Nobody said you can\'t jump AGAIN.' },
   dash: { name: 'CLIP DASH', ico: 'tech-dash', key: 'SHIFT / X  (+ direction)',
@@ -68,8 +82,19 @@ CZ.ABILITIES = {
   noclip: { name: 'NOCLIP', ico: 'tech-ghost', key: 'Hold V / Q',
     desc: 'You found the dev console. Phase through CORRUPT blocks (purple) while the meter lasts. Refills on solid ground.' },
 };
-CZ.ABILITY_ORDER = ['doubleJump', 'dash', 'wallJump', 'pound', 'grapple', 'noclip'];
-CZ.TECH_KEYS = { doubleJump: 'JUMP×2', dash: 'SHIFT', wallJump: 'WALL', pound: 'DOWN', grapple: 'C', noclip: 'V' };
+CZ.ABILITY_ORDER = ['rapidJump', 'menuClip', 'doubleJump', 'dash', 'wallJump', 'pound', 'grapple', 'noclip'];
+
+// Body parts. You start as a limbless wedge; each part changes how you move.
+CZ.LIMBS = {
+  forkArm: { name: 'FORK ARM', ico: 'fork', part: 'a stick with prongs',
+    desc: 'An arm! It is a fork, but it is an ARM. Press SHIFT to stab. Things you stab stop existing.' },
+  knifeArm: { name: 'KNIFE ARM', ico: 'knife', part: 'the other stick',
+    desc: 'A matching arm. Two arms means you no longer get hurt by walking into small things - you skewer them.' },
+  leg: { name: 'TOOTHPICK LEG', ico: 'leg', part: 'a leg',
+    desc: 'A LEG. You can RUN now. Full speed, higher jumps, actual dignity.' },
+};
+CZ.LIMB_ORDER = ['forkArm', 'knifeArm', 'leg'];
+CZ.TECH_KEYS = { rapidJump: 'MASH', menuClip: 'ESC', doubleJump: 'JUMP×2', dash: 'SHIFT', wallJump: 'WALL', pound: 'DOWN', grapple: 'C', noclip: 'V' };
 
 // Save data.
 CZ.SAVE_KEY = 'cheezit.save.v1';
@@ -77,4 +102,4 @@ CZ.loadSave = () => {
   try { return JSON.parse(localStorage.getItem(CZ.SAVE_KEY)) || null; } catch (e) { return null; }
 };
 CZ.writeSave = data => { try { localStorage.setItem(CZ.SAVE_KEY, JSON.stringify(data)); } catch (e) {} };
-CZ.newSave = () => ({ level: 0, abilities: {}, bugs: {}, deaths: 0, time: 0, bestTime: null, completed: false });
+CZ.newSave = () => ({ level: 0, abilities: {}, limbs: {}, bugs: {}, deaths: 0, time: 0, bestTime: null, completed: false, sawIntro: false });

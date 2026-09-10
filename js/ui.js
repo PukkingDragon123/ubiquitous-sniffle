@@ -21,31 +21,51 @@ CZ.UI = (() => {
   function timer(t) { $('timer').textContent = CZ.fmtTime(t); }
   function levelName(n, sub) { $('level-name').textContent = n; $('level-name').title = sub || ''; }
 
+  // Only techs you actually have are shown, so the row grows as you break the game.
+  let techSig = '';
   function techs(ab, player) {
     const el = $('techs');
-    if (el.childElementCount !== CZ.ABILITY_ORDER.length) {
-      el.innerHTML = '';
-      for (const id of CZ.ABILITY_ORDER) {
+    const owned = CZ.ABILITY_ORDER.filter(id => ab[id]);
+    const sig = owned.join(',');
+    if (sig !== techSig) {
+      techSig = sig; el.innerHTML = '';
+      for (const id of owned) {
         const a = CZ.ABILITIES[id];
-        const d = document.createElement('div'); d.className = 'tech';
+        const d = document.createElement('div'); d.className = 'tech'; d.dataset.id = id;
         d.innerHTML = `<i class="spr" data-spr="${a.ico}"></i><div>${a.name.split(' ')[0]}</div><div class="k">${CZ.TECH_KEYS[id]}</div>`;
         el.appendChild(d);
       }
       CZ.Spr.paint(el);
     }
-    [...el.children].forEach((c, i) => {
-      const id = CZ.ABILITY_ORDER[i]; c.classList.toggle('locked', !ab[id]);
+    if (!player) return;
+    for (const c of el.children) {
+      const id = c.dataset.id;
       let active = false, cd = false;
-      if (player) {
-        if (id === 'dash') { active = player.dashing; cd = !player.canDash || player.dashCd > 0; }
-        if (id === 'noclip') { active = player.noclip; cd = player.noclipMeter <= 0.01; }
-        if (id === 'doubleJump') cd = player.jumpsUsed >= 2 && !player.grounded;
-        if (id === 'pound') active = player.pounding;
-        if (id === 'grapple') active = player.grappling;
-        if (id === 'wallJump') active = player.wallSliding;
-      }
+      if (id === 'dash') { active = player.dashing; cd = !player.canDash || player.dashCd > 0; }
+      else if (id === 'noclip') { active = player.noclip; cd = player.noclipMeter <= 0.01; }
+      else if (id === 'doubleJump') cd = player.jumpsUsed >= 2 && !player.grounded;
+      else if (id === 'pound') active = player.pounding;
+      else if (id === 'grapple') active = player.grappling;
+      else if (id === 'wallJump') active = player.wallSliding;
+      else if (id === 'rapidJump') active = player.glitchJump > 0;
       c.classList.toggle('active', active); c.classList.toggle('cd', cd && !active);
-    });
+    }
+  }
+  // The body you have assembled so far.
+  let limbSig = '';
+  function limbs(l) {
+    const el = $('limbs'); if (!el) return;
+    const sig = CZ.LIMB_ORDER.map(id => (l[id] ? 1 : 0)).join('');
+    if (sig === limbSig) return;
+    limbSig = sig; el.innerHTML = '';
+    for (const id of CZ.LIMB_ORDER) {
+      const d = document.createElement('div');
+      d.className = 'limb' + (l[id] ? '' : ' missing');
+      d.innerHTML = `<i class="spr" data-spr="${CZ.LIMBS[id].ico}"></i>`;
+      d.title = CZ.LIMBS[id].name;
+      el.appendChild(d);
+    }
+    CZ.Spr.paint(el);
   }
   function noclipMeter(on, frac) { show('noclip-meter', on); if (on) $('noclip-fill').style.width = `${Math.round(frac * 100)}%`; }
   function bossBar(boss) { show('boss-bar', !!boss); if (boss) { $('boss-name').textContent = boss.name; $('boss-fill').style.width = `${Math.max(0, boss.hp / boss.maxHp) * 100}%`; } }
@@ -77,10 +97,24 @@ CZ.UI = (() => {
   }
   const dialogOpen = () => !!dialogState;
 
-  function unlock(id) {
-    const a = CZ.ABILITIES[id];
+  // Cinematic overlay: letterbox caption plus a flash / glitch wash.
+  function cineCaption(text) {
+    const el = $('cine-caption');
+    el.textContent = text || '';
+    el.classList.toggle('hidden', !text);
+  }
+  function cineFx(flash, glitch) {
+    const f = $('cine-flash'); f.style.opacity = flash;
+    $('cine').classList.toggle('glitching', !!glitch);
+  }
+  function cineShow(on) { show('cine', on); if (!on) cineCaption(''); }
+
+  function unlock(id, isLimb) {
+    const a = isLimb ? CZ.LIMBS[id] : CZ.ABILITIES[id];
     const ico = $('unlock-ico'); ico.dataset.spr = a.ico; ico.dataset.sprPainted = ''; CZ.Spr.paint($('unlock'));
-    $('unlock-name').textContent = a.name; $('unlock-desc').textContent = a.desc; $('unlock-key').textContent = a.key;
+    $('unlock-eyebrow').textContent = isLimb ? 'BODY PART FOUND' : 'EXPLOIT FOUND';
+    $('unlock-name').textContent = a.name; $('unlock-desc').textContent = a.desc;
+    $('unlock-key').textContent = isLimb ? a.part : a.key;
     show('unlock', true);
   }
   // A stat line: pixel icon + value, never an emoji.
@@ -98,5 +132,5 @@ CZ.UI = (() => {
   }
 
   return { $, show, hp, bugs, timer, levelName, techs, noclipMeter, bossBar, sign, toast, flash,
-    dialog, dialogAdvance, dialogOpen, unlock, complete, ending, levelList, stat };
+    dialog, dialogAdvance, dialogOpen, unlock, complete, ending, levelList, stat, limbs, cineCaption, cineFx, cineShow };
 })();

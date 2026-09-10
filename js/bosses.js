@@ -208,10 +208,10 @@ CZ.AntiCheat = class AntiCheat extends CZ.Boss {
     }
   }
 };
-// ───────────────────────── THE GOD OF GAMES ─────────────────────────
+// ───────────────────────── THE DEV (rubber duck, holds the patch) ─────────────────────────
 CZ.GodOfGames = class GodOfGames extends CZ.Boss {
   constructor(game, arena) {
-    super(game, arena); this.name = 'THE GOD OF GAMES'; this.hp = this.maxHp = 5;
+    super(game, arena); this.name = 'THE DEV'; this.hp = this.maxHp = 5;
     const A = arena; this.fx = A.x + A.w - 9; this.fy = 13;
     this.appleSpots = [[A.x + 61, 19.2], [A.x + 12, 17], [A.x + 36, 20.4], [A.x + 68, 8.2], [A.x + 32, 13.5]];
     this.appleI = 0; this.ax = this.appleSpots[0][0]; this.ay = this.appleSpots[0][1];
@@ -219,8 +219,10 @@ CZ.GodOfGames = class GodOfGames extends CZ.Boss {
     const E = CZ.Effects;
     // face
     this.face = new THREE.Group(); this.group.add(this.face);
-    const head = new THREE.Mesh(new THREE.SphereGeometry(3.2, 9, 7), E.toon(0xffe0c0)); head.castShadow = true; E.outline(head, 0.12); this.face.add(head);
-    const beard = new THREE.Group(); for (let i = 0; i < 7; i++) { const s = new THREE.Mesh(new THREE.BoxGeometry(1.4 + Math.random() * 0.7, 1.4 + Math.random() * 0.7, 1.6), new THREE.MeshToonMaterial({ map: CZ.Tex.get('cloud', 'marble') })); s.position.set((i - 3) * 0.8, -2.6 - Math.abs(i - 3) * -0.3 - Math.random() * 0.6, 1.2); beard.add(s); } this.face.add(beard);
+    const head = new THREE.Mesh(new THREE.SphereGeometry(3.2, 9, 7), E.toon(0xffd23f)); head.castShadow = true; E.outline(head, 0.12); this.face.add(head);
+    const bill = new THREE.Mesh(new THREE.BoxGeometry(3.6, 1.1, 2.2), E.toon(0xff8a1f)); bill.position.set(0, -1.3, 2.6); this.face.add(bill);
+    const tail = new THREE.Mesh(new THREE.BoxGeometry(2.2, 2.0, 1.8), E.toon(0xf5c02f)); tail.position.set(-3.4, 1.4, -0.6); tail.rotation.z = 0.5; this.face.add(tail);
+    for (const s2 of [-1, 1]) { const wing = new THREE.Mesh(new THREE.BoxGeometry(1.1, 2.6, 2.6), E.toon(0xf5c02f)); wing.position.set(s2 * 3.1, -0.6, 0); this.face.add(wing); }
     this.eyesG = []; [[-1.1, 0.6], [1.1, 0.6]].forEach(([x, y]) => { const e = new THREE.Mesh(new THREE.BoxGeometry(1.1, 1.1, 0.2), E.basic(0xffffff)); e.position.set(x, y, 2.9); const p = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.5, 0.16), E.basic(0x1a0f0a)); p.position.z = 0.12; e.add(p); this.face.add(e); this.eyesG.push({ e, p }); });
     this.browsG = []; [[-1.1, 1.4, 1], [1.1, 1.4, -1]].forEach(([x, y, s]) => { const b = E.box(1.2, 0.22, 0.2, 0xffffff); b.position.set(x, y, 2.9); b.rotation.z = s * 0.25; this.face.add(b); this.browsG.push({ b, s }); });
     this.mouthG = E.box(1.2, 0.25, 0.2, 0x5a1a1a); this.mouthG.position.set(0, -1.1, 2.95); this.face.add(this.mouthG);
@@ -252,10 +254,10 @@ CZ.GodOfGames = class GodOfGames extends CZ.Boss {
     CZ.Effects.burst(this.ax, this.ay, 0xffd700, 24, { spread: 10, up: 6, life: 1, size: 1.4 });
     this.boltRate *= 0.85; this.handRate *= 0.85; this.delRate *= 0.85;
     const p = this.game.player; p.vy = Math.max(p.vy, 9); p.jumpsUsed = 1; p.canDash = true;
-    this.game.toast(['GOD: "PATCH 1.1 — APPLE RELOCATED. NERFED FLOOR."', 'GOD: "PATCH 1.2 — YOU WERE NOT SUPPOSED TO REACH THAT."', 'GOD: "PATCH 1.3 — I AM DELETING MORE FLOOR."', 'GOD: "PATCH 1.4 — ...how are you doing this."'][this.maxHp - this.hp - 1] || '');
+    this.game.toast(['THE DEV: "PATCH 1.1 — APPLE RELOCATED. NERFED FLOOR."', 'THE DEV: "PATCH 1.2 — YOU WERE NOT SUPPOSED TO REACH THAT."', 'THE DEV: "PATCH 1.3 — I AM DELETING MORE FLOOR."', 'THE DEV: "PATCH 1.4 — ...how are you doing this."'][this.maxHp - this.hp - 1] || '');
     CZ.Audio.sfx.god();
   }
-  onDeathStart() { this.game.toast('GOD: "...fine. FINE. Take it."'); }
+  onDeathStart() { this.game.toast('THE DEV: "...fine. FINE. Take it."'); }
   think(dt) {
     const p = this.game.player, A = this.arena;
     // face + apple visuals
@@ -288,7 +290,7 @@ CZ.GodOfGames = class GodOfGames extends CZ.Boss {
     if (this.delT <= 0) {
       this.delT = this.delRate; const n = 1 + Math.floor((this.maxHp - this.hp) / 2);
       const cands = this.plats.filter(s => !s.broken && !s.deleting); for (let i = 0; i < n && cands.length; i++) { const s = cands.splice((Math.random() * cands.length) | 0, 1)[0]; s.deleting = 0.9; }
-      this.game.toast('GOD: "DELETING FLOOR."'); CZ.Audio.sfx.laser();
+      this.game.toast('THE DEV: "DELETING FLOOR."'); CZ.Audio.sfx.laser();
     }
     for (const s of this.plats) {
       if (s.deleting !== undefined && s.deleting > 0) { s.deleting -= dt; s.mesh.visible = Math.floor(this.t * 20) % 2 === 0; if (s.deleting <= 0) { s.broken = true; s.mesh.visible = false; s.restore = 3.2; s.deleting = undefined; CZ.Effects.burst(s.x + s.w / 2, s.y + 0.3, 0xffffff, 10, { spread: 5, up: 3, gravity: 0 }); } }

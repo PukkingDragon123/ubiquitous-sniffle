@@ -37,7 +37,7 @@ CZ.Enemy = class Enemy {
 
 CZ.Rat = class Rat extends CZ.Enemy {
   constructor(game, d) {
-    super(game, d); this.w = 1.2; this.h = 0.75; this.color = 0x8a8a96; this.speed = d.speed || 2.6; this.facing = d.dir || -1;
+    super(game, d); this.w = 1.2; this.h = 0.75; this.color = 0x8a8a96; this.small = true; this.speed = d.speed || 2.6; this.facing = d.dir || -1;
     const E = CZ.Effects;
     const body = new THREE.Mesh(new THREE.SphereGeometry(0.42, 7, 5), E.toon(0x8a8a96)); body.scale.set(1.4, 0.85, 1); body.castShadow = true; E.outline(body, 0.07); this.mesh.add(body); this.body = body;
     const head = new THREE.Mesh(new THREE.SphereGeometry(0.28, 6, 5), E.toon(0x9a9aa6)); head.position.set(-0.55, 0.05, 0); head.scale.set(1.3, 1, 1); E.outline(head, 0.06); this.mesh.add(head); this.head = head;
@@ -63,7 +63,7 @@ CZ.Rat = class Rat extends CZ.Enemy {
 
 CZ.Spore = class Spore extends CZ.Enemy {
   constructor(game, d) {
-    super(game, d); this.w = 0.9; this.h = 0.9; this.color = 0x62d26f; this.x0 = d.x; this.y0 = d.y; this.amp = d.amp || 1.5; this.speed = d.speed || 2;
+    super(game, d); this.w = 0.9; this.h = 0.9; this.color = 0x62d26f; this.small = true; this.x0 = d.x; this.y0 = d.y; this.amp = d.amp || 1.5; this.speed = d.speed || 2;
     const E = CZ.Effects;
     const body = new THREE.Mesh(new THREE.SphereGeometry(0.42, 6, 5), E.toon(0x62d26f)); body.castShadow = true; E.outline(body, 0.07); this.mesh.add(body); this.body = body;
     for (let i = 0; i < 8; i++) { const sp = new THREE.Mesh(new THREE.ConeGeometry(0.1, 0.35, 5), E.toon(0x3aa04a)); const a = i / 8 * Math.PI * 2; sp.position.set(Math.cos(a) * 0.42, Math.sin(a) * 0.42, 0); sp.rotation.z = a - Math.PI / 2; body.add(sp); }
@@ -149,12 +149,91 @@ CZ.Projectile = class Projectile {
   kill(fx) { if (this.dead) return; this.dead = true; CZ.Effects.disposeTree(this.mesh); this.mesh.material.dispose(); if (fx) CZ.Effects.burst(this.x + this.w / 2, this.y + this.h / 2, this.color, 5, { spread: 4, up: 2, life: 0.3, size: 0.6 }); }
 };
 
+// A cellar spider on a thread: drops when you get close, climbs back when you leave.
+CZ.Spider = class Spider extends CZ.Enemy {
+  constructor(game, d) {
+    super(game, d);
+    this.w = 0.9; this.h = 0.7; this.color = 0x2b2229; this.small = true;
+    this.top = d.y; this.drop = d.drop || 4; this.speed = d.speed || 1.4; this.down = 0;
+    const E = CZ.Effects;
+    this.thread = new THREE.Mesh(new THREE.BoxGeometry(0.05, 1, 0.05), new THREE.MeshBasicMaterial({ color: 0xe8e2d8, transparent: true, opacity: 0.6 }));
+    game.scene.add(this.thread);
+    const body = new THREE.Mesh(new THREE.SphereGeometry(0.34, 8, 6), E.toon(0x2b2229));
+    body.scale.set(1, 0.85, 0.9); body.castShadow = true; E.outline(body, 0.06); this.mesh.add(body); this.body = body;
+    const head = new THREE.Mesh(new THREE.SphereGeometry(0.2, 7, 5), E.toon(0x3a2f38));
+    head.position.set(0, 0.05, 0.3); this.mesh.add(head);
+    for (const s of [-1, 1]) for (const [ex, ey] of [[0.09, 0.07], [0.16, 0.01]]) {
+      const eye = new THREE.Mesh(new THREE.SphereGeometry(0.05, 6, 5), E.basic(0xff4b5c));
+      eye.position.set(s * ex, ey, 0.42); this.mesh.add(eye);
+    }
+    this.legs = [];
+    for (const s of [-1, 1]) for (let i = 0; i < 4; i++) {
+      const leg = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.5, 0.06), E.toon(0x1a1016));
+      leg.position.set(s * 0.28, -0.05, -0.2 + i * 0.16); leg.rotation.z = s * 0.9; leg.rotation.x = (i - 1.5) * 0.2;
+      this.mesh.add(leg); this.legs.push({ leg, s, i });
+    }
+    this.place();
+  }
+  update(dt) {
+    this.t += dt;
+    const p = this.game.player;
+    const near = Math.abs(p.cx() - this.x) < 7;
+    const want = near ? this.drop : 0;
+    this.down = CZ.damp(this.down, want, this.speed, dt);
+    this.y = this.top - this.down + Math.sin(this.t * 2.4) * 0.12 - this.h / 2;
+    this.x = this.d.x - this.w / 2;
+    this.place();
+    for (const { leg, s, i } of this.legs) leg.rotation.z = s * (0.9 + Math.sin(this.t * 9 + i) * 0.28);
+    const topY = this.top + 1.6, len = Math.max(0.1, topY - this.cy());
+    this.thread.position.set(this.cx(), this.cy() + len / 2, 0);
+    this.thread.scale.y = len;
+  }
+  kill(how) { CZ.Effects.disposeTree(this.thread); super.kill(how); }
+};
+
+// A little bug scuttling along the floor: harmless-looking, still bites.
+CZ.BugCrawl = class BugCrawl extends CZ.Enemy {
+  constructor(game, d) {
+    super(game, d);
+    this.w = 0.7; this.h = 0.42; this.color = 0x62d26f; this.small = true; this.speed = d.speed || 3.4;
+    this.facing = -1; this.stompable = true;
+    const E = CZ.Effects;
+    const body = new THREE.Mesh(new THREE.SphereGeometry(0.3, 8, 6), E.toon(0x3f8f4a));
+    body.scale.set(1.3, 0.7, 0.9); body.castShadow = true; E.outline(body, 0.05); this.mesh.add(body); this.body = body;
+    const shell = new THREE.Mesh(new THREE.SphereGeometry(0.26, 8, 6), E.toon(0x62d26f));
+    shell.scale.set(1.1, 0.7, 0.85); shell.position.y = 0.08; this.mesh.add(shell);
+    for (const s of [-1, 1]) {
+      const eye = new THREE.Mesh(new THREE.SphereGeometry(0.06, 6, 5), E.basic(0xffffff));
+      eye.position.set(-0.3, 0.08, s * 0.12); this.mesh.add(eye);
+    }
+    this.legs = [];
+    for (const s of [-1, 1]) for (let i = 0; i < 3; i++) {
+      const leg = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.22, 0.05), E.toon(0x1a1016));
+      leg.position.set(-0.2 + i * 0.2, -0.2, s * 0.2); this.mesh.add(leg); this.legs.push({ leg, s, i });
+    }
+  }
+  update(dt) {
+    this.t += dt; const solids = this.solids();
+    if (this.d.min !== undefined && this.x < this.d.min) this.facing = 1;
+    if (this.d.max !== undefined && this.x + this.w > this.d.max) this.facing = -1;
+    this.vx = this.facing * this.speed; this.vy -= 40 * dt;
+    const r = CZ.moveBody(this, dt, solids);
+    if (r.hitX) this.facing = -r.hitX;
+    if (r.grounded && !CZ.groundAhead(this, this.facing, solids)) this.facing *= -1;
+    this.place();
+    this.mesh.scale.x = this.facing < 0 ? 1 : -1;
+    for (const { leg, s, i } of this.legs) leg.rotation.z = Math.sin(this.t * 22 + i * 2 + (s > 0 ? Math.PI : 0)) * 0.6;
+  }
+};
+
 CZ.createEnemy = (game, d) => {
   switch (d.kind) {
     case 'rat': return new CZ.Rat(game, d);
     case 'spore': return new CZ.Spore(game, d);
     case 'blob': return new CZ.Blob(game, d);
     case 'turret': return new CZ.Turret(game, d);
+    case 'spider': return new CZ.Spider(game, d);
+    case 'bugcrawl': return new CZ.BugCrawl(game, d);
   }
   return null;
 };

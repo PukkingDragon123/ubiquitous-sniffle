@@ -9,7 +9,7 @@ CZ.Level = class Level {
     this.solids = []; this.hazards = []; this.bounces = []; this.winds = []; this.hooks = [];
     this.checks = []; this.bugs = []; this.abilities = []; this.signs = []; this.dialogs = [];
     this.enemySpawns = []; this.exit = null; this.boss = null;
-    this.time = 0; this.windStreaks = []; this.drips = []; this.spinners = [];
+    this.time = 0; this.windStreaks = []; this.drips = []; this.spinners = []; this.decos = [];
     this.build();
     this.buildScenery();
   }
@@ -45,8 +45,36 @@ CZ.Level = class Level {
       mesh.castShadow = true; mesh.receiveShadow = true; E.edges(mesh);
       const lip = new THREE.Mesh(new THREE.BoxGeometry(s.w + 0.06, 0.18, 3.06), this.flat(th.plat));
       lip.position.y = s.h / 2 - 0.06; lip.castShadow = false; mesh.add(lip);
+    } else if (s.skin === 'barrel') {
+      // a barrel on its side: cylinder art, box collision
+      mesh = new THREE.Group();
+      const body = new THREE.Mesh(new THREE.CylinderGeometry(s.h / 2, s.h / 2, s.w, 12),
+        new THREE.MeshToonMaterial({ map: CZ.Tex.tiled('wood', 'timber', s.w, 3) }));
+      body.rotation.z = Math.PI / 2; body.castShadow = true; body.receiveShadow = true; mesh.add(body);
+      for (const off of [-0.32, 0.32]) {
+        const hoop = new THREE.Mesh(new THREE.CylinderGeometry(s.h / 2 + 0.06, s.h / 2 + 0.06, 0.22, 12), this.flat(0x3b3038));
+        hoop.rotation.z = Math.PI / 2; hoop.position.x = s.w * off; mesh.add(hoop);
+      }
+      const plank = new THREE.Mesh(new THREE.BoxGeometry(s.w, 0.22, 2.4), this.flat(0x8a5a2b));
+      plank.position.y = s.h / 2 - 0.05; mesh.add(plank);
+    } else if (s.skin === 'counter') {
+      mesh = new THREE.Group();
+      const body = new THREE.Mesh(new THREE.BoxGeometry(s.w, s.h, 4), new THREE.MeshToonMaterial({ map: CZ.Tex.tiled('wood', 'timber', s.w, s.h) }));
+      body.castShadow = true; body.receiveShadow = true; E.edges(body); mesh.add(body);
+      const top = new THREE.Mesh(new THREE.BoxGeometry(s.w + 0.5, 0.42, 4.5), this.flat(0xcfc3ae));
+      top.position.y = s.h / 2 + 0.1; mesh.add(top); E.edges(top);
+      for (let x = -s.w / 2 + 1.6; x < s.w / 2; x += 3.4) {
+        const door = new THREE.Mesh(new THREE.BoxGeometry(2.4, s.h - 1.2, 0.2), this.flat(0x5c3a1c));
+        door.position.set(x, -0.2, 2.05); mesh.add(door);
+        const knob = new THREE.Mesh(new THREE.SphereGeometry(0.11, 8, 6), this.flat(0xd8c07a));
+        knob.position.set(x + 0.9, -0.2, 2.2); mesh.add(knob);
+      }
+    } else if (s.skin === 'drain') {
+      mesh = new THREE.Mesh(new THREE.BoxGeometry(s.w, s.h, 4), this.flat(0x2b2229));
+      mesh.receiveShadow = true;
     } else {
-      mesh = new THREE.Mesh(new THREE.BoxGeometry(s.w, s.h, 4), new THREE.MeshToonMaterial({ map: this.tileTex(s.w, s.h) }));
+      const pal = s.skin === 'wood' ? ['wood', 'timber'] : this.theme.tile;
+      mesh = new THREE.Mesh(new THREE.BoxGeometry(s.w, s.h, 4), new THREE.MeshToonMaterial({ map: CZ.Tex.tiled(pal[0], pal[1], s.w, s.h) }));
       mesh.castShadow = true; mesh.receiveShadow = true; E.edges(mesh);
       if (s.mover) {
         mesh.material = new THREE.MeshToonMaterial({ map: CZ.Tex.tiled('plate', 'steel', s.w, Math.max(1, s.h)) });
@@ -155,6 +183,15 @@ CZ.Level = class Level {
       const disk = new THREE.Mesh(new THREE.PlaneGeometry(1.1, 1.1), new THREE.MeshBasicMaterial({ map: CZ.Tex.sprite('bug', 4), transparent: true, side: THREE.DoubleSide }));
       const back = new THREE.Mesh(new THREE.BoxGeometry(1.0, 1.0, 0.12), this.flat(0xffd700)); back.position.z = -0.09;
       mesh.add(disk, back); it.disk = mesh; mesh.position.set(it.x, it.y, 0.7);
+    } else if (kind === 'ability' && it.limb) {
+      // a body part lying where it fell, spinning under a glow
+      const spr = CZ.LIMBS[it.id].ico;
+      const card = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 1.5), new THREE.MeshBasicMaterial({ map: CZ.Tex.sprite(spr, 6), transparent: true, side: THREE.DoubleSide }));
+      mesh.add(card); it.orb = card; it.rings = [];
+      const halo = new THREE.Mesh(new THREE.RingGeometry(1.0, 1.15, 16), new THREE.MeshBasicMaterial({ color: 0xffe6a8, transparent: true, opacity: 0.8, side: THREE.DoubleSide }));
+      mesh.add(halo); it.rings.push(halo);
+      mesh.add(new THREE.PointLight(0xffd27a, 5, 9));
+      mesh.position.set(it.x, it.y + 0.9, 0.6);
     } else if (kind === 'ability') {
       const orb = new THREE.Mesh(new THREE.OctahedronGeometry(0.58, 0), new THREE.MeshToonMaterial({ color: 0x39ff88, emissive: 0x108840 }));
       const r1 = new THREE.Group(), r2 = new THREE.Group();
@@ -206,10 +243,166 @@ CZ.Level = class Level {
         case 'sign': this.addProp('sign', it); this.signs.push(it); break;
         case 'dialog': it.done = false; this.dialogs.push(it); break;
         case 'enemy': this.enemySpawns.push(it); break;
+        case 'deco': this.addDeco(it); break;
         case 'boss': this.boss = it; break;
       }
     }
     this.bugTotal = this.bugs.length;
+  }
+
+  // ---------- room dressing ----------
+  // Props that make the cellar read as a place someone works in.
+  addDeco(it) {
+    const E = CZ.Effects, F = c => this.flat(c);
+    const g = new THREE.Group();
+    const timber = (w, h, d) => new THREE.Mesh(new THREE.BoxGeometry(w, h, d), new THREE.MeshToonMaterial({ map: CZ.Tex.tiled('wood', 'timber', w, h) }));
+    switch (it.kind) {
+      case 'lamp': {
+        const chain = new THREE.Mesh(new THREE.BoxGeometry(0.1, 2.4, 0.1), F(0x3b3038)); chain.position.y = 1.2; g.add(chain);
+        const shade = new THREE.Mesh(new THREE.ConeGeometry(1.05, 0.9, 8, 1, true), new THREE.MeshToonMaterial({ color: 0x4a3a2a, side: THREE.DoubleSide }));
+        shade.position.y = -0.3; g.add(shade);
+        const bulb = new THREE.Mesh(new THREE.SphereGeometry(0.3, 8, 6), new THREE.MeshBasicMaterial({ color: 0xffe6a8 }));
+        bulb.position.y = -0.8; g.add(bulb);
+        const light = new THREE.PointLight(0xffc266, 3.4, 26); light.position.y = -1.4; g.add(light);
+        it.bulb = bulb; it.lamp = light;
+        break;
+      }
+      case 'rack': {          // wine rack against the wall
+        const frame = timber(4.6, 5.6, 1.6); frame.position.y = 2.8; g.add(frame); E.edges(frame);
+        for (let r = 0; r < 3; r++) for (let c = 0; c < 3; c++) {
+          const hole = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.42, 0.3, 8), F(0x1a1016));
+          hole.rotation.x = Math.PI / 2; hole.position.set(-1.4 + c * 1.4, 1.3 + r * 1.5, 0.85); g.add(hole);
+          const cork = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 0.24, 8), F(Math.random() < 0.5 ? 0x6b2436 : 0x3f5a2a));
+          cork.rotation.x = Math.PI / 2; cork.position.set(-1.4 + c * 1.4, 1.3 + r * 1.5, 0.95); g.add(cork);
+        }
+        break;
+      }
+      case 'crate': {
+        const n = it.stack || 1;
+        for (let i = 0; i < n; i++) {
+          const c = timber(2.1, 2.1, 2.1); c.position.set(CZ.rand(-0.2, 0.2), 1.05 + i * 2.15, 0); c.castShadow = true; g.add(c); E.edges(c);
+        }
+        break;
+      }
+      case 'web': {           // cobweb wedge plus a resident
+        const web = new THREE.Mesh(new THREE.PlaneGeometry(3.2, 3.2), new THREE.MeshBasicMaterial({ map: CZ.Tex.custom('web', 32, (x, S) => {
+          x.strokeStyle = '#e8e2d8'; x.lineWidth = 1;
+          for (let i = 1; i <= 5; i++) { x.beginPath(); x.arc(0, S, i * 6, 0, Math.PI / 2); x.stroke(); }
+          for (let i = 0; i <= 5; i++) { x.beginPath(); x.moveTo(0, S); x.lineTo(Math.cos(i * 0.31) * S, S - Math.sin(i * 0.31) * S); x.stroke(); }
+        }), transparent: true, opacity: 0.5, side: THREE.DoubleSide }));
+        web.position.set(0, 0, 0.5); g.add(web);
+        const sp = new THREE.Mesh(new THREE.SphereGeometry(0.16, 6, 5), F(0x1a1016));
+        sp.position.set(-0.9, -1.0, 0.7); g.add(sp); it.spider = sp;
+        break;
+      }
+      case 'cheesewheel': {
+        const w = new THREE.Mesh(new THREE.CylinderGeometry(1.15, 1.15, 0.8, 14), new THREE.MeshToonMaterial({ map: CZ.Tex.get('cheese', 'stone') }));
+        w.position.y = 0.4; w.castShadow = true; g.add(w);
+        const rind = new THREE.Mesh(new THREE.CylinderGeometry(1.2, 1.2, 0.26, 14), F(0xd98a2a)); rind.position.y = 0.4; g.add(rind);
+        const cut = new THREE.Mesh(new THREE.CylinderGeometry(1.1, 1.1, 0.5, 14, 1, false, 0, 1.1), new THREE.MeshToonMaterial({ map: CZ.Tex.get('cheese', 'stone') }));
+        cut.position.set(0.5, 1.05, 0.4); cut.rotation.z = 0.25; g.add(cut);
+        break;
+      }
+      case 'knifeblock': {
+        const b = timber(1.3, 1.4, 1.1); b.position.y = 0.7; b.rotation.z = -0.12; g.add(b); E.edges(b);
+        for (const dx of [-0.3, 0, 0.3]) {
+          const h = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.9, 0.12), F(0x2b2229));
+          h.position.set(dx, 1.7, 0); h.rotation.z = -0.12 + dx * 0.2; g.add(h);
+        }
+        break;
+      }
+      case 'bottle': {
+        const body = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.28, 1.0, 8), F(0x2f5a34)); body.position.y = 0.5; g.add(body);
+        const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.14, 0.7, 8), F(0x2f5a34)); neck.position.y = 1.3; g.add(neck);
+        const label = new THREE.Mesh(new THREE.CylinderGeometry(0.29, 0.29, 0.42, 8), F(0xe8dcc0)); label.position.y = 0.52; g.add(label);
+        break;
+      }
+      case 'shelf': {
+        const board = timber(4.4, 0.3, 1.6);
+        for (let i = 0; i < 3; i++) { const b = board.clone(); b.position.y = 1.4 + i * 1.8; g.add(b); }
+        for (const dx of [-2, 2]) { const post = timber(0.3, 5.6, 1.6); post.position.set(dx, 2.8, 0); g.add(post); }
+        for (let i = 0; i < 5; i++) {
+          const w = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 0.4, 10), new THREE.MeshToonMaterial({ map: CZ.Tex.get('cheese', 'stone') }));
+          w.rotation.x = Math.PI / 2; w.position.set(CZ.rand(-1.6, 1.6), 1.75 + ((i % 3) * 1.8), 0.1); g.add(w);
+        }
+        break;
+      }
+      case 'press': {         // the giant cheese maker: hopper, screw, wheel, pipes
+        const frame = new THREE.Mesh(new THREE.BoxGeometry(16, 13, 5), new THREE.MeshToonMaterial({ map: CZ.Tex.tiled('plate', 'steel', 16, 13), color: 0x9a8b7a }));
+        frame.position.y = 6.5; g.add(frame); E.edges(frame);
+        const hopper = new THREE.Mesh(new THREE.CylinderGeometry(4.6, 2.2, 4.4, 10), this.flat(0xb98f4e));
+        hopper.position.y = 14.4; g.add(hopper); E.edges(hopper);
+        const spout = new THREE.Mesh(new THREE.CylinderGeometry(0.9, 0.9, 2.6, 8), this.flat(0x8a6a3a)); spout.position.y = 11.4; g.add(spout);
+        const wheel = new THREE.Mesh(new THREE.TorusGeometry(2.6, 0.42, 6, 14), this.flat(0x7a3a2a));
+        wheel.position.set(-6.6, 8.5, 2.9); g.add(wheel); it.wheel = wheel;
+        for (let i = 0; i < 6; i++) { const spoke = new THREE.Mesh(new THREE.BoxGeometry(0.3, 5, 0.3), this.flat(0x7a3a2a)); spoke.rotation.z = i * 0.52; spoke.position.copy(wheel.position); g.add(spoke); (it.spokes = it.spokes || []).push(spoke); }
+        for (const [px, py, pl] of [[7.4, 10, 7], [7.4, 4, 5]]) {
+          const pipe = new THREE.Mesh(new THREE.CylinderGeometry(0.7, 0.7, pl, 8), this.flat(0x6a5f55));
+          pipe.rotation.z = Math.PI / 2; pipe.position.set(px + pl / 2, py, 1.2); g.add(pipe);
+        }
+        const belt = new THREE.Mesh(new THREE.BoxGeometry(9, 0.5, 3), this.flat(0x2f2a30)); belt.position.set(-11, 2.4, 1); g.add(belt);
+        for (let i = 0; i < 3; i++) {
+          const w = new THREE.Mesh(new THREE.CylinderGeometry(0.75, 0.75, 0.55, 12), new THREE.MeshToonMaterial({ map: CZ.Tex.get('cheese', 'stone') }));
+          w.rotation.x = Math.PI / 2; w.position.set(-13.5 + i * 2.6, 3, 1); g.add(w);
+        }
+        break;
+      }
+      case 'vat': {
+        const v = new THREE.Mesh(new THREE.CylinderGeometry(3.2, 2.6, 6, 12), this.flat(0xa06a3a));
+        v.position.y = 3; g.add(v); E.edges(v);
+        const lip = new THREE.Mesh(new THREE.TorusGeometry(3.2, 0.28, 6, 14), this.flat(0xc98a4a));
+        lip.rotation.x = Math.PI / 2; lip.position.y = 6; g.add(lip);
+        const milk = new THREE.Mesh(new THREE.CylinderGeometry(3.0, 3.0, 0.3, 12), new THREE.MeshBasicMaterial({ color: 0xfff3d0 }));
+        milk.position.y = 5.9; g.add(milk); it.milk = milk;
+        for (let i = 0; i < 6; i++) { const rung = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.16, 0.16), this.flat(0x5c4a3a)); rung.position.set(-3.4, 0.8 + i, 1.4); g.add(rung); }
+        break;
+      }
+      case 'door': {
+        const frame = timber(5.4, 8.4, 1.2); frame.position.y = 4.2; g.add(frame); E.edges(frame);
+        const panel = new THREE.Mesh(new THREE.BoxGeometry(4.2, 7.4, 0.4), this.flat(0x3a2418)); panel.position.set(0, 3.9, 0.7); g.add(panel);
+        for (const dy of [2.2, 5.6]) { const band = new THREE.Mesh(new THREE.BoxGeometry(4.3, 0.4, 0.5), this.flat(0x6a5f55)); band.position.set(0, dy, 0.9); g.add(band); }
+        const knob = new THREE.Mesh(new THREE.SphereGeometry(0.24, 8, 6), this.flat(0xd8c07a)); knob.position.set(1.5, 3.8, 1.0); g.add(knob);
+        const glow = new THREE.PointLight(0xffd27a, 2.4, 14); glow.position.set(0, 4, 3); g.add(glow);
+        break;
+      }
+    }
+    // Room dressing lives behind the play plane; only cobwebs hang in front.
+    const DEPTH = { rack: -2.8, crate: -2.5, shelf: -2.8, lamp: -1.4, web: 2.6,
+      cheesewheel: -0.9, knifeblock: -0.9, bottle: -0.9, press: -3, vat: -2.5, door: -1.6 };
+    g.position.set(it.x, g.position.y + it.y, it.z !== undefined ? it.z : (DEPTH[it.kind] ?? -2));
+    it.mesh = g; this.group.add(g);
+    this.decos.push(it);
+  }
+
+  // Enclosing shell for a level authored as one room.
+  buildRoom() {
+    const th = this.theme, W = this.data.width, top = this.data.room.top;
+    const back = new THREE.Mesh(new THREE.PlaneGeometry(W + 40, top + 26),
+      new THREE.MeshToonMaterial({ map: CZ.Tex.tiled(th.tile[0], th.tile[1], (W + 40) / 2, (top + 26) / 2, 4) }));
+    back.position.set(W / 2, top / 2 - 4, -7); back.receiveShadow = true; this.bgGroup.add(back);
+    // ceiling with beams
+    const ceil = new THREE.Mesh(new THREE.BoxGeometry(W + 40, 2.4, 14), new THREE.MeshToonMaterial({ map: CZ.Tex.tiled('wood', 'timber', (W + 40) / 2, 1) }));
+    ceil.position.set(W / 2, top + 1.2, -1); this.bgGroup.add(ceil);
+    for (let x = 6; x < W; x += 15) {
+      const beam = new THREE.Mesh(new THREE.BoxGeometry(1.4, 1.6, 13), new THREE.MeshToonMaterial({ map: CZ.Tex.tiled('wood', 'timber', 1, 1) }));
+      beam.position.set(x, top - 0.6, -1); beam.castShadow = true; this.bgGroup.add(beam);
+      const brace = new THREE.Mesh(new THREE.BoxGeometry(0.9, 3.2, 1.0), this.flat(0x5c3a1c));
+      brace.position.set(x, top - 2.6, -5.6); brace.rotation.z = 0.5; this.bgGroup.add(brace);
+    }
+    // skirting and a floor shadow strip so the ground reads as a surface
+    const skirt = new THREE.Mesh(new THREE.BoxGeometry(W + 40, 0.7, 1), this.flat(th.blockAlt));
+    skirt.position.set(W / 2, 0.35, -6.4); this.bgGroup.add(skirt);
+    // a few background barrels and racks stacked against the wall
+    for (let x = 4; x < W; x += CZ.rand(16, 26)) {
+      const stack = new THREE.Group();
+      const n = 1 + ((Math.random() * 3) | 0);
+      for (let i = 0; i < n; i++) {
+        const b = new THREE.Mesh(new THREE.CylinderGeometry(1.5, 1.5, 3.4, 10), new THREE.MeshToonMaterial({ map: CZ.Tex.tiled('wood', 'timber', 3, 3), color: 0xb0a08c }));
+        b.rotation.z = Math.PI / 2; b.position.set(CZ.rand(-0.6, 0.6), 1.6 + i * 3.2, 0); stack.add(b);
+        for (const off of [-1, 1]) { const hoop = new THREE.Mesh(new THREE.CylinderGeometry(1.56, 1.56, 0.2, 10), this.flat(0x584a52)); hoop.rotation.z = Math.PI / 2; hoop.position.set(off, 1.6 + i * 3.2, 0); stack.add(hoop); }
+      }
+      stack.position.set(x, 0, -5.2); this.bgGroup.add(stack);
+    }
   }
 
   // ---------- scenery: sky, three parallax depths, foreground ----------
@@ -237,6 +430,9 @@ CZ.Level = class Level {
 
     const abyss = new THREE.Mesh(new THREE.PlaneGeometry(W + 240, 70), new THREE.MeshBasicMaterial({ color: th.sky[0], transparent: true, opacity: 0.85, depthWrite: false }));
     abyss.position.set(W / 2, this.data.deathY - 36, -6); this.bgGroup.add(abyss);
+
+    // A level authored as a room gets walls and a ceiling instead of parallax scatter.
+    if (this.data.room) { this.buildRoom(); return; }
 
     // Far wall so worlds feel enclosed rather than floating in void.
     if (th.bg !== 'heaven') {
@@ -403,10 +599,28 @@ CZ.Level = class Level {
     for (const st of this.windStreaks) { st.m.position.y += st.s * dt; if (st.m.position.y > st.h / 2) st.m.position.y = -st.h / 2; }
     for (const h of this.hooks) { h.ring.rotation.z += dt * 1.6; h.mesh.position.y = h.y + Math.sin(t * 2 + h.x) * 0.1; }
     for (const b of this.bugs) if (!b.taken) { b.mesh.rotation.y = Math.sin(t * 2 + b.x) * 0.5; b.mesh.position.y = b.y + Math.sin(t * 3 + b.x) * 0.15; }
-    for (const a of this.abilities) if (!a.taken) { a.orb.rotation.y += dt * 2; a.orb.rotation.z += dt; a.rings[0].rotation.z += dt * 1.5; a.rings[1].rotation.y += dt * 1.2; a.mesh.position.y = a.y + 0.6 + Math.sin(t * 2.5) * 0.2; a.orb.scale.setScalar(1 + Math.sin(t * 6) * 0.08); }
+    for (const a of this.abilities) {
+      if (a.taken) continue;
+      a.mesh.position.y = a.y + (a.limb ? 0.9 : 0.6) + Math.sin(t * 2.5 + a.x) * 0.2;
+      if (a.limb) {
+        a.orb.rotation.y = Math.sin(t * 1.6) * 0.5;               // a dropped body part turning in the light
+        a.rings[0].rotation.z += dt * 0.8;
+        a.rings[0].scale.setScalar(1 + Math.sin(t * 4) * 0.06);
+      } else {
+        a.orb.rotation.y += dt * 2; a.orb.rotation.z += dt;
+        a.rings[0].rotation.z += dt * 1.5; a.rings[1].rotation.y += dt * 1.2;
+        a.orb.scale.setScalar(1 + Math.sin(t * 6) * 0.08);
+      }
+    }
     if (this.exit) this.exit.portal.material.opacity = 0.45 + 0.2 * Math.sin(t * 3);
     for (const c of this.checks) if (c.active) c.flag.rotation.y = Math.sin(t * 6) * 0.25;
     for (const sp of this.spinners) sp.rotation.z += (sp.userData.spin || 1) * dt;
+    for (const d of this.decos) {
+      if (d.bulb) { const f = 0.9 + Math.sin(t * 7 + d.x) * 0.06 + (Math.random() < 0.02 ? -0.3 : 0); d.lamp.intensity = 3.4 * f; d.bulb.scale.setScalar(f); d.mesh.rotation.z = Math.sin(t * 0.7 + d.x) * 0.03; }
+      if (d.spider) { d.spider.position.y = -1.0 + Math.sin(t * 1.4 + d.x) * 0.35; }
+      if (d.wheel) { d.wheel.rotation.z += dt * 0.7; for (const sp of d.spokes) sp.rotation.z += dt * 0.7; }
+      if (d.milk) { d.milk.position.y = 5.9 + Math.sin(t * 1.6 + d.x) * 0.06; }
+    }
   }
 
   solidFor(s, f) {

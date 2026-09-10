@@ -27,58 +27,94 @@ CZ.LEVELS = (() => {
   const exit = (x, y = 0) => ({ t: 'exit', x, y });
   const sign = (x, y, text) => ({ t: 'sign', x, y, text });
   const boss = (kind, x, w, h, o = {}) => ({ t: 'boss', kind, x, w, h, ...o });
+  const limb = (x, y, id) => ({ t: 'ability', x, y, id, limb: true });
+  const deco = (kind, x, y, o = {}) => ({ t: 'deco', kind, x, y, ...o });
+  const wood = (x, y, w, h, o = {}) => ({ t: 'solid', x, y, w, h, skin: 'wood', ...o });
   const talk = (x, lines) => ({ t: 'dialog', x, lines });
 
   // Portraits are pixel sprites from CZ.Spr, never emoji.
-  const YOU = 'p-cheese', GOD = 'p-god', RAT = 'p-rat', AC = 'p-guard', HUMAN = 'p-human';
+  const YOU = 'p-cheese', GOD = 'p-duck', RAT = 'p-rat', AC = 'p-guard', HUMAN = 'p-human';
   const D = (who, portrait, text) => ({ who, portrait, text });
 
   return [
-  // ───────────────────────────── 1. AGING CELLAR ─────────────────────────────
-  { id: 'cellar', name: 'THE AGING CELLAR', sub: 'World 1 · Tutorial', song: 'factory', width: 200, deathY: -9,
-    theme: { tile: ['brick', 'stone'], prop: ['wood', 'timber'], sky: ['#3a1d12', '#c96a2a'], fog: '#5a2e18', block: '#8a5a2b', blockAlt: '#6f4520', plat: '#c98a4b', accent: '#ffcc33', bg: 'cellar' },
+  // ───────────────────────── 1. THE CHEESE & WINE CELLAR ─────────────────────────
+  // A room, not a corridor: back wall, ceiling beams, a cheese press at the far end,
+  // wine racks along the walls, and one counter you are not tall enough to climb.
+  { id: 'cellar', name: 'THE CHEESE CELLAR', sub: 'World 1 - Learn to be cheese', song: 'factory',
+    width: 176, deathY: -7, room: { top: 15, back: true },
+    theme: { tile: ['brick', 'stone'], prop: ['wood', 'timber'],
+      sky: ['#20120c', '#4a2a16'], fog: '#2a1810', block: '#7a4f28', blockAlt: '#5c3a1c',
+      plat: '#c08a4e', accent: '#ffcc33', bg: 'cellar' },
     spawn: [3, 0],
     intro: [
-      D('YOU (HUMAN)', HUMAN, 'Bug #4,097: clip through the final boss, skip the credits, break the leaderboard. Another game broken. Too easy.'),
-      D('???', GOD, 'E N O U G H .'),
-      D('GOD OF GAMES', GOD, 'Every world I make, you break. Every wall, you clip through. Every boss, you skip. Do you know how long that boss took me?'),
-      D('YOU', HUMAN, '...like a weekend?'),
-      D('GOD OF GAMES', GOD, 'A CURSE, then. You will be CHEESE. Trapped in MY Cheese Factory. Perfect code. Zero bugs. NO exploits.'),
-      D('YOU', YOU, '...cheese. Okay. Cool. Cool cool cool.'),
-      D('GOD OF GAMES', GOD, 'Escape the factory, reach my Pantry in the sky, touch the GOLDEN APPLE, and I will make you human again. But you will do it FAIRLY.'),
-      D('YOU', YOU, 'Buddy. Every game has holes. And I\'m literally cheese now. I\'m going to FILE some.'),
+      D('DEV', GOD, 'You are in my cellar now. Every wall is solid. Every jump is capped. Every route is the route I built.'),
+      D('CHEESE', YOU, 'You left me on the floor with no arms and no legs.'),
+      D('DEV', GOD, 'Correct. Reach the door at the far end and I will consider letting you keep the wedge shape.'),
+      D('CHEESE', YOU, 'Cool. I am going to find your bugs and wear them as limbs.'),
     ],
     items: [
-      floor(0, 42),
-      sign(4, 0, 'LEFT / RIGHT to move.  SPACE to jump - hold it to jump higher.'),
-      solid(20, 0, 4, 1.5), solid(30, 0, 3, 2.2),
-      bug(31.5, 3.2),
-      // gap 42..47
-      floor(47, 78),
-      sign(50, 0, 'Rats. Land on their heads to squish them. Do NOT hug them.'),
-      enemy('rat', 60, 0, { min: 52, max: 74 }),
-      plat(62, 3.2, 5), bug(64.5, 4.3),
-      // knife pit
-      solid(78, -3, 5, 1), knives(78, -2, 5),
-      floor(83, 112),
-      sign(85, 0, 'Knives. Yes, in a cheese cellar. Ask management.'),
-      enemy('rat', 92, 0, { min: 84, max: 100 }),
-      solid(100, 0, 3, 1), solid(103, 0, 3, 2), solid(106, 0, 3, 3),
-      plat(111, 4.6, 4), bug(113, 5.7),
-      // gap 112..117
-      floor(117, 134),
-      check(119),
-      ability(126, 1, 'doubleJump'),
-      sign(129, 0, 'FRAME SKIP: press JUMP again while in the air.'),
-      solid(134, 0, 4, 3.6), floor(134, 152),
-      plat(146, 4.6, 3), bug(147.5, 5.7),
-      // big gap 152..161 (needs double jump)
-      floor(161, 200),
-      sign(164, 0, 'See? "Perfect code". Holes everywhere.'),
-      enemy('spore', 172, 3.5, { amp: 1.5, speed: 1.5 }),
-      enemy('rat', 180, 0, { min: 170, max: 192 }),
-      solid(186, 0, 3, 1.6), bug(187.5, 2.8),
-      exit(195),
+      // ---- the room shell (the floor breaks at the drain, x 148..153) ----
+      floor(0, 148, 0, 4),
+      solid(-2, 0, 2, 15), solid(176, 0, 2, 15),
+
+      // ---- 1. the start nook ----
+      deco('lamp', 8, 12.4), deco('rack', 6, 0), deco('rack', 14, 0), deco('web', 1.5, 13.6),
+      sign(4, 0, 'LEFT / RIGHT to walk. SPACE to hop. You have no legs yet, so both are bad.'),
+      deco('crate', 20, 0), deco('crate', 22.2, 0, { stack: 2 }),
+      wood(20, 0, 2, 1.2), wood(24, 0, 2, 2.4),
+      bug(27, 3.6),
+
+      // ---- 2. the counter: too high on purpose ----
+      deco('cheesewheel', 31, 0),
+      sign(30, 0, 'The counter is 4.6 high. Your hop is 2.1. Try MASHING jump - the check only clears once.'),
+      wood(33, 0, 20, 4.6, { skin: 'counter' }),
+      deco('knifeblock', 36, 4.6), deco('cheesewheel', 44, 4.6), deco('bottle', 48, 4.6),
+      deco('web', 33.5, 13.4),
+      limb(41, 4.6, 'forkArm'),
+      deco('lamp', 42, 12.4),
+
+      // ---- 3. floor level again: first spiders ----
+      enemy('spider', 58, 8.5, { drop: 5.4, speed: 1.1 }),
+      enemy('bugcrawl', 64, 0, { min: 54, max: 70 }),
+      sign(56, 0, 'SHIFT stabs with the fork. Spiders are mostly legs and regret.'),
+      bug(53, 6.2),
+      deco('rack', 62, 0), deco('web', 68, 13.2),
+
+      // ---- 4. barrel row, under the cheese press ----
+      deco('press', 96, 0),
+      wood(72, 0, 5, 2.2, { skin: 'barrel' }),
+      wood(80, 0, 5, 3.4, { skin: 'barrel' }),
+      wood(88, 0, 5, 2.2, { skin: 'barrel' }),
+      enemy('spider', 84, 9.5, { drop: 4.2, speed: 1.5 }),
+      bug(84.5, 5.4),
+
+      // ---- 5. the locked pantry: menu clip (or mash over the top) ----
+      solid(100, 0, 2, 6),
+      sign(97, 0, 'Pantry is locked. The wall is 2 thick. PAUSE while pushing into it, then resume.'),
+      deco('web', 102, 5.6),
+      limb(105, 0, 'knifeArm'),
+      deco('shelf', 107, 0),
+      solid(109, 0, 2, 6),
+
+      // ---- 6. the cheese press: climb it for the leg ----
+      wood(114, 0, 4, 2.6), wood(120, 0, 4, 4.4),
+      plat(126, 6.2, 5), plat(133, 8.4, 5),
+      enemy('spider', 130, 12.6, { drop: 3.4, speed: 1.8 }),
+      limb(135, 9, 'leg'),
+      deco('vat', 130, 0), deco('lamp', 128, 12.4),
+      bug(120.5, 6.2),
+
+      // ---- 7. the run: only clearable once you have a leg ----
+      floor(153, 176, 0, 4),
+      sign(143, 0, 'You have a leg. RUN at it.'),
+      // an open floor drain: five units wide, which is more than a legless hop
+      solid(148, -6.5, 5, 2, { skin: 'drain' }), hazard(148, -4.5, 5, 1, 'goo'),
+      deco('web', 150, 12.8),
+      enemy('bugcrawl', 160, 0, { min: 154, max: 168 }),
+      deco('rack', 158, 0), deco('web', 174, 13.4), deco('lamp', 166, 12.4),
+      bug(153, 4.4),
+      deco('door', 170, 0),
+      exit(170),
     ] },
 
   // ───────────────────────────── 2. THE GRATER LINE ─────────────────────────────
@@ -316,7 +352,7 @@ CZ.LEVELS = (() => {
     ] },
 
   // ───────────────────────────── 7. GOD'S PANTRY ─────────────────────────────
-  { id: 'pantry', name: "GOD'S PANTRY", sub: 'Final · Boss: THE GOD OF GAMES', song: 'heaven', width: 340, deathY: -12,
+  { id: 'pantry', name: "GOD'S PANTRY", sub: 'Final - Boss: THE DEV', song: 'heaven', width: 340, deathY: -12,
     theme: { tile: ['cloud', 'marble'], prop: ['cloud', 'marble'], sky: ['#ffb6d9', '#ffe9a8'], fog: '#ffd6a8', block: '#f6f2ff', blockAlt: '#dcd4f5', plat: '#ffffff', accent: '#ffd700', bg: 'heaven' },
     spawn: [3, 0],
     items: [
@@ -348,9 +384,9 @@ CZ.LEVELS = (() => {
       corrupt(246, 8, 3, 8), solid(246, 4, 10, 4),
       floor(256, 340, 0),
       talk(260, [
-        D('GOD OF GAMES', GOD, 'You. You clipped, you skipped, you wall-jumped through my PERFECT code.'),
+        D('THE DEV', GOD, 'You. You clipped, you skipped, you wall-jumped through my PERFECT code.'),
         D('YOU', YOU, 'Your code is fine. Your level design has holes. Different department.'),
-        D('GOD OF GAMES', GOD, 'The Golden Apple sits above my head. Take it, if you can reach it. I will be deleting the floor.'),
+        D('THE DEV', GOD, 'The Golden Apple sits above my head. Take it, if you can reach it. I will be deleting the floor.'),
         D('YOU', YOU, 'Cool. I mostly use the walls anyway.'),
       ]),
       solid(338, 0, 2, 30),
