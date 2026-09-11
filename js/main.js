@@ -56,7 +56,7 @@ CZ.Game = class Game {
     if (this.cine) { this.cine.dispose(); this.cine = null; }
     U.cineShow(false); U.cineFx(0, 0); CZ.Comic.show(false);
     U.show('hud', false); U.show('complete', false); U.show('ending', false); U.show('unlock', false); U.show('controls', false);
-    U.sign(null); CZ.Touch.setVisible(false);
+    U.sign(null); CZ.Touch.setMode('play'); CZ.Touch.setVisible(false);
     U.levelList(CZ.LEVELS, this.save, i => { U.show('levelselect', false); this.startLevel(i, false); });
     U.show('levelselect', true);
     this.state = 'menu';
@@ -74,7 +74,8 @@ CZ.Game = class Game {
     this.cine.camera.aspect = this.camera.aspect; this.cine.camera.updateProjectionMatrix();
     this.cine.onDone = () => this.endIntro();
     this.state = 'intro';
-    // tap or click anywhere to skip (the touch buttons are hidden during the cutscene)
+    // the duel is played, so the phone controls come up with it
+    CZ.Touch.setMode('fight'); CZ.Touch.setVisible(true);
     const skipBtn = CZ.UI.$('cine-skip');
     this._skipTap = () => { if (this.state === 'intro' && this.cine) this.cine.skip(); };
     skipBtn.addEventListener('pointerdown', this._skipTap);
@@ -87,6 +88,7 @@ CZ.Game = class Game {
     if (this._skipTap && this._skipBtn) { this._skipBtn.removeEventListener('pointerdown', this._skipTap); this._skipTap = null; }
     U.cineShow(false); U.cineFx(0, 0);
     if (this.cine) { this.cine.dispose(); this.cine = null; }
+    CZ.Touch.setMode('play');
     this.save.sawIntro = true; CZ.writeSave(this.save);
     this.startLevel(0, true);
   }

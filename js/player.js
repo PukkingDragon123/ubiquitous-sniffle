@@ -51,18 +51,25 @@ CZ.Player = class Player {
 
     // face rides on the front and stays upright while the wheel turns
     this.face = new THREE.Group(); this.face.position.z = 0.56; this.body.add(this.face);
+    // Two googly eyes, deliberately mismatched: different sizes, different
+    // heights, pupils that swing on their own and never quite agree.
     this.eyes = [];
-    for (const ex of [-0.23, 0.23]) {
-      const socket = new THREE.Group(); socket.position.set(ex, 0.04, 0);
-      socket.add(new THREE.Mesh(new THREE.CircleGeometry(0.2, 18), new THREE.MeshBasicMaterial({ color: 0x2a1a0e })));
-      const white = new THREE.Mesh(new THREE.CircleGeometry(0.165, 18), new THREE.MeshBasicMaterial({ color: 0xffffff }));
+    const EYE = [
+      { x: -0.25, y: 0.12, r: 0.3, pr: 0.14, tilt: 0.16 },
+      { x: 0.24, y: 0.0, r: 0.235, pr: 0.125, tilt: -0.1 },
+    ];
+    for (const cfg of EYE) {
+      const socket = new THREE.Group(); socket.position.set(cfg.x, cfg.y, 0); socket.rotation.z = cfg.tilt;
+      socket.add(new THREE.Mesh(new THREE.CircleGeometry(cfg.r, 20), new THREE.MeshBasicMaterial({ color: 0x2a1a0e })));
+      const white = new THREE.Mesh(new THREE.CircleGeometry(cfg.r - 0.045, 20), new THREE.MeshBasicMaterial({ color: 0xffffff }));
       white.position.z = 0.012; socket.add(white);
-      const pupil = new THREE.Mesh(new THREE.CircleGeometry(0.082, 14), new THREE.MeshBasicMaterial({ color: 0x140c06 }));
+      const pupil = new THREE.Mesh(new THREE.CircleGeometry(cfg.pr, 16), new THREE.MeshBasicMaterial({ color: 0x140c06 }));
       pupil.position.z = 0.026; socket.add(pupil);
-      const shine = new THREE.Mesh(new THREE.CircleGeometry(0.022, 8), new THREE.MeshBasicMaterial({ color: 0xffffff }));
-      shine.position.set(-0.022, 0.028, 0.01); pupil.add(shine);
+      const shine = new THREE.Mesh(new THREE.CircleGeometry(cfg.pr * 0.28, 8), new THREE.MeshBasicMaterial({ color: 0xffffff }));
+      shine.position.set(-cfg.pr * 0.3, cfg.pr * 0.34, 0.01); pupil.add(shine);
       this.face.add(socket);
-      this.eyes.push({ socket, pupil, px: 0, py: -0.05, vx: 0, vy: 0 });
+      this.eyes.push({ socket, pupil, px: 0, py: -0.05, vx: 0, vy: 0, tilt: cfg.tilt,
+        R: cfg.r - cfg.pr - 0.02, wob: CZ.rand(0.8, 1.35), phase: CZ.rand(0, 6.3) });
     }
     // the toothpick it pokes with
     this.poker = new THREE.Group(); this.poker.position.set(0, -0.05, 0.15); this.body.add(this.poker);
@@ -253,17 +260,23 @@ CZ.Player = class Player {
 
   // Only eyes. No brows, no mouth: the googly pupils carry the whole performance.
   updateFace(dt) {
-    const mood = this.mood(), R = 0.075;
+    const mood = this.mood();
     for (const e of this.eyes) {
-      e.vx += (-this.accelX * 0.05 - e.px * 26) * dt;
-      e.vy += (-9 - (this.vy > 6 ? 8 : 0) - e.py * 26) * dt;
-      e.vx *= Math.exp(-dt * 3.4); e.vy *= Math.exp(-dt * 3.4);
+      // a real googly eye: a weight on a loose spring that overshoots, rattles
+      // off the rim and takes its time settling
+      const R = e.R;
+      e.vx += (-this.accelX * 0.07 * e.wob - e.px * 15 + Math.sin(this.time * 5.5 + e.phase) * 1.4) * dt;
+      e.vy += (-11 * e.wob - (this.vy > 6 ? 10 : 0) - e.py * 15) * dt;
+      e.vx *= Math.exp(-dt * 2.1); e.vy *= Math.exp(-dt * 2.1);
       e.px += e.vx * dt; e.py += e.vy * dt;
       const d = Math.hypot(e.px, e.py);
-      if (d > R) { const k = R / d; e.px *= k; e.py *= k; e.vx *= -0.35; e.vy *= -0.35; }
-      if (mood === 'determined' || mood === 'poke') { e.px = CZ.damp(e.px, this.facing * R * 0.75, 18, dt); e.py = CZ.damp(e.py, 0, 18, dt); e.vx = e.vy = 0; }
+      if (d > R) { const k = R / d; e.px *= k; e.py *= k; e.vx *= -0.5; e.vy *= -0.5; }
+      if (this.spinning()) { const a = this.time * 22 * e.wob + e.phase; e.px = Math.cos(a) * R; e.py = Math.sin(a) * R; e.vx = e.vy = 0; }
+      else if (mood === 'poke') { e.px = CZ.damp(e.px, this.facing * R * 0.8, 18, dt); e.py = CZ.damp(e.py, 0, 18, dt); e.vx = e.vy = 0; }
       e.pupil.position.set(e.px, e.py, 0.026);
-      e.pupil.scale.setScalar(mood === 'scared' ? 0.62 : mood === 'melting' ? 1.2 : 1);
+      e.pupil.scale.setScalar(mood === 'scared' ? 0.55 : mood === 'melting' ? 1.35 : mood === 'hurt' ? 1.2 : 1);
+      // the eye itself is glued on badly and wobbles with the wheel
+      e.socket.rotation.z = e.tilt + Math.sin(this.time * 3.2 + e.phase) * 0.08;
     }
     this.blinkT -= dt; if (this.blinkT < 0) this.blinkT = 1.6 + Math.random() * 3.4;
     const open = this.blinkT < 0.11 ? 0.08 : mood === 'determined' || mood === 'poke' ? 0.58

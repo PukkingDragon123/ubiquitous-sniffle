@@ -194,40 +194,93 @@ CZ.RagMech = class RagMech extends CZ.Ragdoll {
     this.armGone = { L: false, R: false }; this.legGone = { L: false, R: false }; this.headGone = false;
   }
 
-  // Keep the torso upright and the feet under the hips; this is what makes it
-  // walk instead of collapse, and wobble instead of feeling rigid.
-  // Stand up: the torso is sprung above the hips and the legs stay under them.
-  // Weak springs, so it staggers and wobbles instead of standing like a statue.
-  balance(dt, lean = 0, strength = 1) {
+  // The animation is all physics targets: the torso is sprung over the hips,
+  // the legs step through a gait cycle, the arms counter-swing, and every pose
+  // is a spring, so a hit or a lost limb bends it instead of breaking it.
+  // move: -1, 0 or 1 - which way it is walking this frame.
+  balance(dt, lean = 0, strength = 1, move = 0) {
     if (this.headGone) return;
     const I = this.i;
     const k = CZ.clamp(16 * strength * dt, 0, 0.34);
+    const air = !this.grounded();
+    const f = this.facing;      // the rig is mirrored when it faces left
+    if (this.armBusy > 0) this.armBusy -= dt;
+    // one clock drives legs, arms and the idle sway, so they stay in step
+    this.gaitT = (this.gaitT || 0) + dt * (move ? 8.5 : 1.5);
+    const g = this.gaitT;
+
     // the legs hold the hips up over whichever feet are left
     const feet = [];
     if (!this.legGone.L) feet.push(this.pts[I.ftL]);
     if (!this.legGone.R) feet.push(this.pts[I.ftR]);
-    if (feet.length) {
+    // ...but only while they are on something. In the air the legs tuck toward
+    // the hips instead, and springing the hips back over them would lift the
+    // whole rig by its own bootstraps.
+    if (feet.length && !air) {
       const fx = feet.reduce((a, p) => a + p.x, 0) / feet.length;
       const fy = feet.reduce((a, p) => a + p.y, 0) / feet.length;
-      this.springTo(I.hip, fx + lean * 0.8, fy + 6.2, k * 0.9, 0.2);
+      this.springTo(I.hip, fx + lean * 0.8 + move * 0.6, fy + 6.2, k * 0.9, 0.2);
+      // the hips rise and fall once per step, like weight passing over a leg.
+      // carry 1 = move the point without handing it any velocity, so the bob
+      // is purely cosmetic and cannot pump the rig into the air.
+      const bob = move ? Math.abs(Math.sin(g)) * 0.5 : Math.sin(g) * 0.14;
+      const hp = this.pts[I.hip];
+      this.springTo(I.hip, hp.x, hp.y + bob, 0.3, 1);
     }
     const hip = this.pts[I.hip];
-    this.springTo(I.chest, hip.x + lean * 1.5, hip.y + 4.8, k, 0.2);
+    // the torso leans into the walk and rocks against the stride
+    const twist = move ? Math.sin(g) * 0.5 * move : 0;
+    this.springTo(I.chest, hip.x + lean * 1.5 + move * 0.9, hip.y + 4.8, k, 0.2);
     const chest = this.pts[I.chest];
-    this.springTo(I.head, chest.x + lean * 1.3, chest.y + 4.6, k * 0.95, 0.2);
-    for (const [kn, ft, s] of [[I.knL, I.ftL, -1], [I.knR, I.ftR, 1]]) {
-      if (this.legGone[s < 0 ? 'L' : 'R']) continue;
-      this.springTo(kn, hip.x + s * 1.3, hip.y - 3.2, k * 0.7, 0.15);
-      this.springTo(ft, hip.x + s * 1.5, Math.min(this.pts[ft].y, 1.1), k * 0.45, 0.1);
+    this.springTo(I.head, chest.x + lean * 1.3 + move * 0.5 + twist * 0.3,
+      chest.y + 4.6 + (move ? Math.sin(g * 2) * 0.18 : 0), k * 0.95, 0.2);
+
+    // ── legs: a stride when walking, a tuck in the air, a weight shift at rest
+    for (const [kn, ft, s, side] of [[I.knL, I.ftL, -1, 'L'], [I.knR, I.ftR, 1, 'R']]) {
+      if (this.legGone[side]) continue;
+      const ph = g + (s < 0 ? 0 : Math.PI);
+      if (air) {                                  // knees up, feet tucked under
+        this.springTo(kn, hip.x + s * f * 1.2 + move * 1.2, hip.y - 2.6, k * 0.6, 0.95);
+        this.springTo(ft, hip.x + s * f * 1.3, hip.y - 4.4, k * 0.5, 0.95);
+        continue;
+      }
+      const step = move ? Math.cos(ph) * 3.0 * move : 0;
+      const lift = move ? Math.max(0, Math.sin(ph)) * 1.6 : 0;
+      // while walking the legs are posed, not pushed: carry ~0.85 moves them
+      // without handing the rig velocity, so a stride cannot lift it off the floor
+      const carry = move ? 0.85 : 0.1;
+      this.springTo(kn, hip.x + s * f * 1.3 + step * 0.6, hip.y - 3.2 + lift * 0.45, k * 0.7, move ? 0.8 : 0.15);
+      const footY = lift > 0.05 ? 1.0 + lift : Math.min(this.pts[ft].y, 1.1);
+      this.springTo(ft, hip.x + s * f * 1.5 + step, footY, k * (move ? 0.8 : 0.45), carry);
+    }
+
+    // ── arms: counter-swing against the legs, unless the sword arm is busy
+    for (const [sh, el, s, side] of [[I.shL, I.elL, -1, 'L'], [I.shR, I.elR, 1, 'R']]) {
+      if (this.armGone[side]) continue;
+      if (side === 'R' && this.armBusy > 0) continue;
+      const ph = g + (s < 0 ? Math.PI : 0);
+      const swing = move ? Math.cos(ph) * 2.0 * move : Math.sin(g * 0.8 + s) * 0.35;
+      const S = this.pts[sh];
+      this.springTo(el, S.x + s * f * 1.5 + swing, S.y - 3.0 + (air ? 0.9 : 0), k * 0.5, 0.9);
     }
   }
-  // Drive the sword hand along an arc; the rest of the body follows physically.
+
+  // A sword swing with a wind-up and a follow-through: the hand is dragged
+  // along an arc and the rest of the body is pulled around by its own joints.
+  // k: 0 → 1 across the swing.
   swingArc(k, facing) {
     const I = this.i, chest = this.pts[I.chest];
-    const a = Math.PI * 0.95 - k * Math.PI * 1.25;
-    const R = 8.2;
-    this.springTo(I.hdR, chest.x + Math.cos(a) * R * facing, chest.y + Math.sin(a) * R, 0.42, 0.55);
-    this.springTo(I.elR, chest.x + Math.cos(a + 0.5) * R * 0.55 * facing, chest.y + Math.sin(a + 0.5) * R * 0.55, 0.3, 0.6);
+    this.armBusy = 0.12;
+    // ease back for the first fifth, then whip through
+    const e = k < 0.22 ? -k / 0.22 * 0.35 : (k - 0.22) / 0.78;
+    const a = Math.PI * 0.95 - e * Math.PI * 1.3;
+    const R = 8.2 * (0.82 + 0.18 * Math.min(1, k * 3));
+    const pull = k < 0.22 ? 0.3 : 0.45;
+    this.springTo(I.hdR, chest.x + Math.cos(a) * R * facing, chest.y + Math.sin(a) * R, pull, 0.55);
+    this.springTo(I.elR, chest.x + Math.cos(a + 0.5) * R * 0.55 * facing, chest.y + Math.sin(a + 0.5) * R * 0.55, pull * 0.7, 0.6);
+    // the shoulder follows the cut through
+    this.springTo(I.shR, chest.x + facing * (1.6 + e * 1.4), chest.y + 0.9, 0.22, 0.4);
+    if (k > 0.25) this.accel(I.chest, facing * 34, 0);
   }
   grounded() {
     const I = this.i;

@@ -147,11 +147,15 @@ CZ.Cinematic = class Cinematic {
     wheel.rotation.x = Math.PI / 2; wheel.castShadow = true; g.add(wheel); this.cheeseWheel = wheel;
     const rind = new THREE.Mesh(new THREE.CylinderGeometry(4.1, 4.1, 0.6, 20), this.mat(0xe8892a));
     rind.rotation.x = Math.PI / 2; g.add(rind);
-    for (const s of [-1.4, 1.4]) {
-      const eye = new THREE.Mesh(new THREE.CircleGeometry(1.25, 16), new THREE.MeshBasicMaterial({ color: 0xffffff }));
-      eye.position.set(s, 0.7, 1.7); g.add(eye);
-      const pup = new THREE.Mesh(new THREE.CircleGeometry(0.6, 12), new THREE.MeshBasicMaterial({ color: 0x140c06 }));
-      pup.position.set(0, -0.45, 0.05); eye.add(pup);
+    this.cheeseEyes = [];
+    for (const [sx, sy, r, pr] of [[-1.5, 0.9, 1.75, 0.8], [1.35, 0.3, 1.35, 0.72]]) {
+      const rim = new THREE.Mesh(new THREE.CircleGeometry(r, 18), new THREE.MeshBasicMaterial({ color: 0x2a1a0e }));
+      rim.position.set(sx, sy, 1.7); g.add(rim);
+      const eye = new THREE.Mesh(new THREE.CircleGeometry(r - 0.22, 18), new THREE.MeshBasicMaterial({ color: 0xffffff }));
+      eye.position.z = 0.02; rim.add(eye);
+      const pup = new THREE.Mesh(new THREE.CircleGeometry(pr, 14), new THREE.MeshBasicMaterial({ color: 0x140c06 }));
+      pup.position.set(0, -(r - pr - 0.3), 0.05); eye.add(pup);
+      this.cheeseEyes.push({ pup, R: r - pr - 0.3, p: CZ.rand(0, 6.3), w: CZ.rand(0.8, 1.4) });
     }
     g.position.set(-40, 4, 0);
     return g;
@@ -323,7 +327,7 @@ CZ.Cinematic = class Cinematic {
 
     // ── player ──
     const axis = I.axisX();
-    B.balance(dt, axis * 0.55, 1);
+    B.balance(dt, axis * 0.55, 1, axis);          // axis drives the walk cycle
     if (axis) { B.accel(B.i.hip, axis * 150, 0); B.accel(B.i.chest, axis * 70, 0); }
     if (I.pressed('jump') && B.grounded()) {
       B.impulse(B.i.hip, 0, 26, dt); B.impulse(B.i.chest, 0, 20, dt);
@@ -339,15 +343,17 @@ CZ.Cinematic = class Cinematic {
       B.swingArc(1 - this.swingT / 0.38, toward);
     }
     // ── enemy ──
-    R.balance(dt, 0, 1);
     this.aiT -= dt;
     const gap = Math.abs(rc.x - bc.x);
     const away = -toward;
+    let rMove = 0;
     if (this.aiState === 'approach') {
-      if (gap > 16) R.accel(R.i.hip, away * 120, 0);
-      else if (gap < 11) R.accel(R.i.hip, -away * 90, 0);
+      if (gap > 16) { R.accel(R.i.hip, away * 120, 0); rMove = away; }
+      else if (gap < 11) { R.accel(R.i.hip, -away * 90, 0); rMove = -away; }
       if (this.aiT <= 0 && gap < 20) { this.aiState = 'swing'; this.aiT = 0.42; }
-    } else if (this.aiState === 'swing') {
+    }
+    R.balance(dt, rMove * 0.4, 1, rMove);
+    if (this.aiState === 'swing') {
       R.swingArc(1 - Math.max(0, this.aiT) / 0.42, away);
       if (this.aiT <= 0) { this.aiState = 'approach'; this.aiT = CZ.rand(1.0, 2.0); }
     }
@@ -440,6 +446,15 @@ CZ.Cinematic = class Cinematic {
   }
 
   // beside the duck, not above it - the letterbox bars eat the top of the frame
+  // the googly eyes swing on their own, out of step with each other
+  wobbleEyes() {
+    if (!this.cheeseEyes) return;
+    for (const e of this.cheeseEyes) {
+      const a = Math.sin(this.t * 3.1 * e.w + e.p) * 1.1 - Math.PI / 2;
+      e.pup.position.set(Math.cos(a) * e.R, Math.sin(a) * e.R, 0.05);
+    }
+  }
+
   duckAnchor() { return () => [this.duck.position.x + 30, this.duck.position.y + 4, 0]; }
 
   phaseCurse(dt) {
@@ -457,6 +472,7 @@ CZ.Cinematic = class Cinematic {
       const s = Math.max(0.001, 1 - (k - 0.9) * 1.6);
       B.group.scale.setScalar(s);
       B.group.position.y = 0;
+      this.wobbleEyes();
       if (k > 1.5 && !this.cheese.visible) {
         B.group.visible = false; this.cheese.visible = true; this.cheese.position.x = cx;
         this.spark(cx, 6, 0, 0xffd23f, 40, 24);
@@ -481,6 +497,7 @@ CZ.Cinematic = class Cinematic {
     this.beam.material.opacity = Math.max(0, 0.24 - k * 0.3);
     this.cheese.rotation.z = Math.sin(this.t * 3) * 0.18;
     this.cheese.position.y = 4 + Math.abs(Math.sin(this.t * 3)) * 0.5;
+    this.wobbleEyes();
     if (k > 0.4) this.say('d3', "I'LL BUILD MY OWN.", () => [this.cheese.position.x, this.cheese.position.y + 9, 0], { kind: 'say', life: 2.6 });
     this.camZ = CZ.damp(this.camZ, 24, 2, dt);
     this.camY = CZ.damp(this.camY, 7, 3, dt);

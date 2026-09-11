@@ -12,7 +12,9 @@ CZ.Comic = (() => {
   // the edge, a chunky outline, and a tail of shrinking puffs underneath.
   const cloudCache = new Map();
   function cloudSprite(w, h, kind) {
-    const S = 4;                                   // pixel size
+    // Chunkier pixels on bigger balloons, so the lobes stay lobes instead of
+    // shrinking into a torn-paper edge.
+    const S = CZ.clamp(Math.round(w / 60), 4, 9);   // pixel size
     const cw = Math.max(12, Math.round(w / S)), ch = Math.max(8, Math.round(h / S));
     const key = `${cw}x${ch}|${kind}`;
     if (cloudCache.has(key)) return cloudCache.get(key);
@@ -30,17 +32,17 @@ CZ.Comic = (() => {
     };
     // body plus big round lobes all around the rim
     for (let y = 6; y < H - 6; y++) for (let x = 6; x < W - 6; x++) grid[y][x] = 1;
-    const lobes = Math.max(3, Math.round(W / 11));
+    const lobes = Math.max(3, Math.round(W / 14));
     for (let i = 0; i <= lobes; i++) {
       const x = 5.5 + (i / lobes) * (W - 11);
-      disc(x, 6, 5.4 + (i % 2) * 1.6);
-      disc(x, H - 6, 5.2 + ((i + 1) % 2) * 1.5);
+      disc(x, 6, 6.6 + (i % 2) * 1.8);
+      disc(x, H - 6, 6.2 + ((i + 1) % 2) * 1.6);
     }
-    const vl = Math.max(2, Math.round(H / 10));
+    const vl = Math.max(2, Math.round(H / 13));
     for (let i = 0; i <= vl; i++) {
       const y = 5.5 + (i / vl) * (H - 11);
-      disc(6, y, 5.2 + (i % 2) * 1.4);
-      disc(W - 6, y, 5.2 + ((i + 1) % 2) * 1.4);
+      disc(6, y, 6.2 + (i % 2) * 1.5);
+      disc(W - 6, y, 6.2 + ((i + 1) % 2) * 1.5);
     }
     // tail: three shrinking puffs trailing down toward the speaker
     const tx = W * 0.4;
@@ -65,8 +67,8 @@ CZ.Comic = (() => {
     el.style.backgroundImage = `url(${cloud.url})`;
     el.style.backgroundSize = '100% 100%';
     el.style.padding = `${cloud.padY}px ${cloud.padX}px ${cloud.padY + cloud.tail}px`;
-    el.style.marginLeft = `${-cloud.padX}px`;
-    el.style.marginTop = `${-cloud.padY}px`;
+    // no negative margins: place() clamps by the element box, and shifting it
+    // outside that box is how balloons ended up under the letterbox bar
   }
 
   // anchor: () => [x, y, z] in world space, or [x, y] already in screen fractions.
@@ -99,7 +101,11 @@ CZ.Comic = (() => {
     el.className = `pow ${opts.kind || 'hit'}`;
     el.textContent = text;
     layer.appendChild(el);
-    const b = { el, anchor, life: opts.life ?? 0.75, t: 0, off: opts.off || [0, 0], spin: (Math.random() - 0.5) * 16 };
+    // never more than two impact words at once, and never stacked exactly
+    while (bursts.length >= 2) { const old = bursts.shift(); old.el.remove(); }
+    const jitter = [(Math.random() - 0.5) * 90, (Math.random() - 0.5) * 60];
+    const off = opts.off || [0, 0];
+    const b = { el, anchor, life: opts.life ?? 0.75, t: 0, off: [off[0] + jitter[0], off[1] + jitter[1]], spin: (Math.random() - 0.5) * 16 };
     bursts.push(b);
     place(b);
     return b;

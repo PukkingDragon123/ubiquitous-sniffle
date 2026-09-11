@@ -44,7 +44,7 @@ CZ.Touch = (() => {
       stickEl.style.bottom = 'auto';
       homeX = cx; homeY = cy;
       move(e);
-      stickZone.setPointerCapture(e.pointerId);
+      try { stickZone.setPointerCapture(e.pointerId); } catch (err) { /* capture is optional */ }
       e.preventDefault();
     };
     const move = e => {
@@ -73,7 +73,7 @@ CZ.Touch = (() => {
         btnPointers.set(e.pointerId, { btn, at: performance.now() }); btn.classList.add('pressed');
         hold(act, true);
         if (act === 'jump') hold('confirm', true, MIN_HOLD);
-        btn.setPointerCapture(e.pointerId);
+        try { btn.setPointerCapture(e.pointerId); } catch (err) { /* capture is optional */ }
         CZ.Audio.resume();
         e.preventDefault(); e.stopPropagation();
       };
@@ -126,12 +126,37 @@ CZ.Touch = (() => {
     if (!on) { holdTimers.forEach(clearTimeout); holdTimers.clear(); CZ.Input.clearTouch(); stickPointer = null; btnPointers.clear(); root.querySelectorAll('.pressed').forEach(b => b.classList.remove('pressed')); }
     checkRotate();
   }
-  // Only offer the buttons for techs the player has actually unlocked.
+  // Spin and poke are always available - the wheel can do both from the start -
+  // so only the phase core is gated. Labels follow whatever part is installed.
+  let lastAb = {};
   function syncAbilities(ab) {
     if (!enabled) return;
-    $('tc-dash').hidden = !ab.dash;
-    $('tc-grapple').hidden = !ab.grapple;
-    $('tc-noclip').hidden = !ab.noclip;
+    lastAb = ab || {};
+    if (mode === 'fight') return;
+    $('tc-dash').hidden = false;
+    $('tc-grapple').hidden = false;
+    $('tc-noclip').hidden = !lastAb.noclip;
+    label('tc-dash', lastAb.dash ? 'THRUST' : 'SPIN');
+    label('tc-grapple', lastAb.grapple ? 'WINCH' : 'POKE');
+    label('tc-noclip', 'PHASE');
+  }
+  const label = (id, text) => { const el = $(id); if (el) el.querySelector('.lbl').textContent = text; };
+
+  // 'fight' is the opening mech duel: walk, jump, swing, and nothing else.
+  let mode = 'play';
+  function setMode(m) {
+    mode = m;
+    if (!enabled) return;
+    const fight = m === 'fight';
+    $('tc-pause').hidden = fight;
+    if (fight) {
+      $('tc-dash').hidden = false; $('tc-grapple').hidden = true; $('tc-noclip').hidden = true;
+      label('tc-dash', 'SWING');
+      $('tc-stick').querySelector('.tc-hint').textContent = 'WALK';
+    } else {
+      $('tc-stick').querySelector('.tc-hint').textContent = 'MOVE';
+      syncAbilities(lastAb);
+    }
   }
   function checkRotate() {
     if (!enabled) return;
@@ -139,5 +164,5 @@ CZ.Touch = (() => {
     $('rotate').classList.toggle('hidden', !(shown && portrait && !rotateDismissed));
   }
 
-  return { init, setVisible, syncAbilities, enabled: () => enabled };
+  return { init, setVisible, syncAbilities, setMode, enabled: () => enabled };
 })();

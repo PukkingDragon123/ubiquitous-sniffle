@@ -15,7 +15,15 @@ points, stick joints, joints that snap - so nothing is animated by hand. You dri
 | --- | --- | --- |
 | Walk | LEFT / RIGHT | thumbstick |
 | Jump | SPACE | JUMP |
-| Beam saber | SHIFT | DASH |
+| Beam saber | SHIFT | SWING |
+
+On a phone the duel gets its own control layout: the floating stick, a big JUMP,
+a SWING button, and SKIP moved to the top corner so it is never under your thumb.
+
+Nothing in the fight is keyframed. The torso is sprung over the hips, the legs run a stride cycle with the hips
+rising over each planted foot, the arms counter-swing against the legs, the knees tuck in mid-air, and a sword swing
+winds up before it whips through and drags the shoulders with it - all of it spring targets on the same rig the
+physics is solving, so a hit or a missing limb bends the animation instead of breaking it.
 
 Hits are found by sweeping the blade against the other rig, so a downward cut still lands on a mech that is already
 on the ground. Three hits and a mech starts coming apart: an arm, a leg, then the head, each one a stick that snaps
@@ -126,9 +134,12 @@ every icon, portrait and glyph is hand-authored pixel art.
   meter and a row of installed parts; the upgrade card is an icon, a name and a key.
 - **Cardboard UI.** Panels and buttons are corrugated cardboard with hard pixel borders and a drop step instead of
   soft shadows, tilted slightly like taped-up signs.
-- **Graffiti type.** Rubik Spray Paint for the huge tags, Press Start 2P for pixel labels, Silkscreen for body text.
-  The title letters bob on a stagger, the boss name shudders, and prompts blink. All motion respects
+- **One pixel typeface.** Everything - headings, balloons, buttons, impact words - is set in Pixelify Sans, heavy
+  weight for display sizes. No second face anywhere. The boss name shudders and prompts blink; all motion respects
   `prefers-reduced-motion`.
+- **Googly eyes.** The cheese has two of them, deliberately mismatched in size and height, each pupil a weight on its
+  own loose spring that overshoots, rattles off the rim and takes its time settling - and spins in circles when you
+  spin.
 - **Cheese everywhere.** Drips ooze off every panel and off ledges in the world, where they stretch, break and
   fall, and the wheel throws a trail of crumbs whenever it is rolling fast or spinning.
 
