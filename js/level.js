@@ -16,6 +16,14 @@ CZ.Level = class Level {
   }
 
   tileTex(w, h) { const t = this.theme.tile; return CZ.Tex.tiled(t[0], t[1], w, h); }
+  // A stable wobble per world position: the same crate always leans the same
+  // way, but nothing in the room is set down at exactly zero degrees, because
+  // nobody has ever set anything down at exactly zero degrees.
+  lean(x, amt = 0.05) {
+    let h = Math.imul(Math.round(x * 16) | 0, 2654435761) ^ 0x9e3779b9;
+    h = (h ^ (h >>> 15)) >>> 0;
+    return ((h % 2000) / 1000 - 1) * amt;
+  }
   flat(color, opts = {}) { return new THREE.MeshToonMaterial({ color, ...opts }); }
 
   // ---------- blocks ----------
@@ -143,6 +151,8 @@ CZ.Level = class Level {
     // anything marked as a crate is breakable, whatever skin it wears
     if (s.crate) s.breakable = true;
     mesh.position.set(s.x + s.w / 2, s.y + s.h / 2, 0);
+    // Crates were stacked by somebody in a hurry; walls were not.
+    if (s.crate) { mesh.rotation.z = this.lean(s.x + s.y * 7, 0.045); mesh.position.z = this.lean(s.x + 3, 0.5); }
     s.mesh = mesh; this.group.add(mesh);
   }
 
@@ -474,7 +484,11 @@ CZ.Level = class Level {
     // Room dressing lives behind the play plane; only cobwebs hang in front.
     const DEPTH = { rack: -2.8, crate: -2.5, shelf: -2.8, lamp: -1.4, web: 2.6,
       cheesewheel: -0.9, knifeblock: -0.9, bottle: -0.9, press: -3, vat: -2.5, door: -1.6 };
-    g.position.set(it.x, g.position.y + it.y, it.z !== undefined ? it.z : (DEPTH[it.kind] ?? -2));
+    g.position.set(it.x + this.lean(it.x * 3, 0.22), g.position.y + it.y,
+      it.z !== undefined ? it.z : (DEPTH[it.kind] ?? -2) + this.lean(it.x + 11, 0.45));
+    if (it.kind !== 'press' && it.kind !== 'vat' && it.kind !== 'door') {
+      g.rotation.z = this.lean(it.x + 5, it.kind === 'bottle' || it.kind === 'knifeblock' ? 0.12 : 0.05);
+    }
     it.mesh = g; this.group.add(g);
     this.decos.push(it);
     this.registerProp(it);

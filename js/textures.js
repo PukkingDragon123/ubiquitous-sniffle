@@ -24,18 +24,37 @@ CZ.Tex = (() => {
 
   const PATTERNS = {
     // stacked stone blocks with mortar lines
+    // Stacked stone. Nobody laid these to the millimetre: courses shift, the
+    // odd brick is short, corners are knocked off and a few of them have given
+    // up entirely and left a hole in the wall.
     brick: (g, S, c) => {
       const r = rng(7);
       g.fillStyle = c.mortar; g.fillRect(0, 0, S, S);
-      const bh = 8, bw = 16;
+      const bh = 8;
       for (let y = 0; y < S; y += bh) {
-        const off = (y / bh) % 2 ? bw / 2 : 0;
-        for (let x = -bw; x < S; x += bw) {
-          g.fillStyle = r() < 0.28 ? c.alt : c.base;
-          g.fillRect(x + off + 1, y + 1, bw - 2, bh - 2);
-          g.fillStyle = c.light; g.fillRect(x + off + 1, y + 1, bw - 2, 1);
-          g.fillStyle = c.dark; g.fillRect(x + off + 1, y + bh - 2, bw - 2, 1);
+        const off = ((y / bh) % 2 ? 8 : 0) + ((r() * 3) | 0) - 1;
+        for (let x = -16; x < S; ) {
+          const bw = r() < 0.22 ? 10 : 16;          // the odd short brick
+          const gone = r() < 0.06;                  // ...and the odd missing one
+          if (!gone) {
+            const top = y + 1 + (r() < 0.3 ? 1 : 0);
+            const h = y + bh - 1 - top;
+            g.fillStyle = r() < 0.28 ? c.alt : c.base;
+            g.fillRect(x + off + 1, top, bw - 2, h);
+            g.fillStyle = c.light; g.fillRect(x + off + 1, top, bw - 2 - ((r() * 4) | 0), 1);
+            g.fillStyle = c.dark; g.fillRect(x + off + 1 + ((r() * 3) | 0), y + bh - 2, bw - 3, 1);
+            // a chipped corner
+            if (r() < 0.3) { g.fillStyle = c.mortar; g.fillRect(x + off + 1, top, 1 + ((r() * 2) | 0), 1); }
+            if (r() < 0.22) { g.fillStyle = c.dark; g.fillRect(x + off + bw - 3, y + bh - 3, 2, 1); }
+          }
+          x += bw;
         }
+      }
+      // hairline cracks that wander down across the courses
+      for (let i = 0; i < 2; i++) {
+        let x = (r() * S) | 0, y = (r() * S) | 0;
+        g.fillStyle = c.dark;
+        for (let k = 0; k < 5 + ((r() * 7) | 0); k++) { g.fillRect(x, y, 1, 1); y++; x += ((r() * 3) | 0) - 1; }
       }
       speck(g, S, c.dark, 26, r); speck(g, S, c.light, 14, r);
     },
@@ -163,11 +182,27 @@ CZ.Tex = (() => {
       g.fillStyle = c.dark; for (let i = 0; i < 12; i++) g.fillRect((r() * S) | 0, (r() * S) | 0, 2, 1);
     },
     // wooden barrel / crate staves
+    // Planks of uneven width, with grain that wanders and a knot or two.
     wood: (g, S, c) => {
       const r = rng(311);
       g.fillStyle = c.base; g.fillRect(0, 0, S, S);
-      for (let x = 0; x < S; x += 8) { g.fillStyle = c.dark; g.fillRect(x, 0, 1, S); g.fillStyle = c.light; g.fillRect(x + 1, 0, 1, S); }
-      g.fillStyle = c.alt; for (let i = 0; i < 18; i++) g.fillRect((r() * S) | 0, (r() * S) | 0, 4, 1);
+      for (let x = 0; x < S; ) {
+        const w = 6 + ((r() * 5) | 0);
+        g.fillStyle = c.dark; g.fillRect(x, 0, 1, S);
+        g.fillStyle = c.light; g.fillRect(x + 1, 0, 1, S);
+        // the grain inside this plank, drifting as it runs
+        let gx = x + 2 + ((r() * (w - 3)) | 0);
+        g.fillStyle = c.alt;
+        for (let y = 0; y < S; y++) { g.fillRect(gx, y, 1, 1); if (r() < 0.18) gx += r() < 0.5 ? 1 : -1; }
+        // a knot
+        if (r() < 0.45) {
+          const kx = x + 2 + ((r() * Math.max(1, w - 4)) | 0), ky = (r() * S) | 0;
+          g.fillStyle = c.dark; g.fillRect(kx, ky, 3, 2); g.fillRect(kx + 1, ky - 1, 1, 4);
+          g.fillStyle = c.alt; g.fillRect(kx + 1, ky, 1, 1);
+        }
+        x += w;
+      }
+      g.fillStyle = c.alt; for (let i = 0; i < 14; i++) g.fillRect((r() * S) | 0, (r() * S) | 0, 2 + ((r() * 4) | 0), 1);
       speck(g, S, c.dark, 20, r);
     },
   };
@@ -200,10 +235,16 @@ CZ.Tex = (() => {
     return t;
   }
   // A per-mesh clone so each block can tile the texture to its own size.
+  // Patterns that cover whole walls get a bigger canvas, so the repeat has a
+  // longer period before the eye catches it. The world scale is unchanged: the
+  // unit grows with the canvas, so a brick is still a brick.
+  const TILE = { brick: 64, wood: 64 };
   function tiled(pattern, palette, w, h, unit = 2) {
-    const t = get(pattern, palette).clone();
+    const size = TILE[pattern] || 32;
+    const u = unit * (size / 32);
+    const t = get(pattern, palette, size).clone();
     t.needsUpdate = true;
-    t.repeat.set(Math.max(1, Math.round(w / unit)), Math.max(1, Math.round(h / unit)));
+    t.repeat.set(Math.max(1, Math.round(w / u)), Math.max(1, Math.round(h / u)));
     return t;
   }
   // Draw a sprite from CZ.Spr onto a transparent texture (used for in-world signs).

@@ -115,4 +115,29 @@ CZ.loadSave = () => {
   try { return JSON.parse(localStorage.getItem(CZ.SAVE_KEY)) || null; } catch (e) { return null; }
 };
 CZ.writeSave = data => { try { localStorage.setItem(CZ.SAVE_KEY, JSON.stringify(data)); } catch (e) {} };
-CZ.newSave = () => ({ level: 0, abilities: {}, bugs: {}, deaths: 0, time: 0, bestTime: null, completed: false, sawIntro: false });
+CZ.newSave = () => ({ level: 0, abilities: {}, bugs: {}, deaths: 0, time: 0, bestTime: null, completed: false, sawIntro: false,
+  opts: CZ.defaultOpts() });
+
+// Settings. Each one is a small integer so the whole thing round-trips through
+// localStorage without a schema.
+CZ.defaultOpts = () => ({
+  sfx: 3,        // 0-3
+  music: 2,      // 0-3
+  shake: 2,      // 0 none, 1 half, 2 full
+  pixels: 1,     // 0 fine (540), 1 chunky (360), 2 blocky (270)
+  palette: 1,    // 0 full colour, 1 crushed + dithered
+  flash: 1,      // 0 no full-screen flashes
+});
+CZ.PIXEL_STEPS = [540, 360, 270];
+CZ.OPT_LABELS = {
+  sfx: ['OFF', 'LOW', 'MID', 'FULL'],
+  music: ['OFF', 'LOW', 'MID', 'FULL'],
+  shake: ['OFF', 'HALF', 'FULL'],
+  pixels: ['FINE', 'CHUNKY', 'BLOCKY'],
+  palette: ['FULL', 'CRUSHED'],
+  flash: ['OFF', 'ON'],
+};
+CZ.OPT_ROWS = [
+  ['sfx', 'SOUND'], ['music', 'MUSIC'], ['shake', 'SCREEN SHAKE'],
+  ['pixels', 'PIXEL SIZE'], ['palette', 'COLOURS'], ['flash', 'SCREEN FLASH'],
+];

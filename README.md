@@ -1,7 +1,7 @@
 # CHEEZ-IT — Get Out Before You Rot
 
 A 3D side-scrolling platformer about a wheel of cheese escaping the place that left it to rot, built with Three.js
-and no build tools.
+and no build tools. Made by Pukking Dragon.
 
 You are a wheel of cheese on a cellar shelf. Nobody is coming back for you. The wheel beside you is already green,
 and the mould is working its way along the shelf. So you roll off the shelf and go looking for the door.
@@ -149,9 +149,13 @@ every icon, portrait and glyph is hand-authored pixel art.
   brick, riveted plate, corrugated cardboard, cracked magma, circuit board, ducting, cloud marble, cheese, belts.
 - **Three depths per world.** A dithered sky, two parallax background layers of themed props, the play plane, and a
   foreground layer of pipes, girders and chains that sweeps past in front of the camera.
-- **Cloud balloons.** Every line of speech is a pixel-art cloud drawn per balloon on a 4px grid - a body with fat
-  round lobes all around the rim, a chunky ink outline and three shrinking tail puffs - sized to the text, tracking
-  a point in the 3D world, and never more than one on screen at a time.
+- **Cloud balloons.** Every line of speech is a pixel-art cloud drawn per balloon, sized to the text, tracking a
+  point in the 3D world, and never more than one on screen at a time. The lobes around the rim are deliberately
+  uneven and the ink is deliberately uneven with them - a balloon whose every lobe is the same radius looks stamped
+  out. The outline runs one pixel along the top and left and two along the bottom and right, the way a brush loads
+  on the way down, with the odd pixel of it missing, because a line drawn by hand is never closed; outside it goes a
+  pale halo, because a black line on a black cellar wall is not a line. The tail curls toward whoever is speaking
+  and flips sides when the screen edge pushes the balloon past them, and a shout is a jagged burst instead.
 - **Almost no words.** No title screen, no dialogue box, no signposts, no tutorial text. The HUD is a row of
   installed parts and a tally of what you have wrecked; the upgrade card is an icon, a name and a key.
 - **A UI made of pixels, not of CSS.** Every frame, button, plank and chain link in the interface is drawn pixel by
@@ -161,6 +165,13 @@ every icon, portrait and glyph is hand-authored pixel art.
   ornate gold banding with a scroll in every corner over a dark wood field; buttons are struck brass; the touch
   controls are blued steel; meters sit in a dark slot cut into an iron-capped plank; the wreck tally hangs off a
   length of chain.
+- **Nothing in here is square.** The four corners of a frame are not mirrors of each other: each edge wanders in and
+  out by a pixel through the corner slices, each corner scroll sits a pixel out from the last and frays differently,
+  studs are hammered in slightly crooked, and gold gets chipped off corners and edges. The bricks in the walls are
+  laid in courses that shift, some short, some missing, corners knocked off, with hairline cracks wandering down
+  across them; planks vary in width and carry knots and grain that drifts as it runs; crates and clutter are set
+  down a degree or two off true. The one place none of it applies is the middle of a frame's edges, because that is
+  the part CSS tiles and a repeating wobble is just a pattern.
 - **Two bitmap faces.** Press Start 2P for anything short and loud - titles, keys, labels, impact words - and
   Pixelify Sans for anything you actually have to read. Both are real pixel fonts, so nothing is anti-aliased into
   mush at size, and neither carries a fat outline: a thick stroke fills in a bitmap face's counters, so the depth
@@ -184,6 +195,20 @@ every icon, portrait and glyph is hand-authored pixel art.
   that step; the spider hangs on a thread on eight two-jointed legs; the mould spore is a spiked puffball with one
   enormous eye that follows you; the molten blob drips and gurns; the turret wears hazard stripes and its lens flares
   red before it fires.
+
+## Settings
+
+SETTINGS from the world picker or from the pause menu. Everything saves to `localStorage` with the rest of your
+progress:
+
+| | |
+| --- | --- |
+| SOUND / MUSIC | OFF / LOW / MID / FULL, on separate taps |
+| SCREEN SHAKE | OFF / HALF / FULL |
+| PIXEL SIZE | FINE (540) / CHUNKY (360) / BLOCKY (270) internal render height |
+| COLOURS | FULL, or CRUSHED to 14 steps per channel with an ordered dither |
+| SCREEN FLASH | OFF turns off every full-screen flash |
+| ERASE SAVE | Asks twice, then puts you back to one wheel and no parts |
 
 ## Code layout
 

@@ -55,6 +55,46 @@ CZ.UI = (() => {
     el.classList.remove('bump'); void el.offsetWidth; el.classList.add('bump');
   }
 
+  // The settings list. Each row is a label, a value and two nudge keys. The
+  // rows are built once and only the values are rewritten, so the key you are
+  // pressing is still the same key after you press it.
+  function options(opts, onChange) {
+    const el = $('opt-rows'); if (!el) return;
+    el.innerHTML = '';
+    const rows = [];
+    const paint = () => {
+      for (const r of rows) {
+        const vals = CZ.OPT_LABELS[r.key], i = CZ.clamp(opts[r.key] | 0, 0, vals.length - 1);
+        r.v.textContent = vals[i];
+        r.down.disabled = i === 0;
+        r.up.disabled = i === vals.length - 1;
+      }
+    };
+    for (const [key, label] of CZ.OPT_ROWS) {
+      const row = document.createElement('div'); row.className = 'opt';
+      const k = document.createElement('span'); k.className = 'k'; k.textContent = label;
+      const v = document.createElement('span'); v.className = 'v';
+      const nudge = (d, glyph) => {
+        const b = document.createElement('button');
+        b.textContent = glyph; b.type = 'button';
+        b.setAttribute('aria-label', `${label} ${d < 0 ? 'down' : 'up'}`);
+        b.onclick = () => {
+          const vals = CZ.OPT_LABELS[key];
+          const next = CZ.clamp((opts[key] | 0) + d, 0, vals.length - 1);
+          if (next === (opts[key] | 0)) return;
+          onChange(key, next);
+          paint();
+        };
+        return b;
+      };
+      const down = nudge(-1, '<'), up = nudge(1, '>');
+      row.append(k, v, down, up);
+      el.appendChild(row);
+      rows.push({ key, v, down, up });
+    }
+    paint();
+  }
+
   function noclipMeter(on, frac) { show('noclip-meter', on); if (on) $('noclip-fill').style.width = `${Math.round(frac * 100)}%`; }
   function bossBar(boss) { show('boss-bar', !!boss); if (boss) { $('boss-name').textContent = boss.name; $('boss-fill').style.width = `${Math.max(0, boss.hp / boss.maxHp) * 100}%`; } }
   function sign() {}
@@ -93,6 +133,6 @@ CZ.UI = (() => {
     });
   }
 
-  return { $, show, wheel, parts, timer, levelName, qte, wrecked, noclipMeter, bossBar, sign, toast, flash,
+  return { $, show, wheel, parts, timer, levelName, qte, wrecked, options, noclipMeter, bossBar, sign, toast, flash,
     unlock, complete, ending, levelList, stat, cineCaption, cineFx, cineShow };
 })();

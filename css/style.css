@@ -173,10 +173,32 @@ button:disabled{filter:grayscale(.8) brightness(.65) drop-shadow(0 3px 0 rgba(0,
 .panel td{padding:9px 14px;border-bottom:3px dotted rgba(21,13,8,.28);text-align:left}
 .panel td:first-child{font-family:var(--pixel);font-size:11px;line-height:1.7;white-space:nowrap;color:var(--wine-dk)}
 .panel .tip{font-size:22px;max-width:52ch;line-height:1.5;margin:0;color:#4a3218}
-#level-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(196px,1fr));gap:12px;width:100%}
-#level-list button{font-family:var(--body);font-size:20px;padding:12px 10px;display:flex;flex-direction:column;
-  gap:6px;align-items:center;line-height:1.2}
-#level-list button .n{font-family:var(--pixel);font-size:9px;opacity:.8}
+/* the settings rows: a label, the current value, and two brass nudge keys */
+#opt-rows{display:flex;flex-direction:column;gap:1px;width:100%;max-width:530px}
+.opt{display:grid;grid-template-columns:1fr auto auto auto;align-items:center;gap:7px;
+  padding:2px 2px 4px;border-bottom:3px dotted rgba(21,13,8,.22)}
+.opt .k{font-family:var(--pixel);font-size:10px;line-height:1.7;color:var(--wine-dk);text-align:left}
+.opt .v{font-family:var(--pixel);font-size:10px;line-height:1.7;color:var(--ink);
+  min-width:8ch;text-align:center}
+.opt button{font-size:10px;padding:5px 7px;border-width:12px;border-image-width:12px;min-width:38px}
+/* the byline, scratched into the bottom of the page */
+.byline{font-family:var(--pixel);font-size:9px;line-height:1.9;letter-spacing:1px;
+  color:#7a5c33;margin:2px 0 0;transform:rotate(-.7deg)}
+#ending .byline{color:#6b4220}
+#erase-note{font-size:13px;opacity:.75;margin:-4px 0 0;max-width:44ch}
+#settings{gap:6px}
+#settings h2{margin-bottom:0}
+#settings #btn-erase{font-size:10px;padding:8px 12px;border-width:14px;border-image-width:14px}
+#settings .back{font-size:11px;padding:9px 16px;border-width:16px;border-image-width:16px}
+
+#level-list{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;width:100%}
+#level-list button{font-family:var(--body);font-size:17px;padding:8px 6px;display:flex;flex-direction:column;
+  gap:4px;align-items:center;line-height:1.15;border-width:14px;border-image-width:14px}
+#level-list button .n{font-family:var(--pixel);font-size:8px;opacity:.8}
+#levelselect{gap:7px}
+.panel .row{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+#levelselect button{font-size:12px;padding:9px 16px;border-width:15px;border-image-width:15px}
+#levelselect .tip{font-size:19px}
 #complete-stats,#ending-stats{display:flex;flex-direction:column;gap:10px;align-items:center;color:var(--ink)}
 .stat{display:flex;align-items:center;gap:12px;font-family:var(--pixel);font-size:12px;line-height:1.7}
 .stat .spr{width:26px;height:26px}
@@ -333,8 +355,21 @@ html.touch .mobile-only{display:block}
   .panel .tip{font-size:17px}
   button{font-size:11px;padding:11px 16px;border-width:18px;border-image-width:18px}
   button.big{font-size:15px;padding:14px 24px}
-  #level-list{grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px}
-  #level-list button{font-size:16px;padding:9px 5px}
+  #level-list{grid-template-columns:repeat(3,1fr);gap:6px}
+  #level-list button{font-size:12px;padding:6px 4px;gap:2px;border-width:11px;border-image-width:11px}
+  #level-list button .n{font-size:7px}
+  #levelselect{gap:5px}
+  #levelselect .tip{font-size:14px}
+  #levelselect button{font-size:9px;padding:7px 12px;border-width:12px;border-image-width:12px}
+  .byline{font-size:7px;margin-top:1px}
+  /* the settings list has to fit a landscape phone with the bar at the bottom */
+  .opt{padding:0 2px 2px;gap:5px}
+  .opt .k,.opt .v{font-size:8px}
+  .opt button{font-size:8px;padding:4px 5px;min-width:30px;border-width:10px;border-image-width:10px}
+  #settings{gap:4px}
+  #erase-note{display:none}
+  #settings #btn-erase{font-size:8px;padding:5px 9px;border-width:11px;border-image-width:11px}
+  #settings .back{font-size:9px;padding:6px 11px;border-width:12px;border-image-width:12px}
   .stat{font-size:9px}
   #ending-text{font-size:19px}
   .big-spr{width:52px;height:52px}
@@ -345,6 +380,23 @@ html.touch .mobile-only{display:block}
   #cine-skip{font-size:9px;border-width:14px;border-image-width:14px}
   #qte .key{font-size:13px;border-width:18px;border-image-width:18px}
   #cine .bar{height:9vh}
+}
+/* A landscape phone is very short. Fold the settings into two columns rather
+   than making everybody scroll a panel that has a frame drawn round it. */
+@media (max-height:540px){
+  #opt-rows{display:grid;grid-template-columns:1fr 1fr;gap:3px 16px;max-width:none;width:auto}
+  #settings{min-width:min(700px,96vw)}
+  #settings h2{font-size:11px;margin-bottom:6px}
+  .opt{border-bottom-width:2px}
+  /* ...and the world picker has to fit on the same screen */
+  #levelselect{gap:4px}
+  #levelselect h2{font-size:11px;margin-bottom:0}
+  #levelselect .tip{font-size:11px}
+  .byline{font-size:6px;margin-top:0}
+  #level-list{gap:5px}
+  #level-list button{font-size:10px;padding:4px 3px;border-width:10px;border-image-width:10px}
+  #level-list button .n{font-size:6px}
+  #levelselect button{font-size:8px;padding:5px 10px;border-width:10px;border-image-width:10px}
 }
 @media (max-height:430px){
   #tc-stick-base{width:104px;height:104px;border-width:20px;border-image-width:20px}
@@ -370,13 +422,17 @@ html.touch .mobile-only{display:block}
 #comic.hidden{display:none !important}
 
 /* The balloon body is a pixel-art cloud drawn per bubble in comic.js. */
-.bubble{position:absolute;transform:translate(-50%,-100%);font-weight:700;
-  color:var(--ink);max-width:min(460px,58vw);text-align:center;
+/* content-box on purpose: the balloon sprite is generated from the text's own
+   size, so max-width has to cap the text and not the text plus the padding, or
+   the words reflow the moment the padding lands and spill out of the drawing. */
+.bubble{position:absolute;--tilt:0deg;box-sizing:content-box;
+  transform:translate(-50%,-100%) rotate(var(--tilt));font-weight:700;
+  color:var(--ink);max-width:min(360px,42vw);text-align:center;
   font-family:var(--body);font-size:clamp(26px,2.9vw,40px);line-height:1.55;
   background-repeat:no-repeat;image-rendering:pixelated;
   animation:bubblePop .16s steps(3);transition:opacity .22s}
 .bubble.gone{opacity:0}
-@keyframes bubblePop{from{transform:translate(-50%,-100%) scale(.4)}to{transform:translate(-50%,-100%) scale(1)}}
+@keyframes bubblePop{from{transform:translate(-50%,-100%) rotate(var(--tilt)) scale(.4)}to{transform:translate(-50%,-100%) rotate(var(--tilt)) scale(1)}}
 .bubble.shout{font-size:clamp(29px,3.4vw,48px)}
 .bubble.small{font-size:clamp(26px,2.97vw,43px);text-transform:lowercase}
 
@@ -409,7 +465,7 @@ html.touch .mobile-only{display:block}
 @keyframes pf{to{opacity:0}}
 
 @media (max-width:900px), (max-height:620px){
-  .bubble{font-size:21px;max-width:62vw}
+  .bubble{font-size:21px;max-width:46vw}
   .bubble.shout{font-size:23px}
   .pow{font-size:clamp(13px,3.2vw,21px)}
 }

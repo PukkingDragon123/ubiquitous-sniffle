@@ -41,8 +41,21 @@
   <h2 class="graffiti">CHEEZ-IT</h2>
   <p class="tip">One wheel of cheese, one way out. Pick a world.</p>
   <div id="level-list"></div>
-  <button id="btn-controls">CONTROLS</button>
+  <div class="row">
+    <button id="btn-controls">CONTROLS</button>
+    <button id="btn-settings">SETTINGS</button>
+  </div>
   <button id="btn-replay-intro">REPLAY THE OPENING</button>
+  <p class="byline">MADE BY PUKKING DRAGON</p>
+</div>
+
+<!-- Settings -->
+<div id="settings" class="panel hidden">
+  <h2 class="graffiti">SETTINGS</h2>
+  <div id="opt-rows"></div>
+  <button id="btn-erase">ERASE SAVE</button>
+  <p class="tip" id="erase-note">Wipes progress and every part you have bolted on.</p>
+  <button class="back" data-back>BACK</button>
 </div>
 
 <!-- Controls -->
@@ -69,6 +82,7 @@
   <h2 class="graffiti">PAUSED</h2>
   <button id="btn-resume">RESUME</button>
   <button id="btn-restart">RESTART LEVEL</button>
+  <button id="btn-pause-settings">SETTINGS</button>
   <button id="btn-quit">QUIT TO TITLE</button>
 </div>
 
@@ -85,6 +99,7 @@
   <h2 class="graffiti">YOU GOT OUT</h2>
   <div id="ending-text"></div>
   <div id="ending-stats"></div>
+  <p class="byline">CHEEZ-IT &mdash; MADE BY PUKKING DRAGON</p>
   <button id="btn-ending-title">BACK TO TITLE</button>
 </div>
 

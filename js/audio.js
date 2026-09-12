@@ -102,6 +102,7 @@ CZ.Audio = (() => {
   function playMusic(name) {
     if (currentSong === name) return;
     stopMusic();
+    if (musVol <= 0 || muted) { currentSong = name; return; }
     currentSong = name;
     if (!ensure()) return;
     step = 0;
@@ -128,7 +129,21 @@ CZ.Audio = (() => {
     schedule();
   }
   function stopMusic() { currentSong = null; if (musicTimer) clearTimeout(musicTimer); musicTimer = null; }
-  function toggleMute() { muted = !muted; return muted; }
+  function toggleMute() { muted = !muted; setMuted(muted); return muted; }
+  // Settings reach in here: sound and music are separate taps.
+  function setMuted(on) {
+    muted = !!on;
+    if (master) master.gain.value = muted ? 0 : 0.5 * sfxVol;
+    if (muted) stopMusic();
+  }
+  let sfxVol = 1, musVol = 1;
+  function setVolumes(sfx01, mus01) {
+    sfxVol = sfx01; musVol = mus01;
+    if (master) master.gain.value = muted ? 0 : 0.5 * sfxVol;
+    if (musicGain) musicGain.gain.value = 0.28 * musVol;
+    if (musVol <= 0) stopMusic();
+  }
 
-  return { sfx, playMusic, stopMusic, toggleMute, resume, isMuted: () => muted };
+  return { sfx, playMusic, stopMusic, toggleMute, setMuted, setVolumes, resume,
+    isMuted: () => muted, musicOn: () => musVol > 0 };
 })();

@@ -67,11 +67,13 @@ CZ.Game = class Game {
     this.screenScene.add(this.screenQuad);
 
     this.save = CZ.loadSave() || CZ.newSave();
+    this.opts = Object.assign(CZ.defaultOpts(), this.save.opts || {});
+    this.save.opts = this.opts;
     this.abilities = this.save.abilities;
     this.state = 'title'; this.level = null; this.player = null; this.enemies = []; this.projectiles = []; this.boss = null; this.bossStarted = false;
     this.levelIndex = 0; this.levelTime = 0; this.levelDeaths = 0; this.checkpoint = { x: 0, y: 0 };
     this.camX = 0; this.camY = 4; this.camZ = 19; this.acc = 0; this.last = performance.now(); this.deadT = 0; this.unlockingId = null;
-    CZ.Touch.init(); this.bindUI(); this.resize(); window.addEventListener('resize', () => this.resize());
+    CZ.Touch.init(); this.bindUI(); this.applyOpts(); this.resize(); window.addEventListener('resize', () => this.resize());
     requestAnimationFrame(t => this.loop(t));
   }
 
@@ -81,8 +83,26 @@ CZ.Game = class Game {
     const gesture = () => CZ.Audio.resume();
     window.addEventListener('pointerdown', gesture, { once: true }); window.addEventListener('keydown', gesture, { once: true });
     $('btn-controls').onclick = () => { U.show('levelselect', false); U.show('controls', true); };
+    $('btn-settings').onclick = () => { U.show('levelselect', false); this.openSettings(false); };
+    $('btn-pause-settings').onclick = () => { U.show('pause', false); this.openSettings(true); };
+    $('btn-erase').onclick = () => {
+      if (this._eraseArmed) {
+        const opts = this.opts;
+        this.save = CZ.newSave(); this.save.opts = opts; this.abilities = this.save.abilities;
+        CZ.writeSave(this.save);
+        this._eraseArmed = false; $('btn-erase').textContent = 'ERASE SAVE';
+        $('erase-note').textContent = 'Gone. Back to one wheel and no parts.';
+      } else {
+        this._eraseArmed = true; $('btn-erase').textContent = 'REALLY ERASE?';
+        $('erase-note').textContent = 'Press it again and there is no undo.';
+      }
+    };
     $('btn-replay-intro').onclick = () => this.startIntro();
-    document.querySelectorAll('[data-back]').forEach(b => b.onclick = () => { U.show('controls', false); this.showMenu(); });
+    document.querySelectorAll('[data-back]').forEach(b => b.onclick = () => {
+      U.show('controls', false); U.show('settings', false);
+      if (this._settingsFromPause) { this._settingsFromPause = false; U.show('pause', true); this.state = 'paused'; CZ.Touch.setVisible(false); }
+      else this.showMenu();
+    });
     $('btn-resume').onclick = () => this.setPaused(false);
     $('btn-restart').onclick = () => { this.setPaused(false); this.startLevel(this.levelIndex, false); };
     $('btn-quit').onclick = () => { this.setPaused(false); this.showMenu(); };
@@ -96,6 +116,34 @@ CZ.Game = class Game {
       if (k < 0.42 && k > 0.14) this.doorSmashed(); else this.doorMissed();
     });
   }
+  // ---------- settings ----------
+  openSettings(fromPause) {
+    this._settingsFromPause = !!fromPause;
+    this._eraseArmed = false;
+    const $ = CZ.UI.$;
+    $('btn-erase').textContent = 'ERASE SAVE';
+    $('erase-note').textContent = 'Wipes progress and every part you have bolted on.';
+    const apply = (k, v) => {
+      this.opts[k] = v; this.save.opts = this.opts; CZ.writeSave(this.save);
+      this.applyOpts();
+      CZ.Audio.sfx.checkpoint();
+    };
+    CZ.UI.options(this.opts, apply);
+    CZ.UI.show('settings', true);
+  }
+  // Push the settings into the parts of the game that care about them.
+  applyOpts() {
+    const o = this.opts;
+    CZ.Audio.setVolumes(o.sfx / 3, o.music / 3);
+    CZ.Audio.setMuted(o.sfx === 0);
+    if (o.music > 0 && this.level && this.state === 'playing') CZ.Audio.playMusic(this.level.data.song);
+    CZ.SHAKE_SCALE = [0, 0.5, 1][o.shake] ?? 1;
+    CZ.FLASH_ON = o.flash !== 0;
+    const ph = CZ.PIXEL_STEPS[o.pixels] ?? 360;
+    if (ph !== CZ.PIXEL_HEIGHT) { CZ.PIXEL_HEIGHT = ph; this.resize(); }
+    if (this.screenMat) this.screenMat.uniforms.levels.value = o.palette ? CZ.COLOR_LEVELS : 64;
+  }
+
   // The world picker doubles as the main menu now that the title screen is gone.
   showMenu() {
     const U = CZ.UI;
@@ -103,7 +151,8 @@ CZ.Game = class Game {
     if (this._skipTap && this._skipBtn) { this._skipBtn.removeEventListener('pointerdown', this._skipTap); this._skipTap = null; }
     if (this.cine) { this.cine.dispose(); this.cine = null; }
     U.cineShow(false); U.cineFx(0, 0); CZ.Comic.show(false);
-    U.show('hud', false); U.show('complete', false); U.show('ending', false); U.show('unlock', false); U.show('controls', false);
+    U.show('hud', false); U.show('complete', false); U.show('ending', false); U.show('unlock', false);
+    U.show('controls', false); U.show('settings', false);
     U.sign(null); CZ.Touch.setMode('play'); CZ.Touch.setVisible(false);
     U.levelList(CZ.LEVELS, this.save, i => { U.show('levelselect', false); this.startLevel(i, false); });
     U.show('levelselect', true);
@@ -207,7 +256,7 @@ CZ.Game = class Game {
   }
 
   playerDied() {
-    this.state = 'dead'; this.deadT = 0; this.levelDeaths++; this.save.deaths++; CZ.UI.flash('rgba(255,40,60,.5)');
+    this.state = 'dead'; this.deadT = 0; this.levelDeaths++; this.save.deaths++; this.flash('rgba(255,40,60,.5)');
   }
   respawnAll() {
     this.player.respawn(this.checkpoint.x, this.checkpoint.y);
@@ -314,7 +363,7 @@ CZ.Game = class Game {
     for (const e of this.enemies) if (!e.dead && Math.abs(e.cx() - x) < r && Math.abs(e.y - y) < 1.6) e.kill('stomp');
     for (const p of this.projectiles) if (!p.dead && Math.abs(p.x - x) < r && Math.abs(p.y - y) < 2) p.kill(true);
   }
-  flash(c) { CZ.UI.flash(c); }
+  flash(c) { if (CZ.FLASH_ON !== false) CZ.UI.flash(c); }
   toast(t) { CZ.UI.toast(t); }
   // Freeze the world for a few frames on impact. Nothing else sells a hit
   // half as well as the game briefly refusing to continue.

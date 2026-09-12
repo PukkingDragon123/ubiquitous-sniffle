@@ -264,7 +264,7 @@ CZ.Effects = (() => {
     }
   }
 
-  function shake(a) { shakeAmt = Math.max(shakeAmt, a); }
+  function shake(a) { shakeAmt = Math.max(shakeAmt, a * (CZ.SHAKE_SCALE ?? 1)); }
   function update(dt) {
     stepChunks(dt);
     stepDust(dt);

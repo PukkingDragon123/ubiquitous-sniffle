@@ -27,13 +27,22 @@ CZ.Frame = (() => {
   }
   const px = (g, x, y, c, w = 1, h = 1) => { g.fillStyle = c; g.fillRect(x, y, w, h); };
 
+  // Deterministic noise, so a frame looks the same every time it is built.
+  const rng = seed => () => (seed = (seed * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff;
+
   // Ring index of a pixel inside a chamfered rectangle: 0 is the outermost
   // row, -1 means the pixel is outside the cut corner. Rings are what make a
   // border read as bevelled metal instead of as a coloured outline.
-  function ring(x, y, w, h, cut) {
+  //
+  // `wob` pushes the boundary in and out by a pixel as it travels round. A
+  // frame whose every edge is dead straight and whose four corners are exact
+  // mirrors of each other is the thing that gives a generated interface away,
+  // so the edges here breathe and no two corners match.
+  function ring(x, y, w, h, cut, wob) {
     const l = x, t = y, r = w - 1 - x, b = h - 1 - y;
     let d = Math.min(l, t, r, b);
     d = Math.min(d, l + t - cut, r + t - cut, l + b - cut, r + b - cut);
+    if (wob) d += wob(x, y, w, h);
     return d;
   }
   // Which edge is nearest: the top and left catch the light, the rest fall away.
@@ -42,9 +51,48 @@ CZ.Frame = (() => {
     const m = Math.min(l, t, r, b);
     return m === t || m === l;
   };
-
-  // Deterministic noise, so a frame looks the same every time it is built.
-  const rng = seed => () => (seed = (seed * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff;
+  // A wander that lives only in the corner slices. The middle of each edge is
+  // the part CSS tiles, so it has to stay dead straight or the repeat shows a
+  // seam; the corners are drawn once each, so that is where the hand goes in.
+  function wobble(seed, amp, slice) {
+    const r = rng(seed);
+    const n = [];
+    for (let i = 0; i < 48; i++) n.push(r());
+    const wave = t => {
+      const f = CZ.clamp(t, 0, 1) * (n.length - 1), i = Math.floor(f), k = f - i;
+      const a = n[i], b = n[Math.min(n.length - 1, i + 1)];
+      return (a + (b - a) * k) * 2 - 1;
+    };
+    // one different phase and bias per corner, so no two corners match
+    const ph = [r() * 40, r() * 40, r() * 40, r() * 40];
+    const bias = [r(), r(), r(), r()];
+    return (x, y, w, h) => {
+      const l = x, t = y, rr = w - 1 - x, b = h - 1 - y;
+      const dx = Math.min(l, rr), dy = Math.min(t, b);      // distance to nearest corner
+      const along = Math.max(dx, dy);                        // ...along the edge
+      if (along >= slice) return 0;
+      const taper = 1 - along / slice;
+      const q = (rr < l ? 1 : 0) + (b < t ? 2 : 0);
+      return Math.round((wave(ph[q] * 0.02 + along / slice) * amp + (bias[q] - 0.5) * amp) * taper);
+    };
+  }
+  // Knock a few chips out of a finished frame. Only ever inside a corner slice:
+  // a chip in the tiling middle repeats all the way along the edge, and a
+  // regular row of identical holes is worse than no holes at all.
+  function wear(g, w, h, seed, slice, n = 6) {
+    const r = rng(seed);
+    for (let i = 0; i < n; i++) {
+      const corner = (r() * 4) | 0;
+      const along = 1 + ((r() * (slice - 3)) | 0);
+      const deep = 1 + ((r() * 2) | 0);
+      const len = 1 + ((r() * 2) | 0);
+      const horiz = r() < 0.5;
+      let x, y;
+      if (horiz) { x = (corner & 1) ? w - along - len : along; y = (corner & 2) ? h - deep : 0; }
+      else { x = (corner & 1) ? w - deep : 0; y = (corner & 2) ? h - along - len : along; }
+      g.clearRect(x, y, horiz ? len : deep, horiz ? deep : len);
+    }
+  }
 
   // ── wood grain, for anything with a plank in it ──────────────────────
   function grain(g, x0, y0, w, h, pal, seed = 3, dense = 0.3) {
@@ -76,15 +124,21 @@ CZ.Frame = (() => {
     'KD.K......',
     'KK.K......',
   ];
-  function flourish(g, w, h, pal, inset = 0) {
+  function flourish(g, w, h, pal, inset = 0, seed = 17) {
     const map = { K: pal.ink, L: pal.lit, H: pal.hi, M: pal.mid, D: pal.lo };
+    const r = rng(seed);
     for (const [fx, fy] of [[0, 0], [1, 0], [0, 1], [1, 1]]) {
+      // Nobody fits four identical brackets by hand. Each one sits a pixel out
+      // from the last, and each one drops a different pixel off its tail.
+      const ox = (r() < 0.5 ? 0 : 1), oy = (r() < 0.5 ? 0 : 1);
+      const skip = 0.06 + r() * 0.10;
       for (let y = 0; y < SCROLL.length; y++) {
         for (let x = 0; x < SCROLL[y].length; x++) {
           const ch = SCROLL[y][x];
           if (ch === '.') continue;
-          const px0 = fx ? w - 1 - inset - x : inset + x;
-          const py0 = fy ? h - 1 - inset - y : inset + y;
+          if (x + y > 8 && r() < skip) continue;       // the tail frays
+          const px0 = fx ? w - 1 - inset - ox - x : inset + ox + x;
+          const py0 = fy ? h - 1 - inset - oy - y : inset + oy + y;
           px(g, px0, py0, map[ch]);
         }
       }
@@ -98,9 +152,11 @@ CZ.Frame = (() => {
   // inventory square, at three different sizes.
   function ornate(opts = {}) {
     const S = 44, B = 6, pal = GOLD, wood = opts.wood || OAK;
+    const SLICE = 19;
     return build(`ornate|${opts.wood ? 'w' : ''}`, S, S, g => {
+      const wob = wobble(4271, 1, SLICE);
       for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) {
-        const d = ring(x, y, S, S, 5);
+        const d = ring(x, y, S, S, 5, wob);
         if (d < 0) continue;
         const L = lit(x, y, S, S);
         let c;
@@ -125,7 +181,8 @@ CZ.Frame = (() => {
       px(g, F, F, 'rgba(0,0,0,.32)', 1, S - F * 2);
       // The scrolls sit ON the wood, clear of the banding, with a gap of dark
       // field between: touching the band they just read as a thicker band.
-      flourish(g, S, S, pal, B + 2);
+      flourish(g, S, S, pal, B + 2, 9911);
+      wear(g, S, S, 5501, SLICE, 7);
     });
   }
 
@@ -134,8 +191,9 @@ CZ.Frame = (() => {
   function slot() {
     const S = 24, B = 3;
     return build('slot', S, S, g => {
+      const wob = wobble(8123, 1, 9);
       for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) {
-        const d = ring(x, y, S, S, 3);
+        const d = ring(x, y, S, S, 3, wob);
         if (d < 0) continue;
         const L = lit(x, y, S, S);
         let c;
@@ -148,12 +206,14 @@ CZ.Frame = (() => {
       }
       grain(g, B + 1, B + 1, S - (B + 1) * 2, S - (B + 1) * 2, OAK, 7, 0.12);
       px(g, B + 1, B + 1, 'rgba(0,0,0,.45)', S - (B + 1) * 2, 1);
+      const rr = rng(613);
       for (const [fx, fy] of [[0, 0], [1, 0], [0, 1], [1, 1]]) {
-        const bx = fx ? S - 7 : 4, by = fy ? S - 7 : 4;
+        const bx = (fx ? S - 7 : 4) + (rr() < 0.5 ? 0 : 1), by = (fy ? S - 7 : 4) + (rr() < 0.5 ? 0 : 1);
         px(g, bx, by, GOLD.ink, 3, 3);
         px(g, bx, by, GOLD.hi, 2, 2);
         px(g, bx + 1, by + 1, GOLD.lo, 1, 1);
       }
+      wear(g, S, S, 2207, 9, 4);
     });
   }
 
@@ -162,8 +222,9 @@ CZ.Frame = (() => {
   function button(name, pal, cut = 2) {
     const S = 24;
     return build(`btn|${name}`, S, S, g => {
+      const wob = wobble(1000 + name.length * 977, 1, 8);
       for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) {
-        const d = ring(x, y, S, S, cut);
+        const d = ring(x, y, S, S, cut, wob);
         if (d < 0) continue;
         const L = lit(x, y, S, S);
         let c;
@@ -177,6 +238,13 @@ CZ.Frame = (() => {
       px(g, 3, 4, pal.hi, S - 6, 2);
       px(g, 3, S - 6, pal.lo, S - 6, 2);
       px(g, 4, S - 4, pal.lo, S - 8, 1);
+      // scuffs across the face, from being pressed a few thousand times
+      const r = rng(2000 + name.length * 31);
+      for (let i = 0; i < 5; i++) {
+        const x = 4 + ((r() * (S - 8)) | 0), y = 5 + ((r() * (S - 10)) | 0);
+        px(g, x, y, r() < 0.5 ? pal.lit : pal.lo, 1 + ((r() * 2) | 0), 1);
+      }
+      wear(g, S, S, 3000 + name.length * 53, 8, 4);
     });
   }
 
@@ -185,8 +253,9 @@ CZ.Frame = (() => {
     const S = 40, L0 = 7;      // L0: where the leather ends and paper begins
     return build('page', S, S, g => {
       const hide = { lit: '#8a5a2b', hi: '#6b4220', mid: '#523113', lo: '#311c0a', ink: INK };
+      const wob = wobble(3319, 1, 13);
       for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) {
-        const d = ring(x, y, S, S, 4);
+        const d = ring(x, y, S, S, 4, wob);
         if (d < 0) continue;
         const L = lit(x, y, S, S);
         let c;
@@ -207,15 +276,25 @@ CZ.Frame = (() => {
       px(g, P0, P0, 'rgba(120,90,50,.32)', PW, 1);
       px(g, P0, P0, 'rgba(120,90,50,.24)', 1, PW);
       px(g, P0, S - P0 - 1, 'rgba(255,255,255,.35)', PW, 1);
-      // corner studs, pinning the leaf to the board
+      // A foxing stain and a crease, because a page that has been opened has
+      // been opened somewhere.
+      for (let i = 0; i < 3; i++) {
+        const sx = P0 + 2 + ((r() * (PW - 6)) | 0), sy = P0 + 2 + ((r() * (PW - 6)) | 0);
+        const sw = 2 + ((r() * 4) | 0), sh = 1 + ((r() * 3) | 0);
+        g.fillStyle = 'rgba(150,110,60,.16)'; g.fillRect(sx, sy, sw, sh);
+      }
+      // corner studs, pinning the leaf to the board - hammered in by eye
+      const rs = rng(881);
       for (const [fx, fy] of [[0, 0], [1, 0], [0, 1], [1, 1]]) {
-        const bx = fx ? S - 8 : 3, by = fy ? S - 8 : 3;
+        const bx = (fx ? S - 8 : 3) + (rs() < 0.5 ? 0 : 1), by = (fy ? S - 8 : 3) + (rs() < 0.6 ? 0 : 1);
         px(g, bx, by, INK, 5, 5);
         px(g, bx + 1, by + 1, GOLD.mid, 3, 3);
         px(g, bx + 1, by + 1, GOLD.lit, 2, 1);
         px(g, bx + 1, by + 1, GOLD.lit, 1, 2);
         px(g, bx + 3, by + 3, GOLD.lo, 1, 1);
+        if (rs() < 0.5) px(g, bx + 2, by, hide.lo, 1, 1);    // one seated crooked
       }
+      wear(g, S, S, 7717, 13, 6);
     });
   }
 
