@@ -295,7 +295,11 @@ CZ.Level = class Level {
         shade.position.y = -0.3; g.add(shade);
         const bulb = new THREE.Mesh(new THREE.SphereGeometry(0.3, 8, 6), new THREE.MeshBasicMaterial({ color: 0xffe6a8 }));
         bulb.position.y = -0.8; g.add(bulb);
-        const light = new THREE.PointLight(0xffc266, 3.4, 26); light.position.y = -1.4; g.add(light);
+        const light = new THREE.PointLight(0xffc266, 5.2, 30); light.position.y = -1.4; g.add(light);
+        // a soft cone of light under the shade, so the lamp reads at a distance
+        const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.9, 4.6, 11, 10, 1, true),
+          new THREE.MeshBasicMaterial({ color: 0xffd9a0, transparent: true, opacity: 0.055, side: THREE.DoubleSide, depthWrite: false }));
+        shaft.position.y = -6.4; g.add(shaft);
         it.bulb = bulb; it.lamp = light;
         break;
       }
@@ -452,13 +456,28 @@ CZ.Level = class Level {
   }
 
   // Enclosing shell for a level authored as one room.
+  // Dust hanging in the air, drifting up through the lamplight. Cheap, and it
+  // is most of what makes a room feel like a room.
+  buildMotes(W, top) {
+    const geo = new THREE.BoxGeometry(0.07, 0.07, 0.07);
+    const mat = new THREE.MeshBasicMaterial({ color: 0xffe6a8, transparent: true, opacity: 0.42 });
+    this.motes = [];
+    for (let i = 0; i < 150; i++) {
+      const m = new THREE.Mesh(geo, mat);
+      m.position.set(CZ.rand(0, W), CZ.rand(-2, top), CZ.rand(-3, 3.2));
+      this.group.add(m);
+      this.motes.push({ m, s: CZ.rand(0.1, 0.45), p: CZ.rand(0, 6.3), top });
+    }
+  }
+
   buildRoom() {
     const th = this.theme, W = this.data.width, top = this.data.room.top;
+    this.buildMotes(W, top);
     const back = new THREE.Mesh(new THREE.PlaneGeometry(W + 40, top + 26),
-      new THREE.MeshToonMaterial({ map: CZ.Tex.tiled(th.tile[0], th.tile[1], (W + 40) / 2, (top + 26) / 2, 4) }));
+      new THREE.MeshToonMaterial({ map: CZ.Tex.tiled(th.tile[0], th.tile[1], (W + 40) / 2, (top + 26) / 2, 4), color: 0x6f5c46 }));
     back.position.set(W / 2, top / 2 - 4, -7); back.receiveShadow = true; this.bgGroup.add(back);
     // ceiling with beams
-    const ceil = new THREE.Mesh(new THREE.BoxGeometry(W + 40, 2.4, 14), new THREE.MeshToonMaterial({ map: CZ.Tex.tiled('wood', 'timber', (W + 40) / 2, 1) }));
+    const ceil = new THREE.Mesh(new THREE.BoxGeometry(W + 40, 2.4, 14), new THREE.MeshToonMaterial({ map: CZ.Tex.tiled('wood', 'timber', (W + 40) / 2, 1), color: 0x8a7a66 }));
     ceil.position.set(W / 2, top + 1.2, -1); this.bgGroup.add(ceil);
     for (let x = 6; x < W; x += 15) {
       const beam = new THREE.Mesh(new THREE.BoxGeometry(1.4, 1.6, 13), new THREE.MeshToonMaterial({ map: CZ.Tex.tiled('wood', 'timber', 1, 1) }));
@@ -693,6 +712,11 @@ CZ.Level = class Level {
     if (this.exit) this.exit.portal.material.opacity = 0.45 + 0.2 * Math.sin(t * 3);
     for (const c of this.checks) if (c.active) c.flag.rotation.y = Math.sin(t * 6) * 0.25;
     for (const sp of this.spinners) sp.rotation.z += (sp.userData.spin || 1) * dt;
+    if (this.motes) for (const d of this.motes) {
+      d.m.position.y += d.s * dt;
+      d.m.position.x += Math.sin(t * 0.5 + d.p) * dt * 0.35;
+      if (d.m.position.y > d.top) d.m.position.y = -2;
+    }
     for (const d of this.decos) {
       if (d.bulb) { const f = 0.9 + Math.sin(t * 7 + d.x) * 0.06 + (Math.random() < 0.02 ? -0.3 : 0); d.lamp.intensity = 3.4 * f; d.bulb.scale.setScalar(f); d.mesh.rotation.z = Math.sin(t * 0.7 + d.x) * 0.03; }
       if (d.spider) { d.spider.position.y = -1.0 + Math.sin(t * 1.4 + d.x) * 0.35; }

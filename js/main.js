@@ -7,8 +7,10 @@ CZ.Game = class Game {
     this.renderer.outputColorSpace = THREE.SRGBColorSpace; this.renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
     this.scene = new THREE.Scene();
     this.camera = new THREE.PerspectiveCamera(50, 16 / 9, 0.1, 400);
-    this.hemi = new THREE.HemisphereLight(0xffffff, 0x664422, 0.9); this.scene.add(this.hemi);
-    this.sun = new THREE.DirectionalLight(0xfff2dd, 2.2); this.sun.castShadow = true;
+    this.hemi = new THREE.HemisphereLight(0xffffff, 0x664422, 1.0); this.scene.add(this.hemi);
+    // a cool rim light from behind picks every silhouette off the background
+    this.rim = new THREE.DirectionalLight(0x9fd4ff, 0.85); this.rim.position.set(-14, 10, -16); this.scene.add(this.rim);
+    this.sun = new THREE.DirectionalLight(0xfff2dd, 2.5); this.sun.castShadow = true;
     this.sun.shadow.mapSize.set(2048, 2048); const sc = this.sun.shadow.camera; sc.left = -26; sc.right = 26; sc.top = 20; sc.bottom = -20; sc.near = 1; sc.far = 90; this.sun.shadow.bias = -0.0015;
     this.scene.add(this.sun); this.scene.add(this.sun.target);
     CZ.Effects.init(this.scene);
@@ -74,8 +76,7 @@ CZ.Game = class Game {
     this.cine.camera.aspect = this.camera.aspect; this.cine.camera.updateProjectionMatrix();
     this.cine.onDone = () => this.endIntro();
     this.state = 'intro';
-    // the duel is played, so the phone controls come up with it
-    CZ.Touch.setMode('fight'); CZ.Touch.setVisible(true);
+    CZ.Touch.setMode('play'); CZ.Touch.setVisible(false);
     const skipBtn = CZ.UI.$('cine-skip');
     this._skipTap = () => { if (this.state === 'intro' && this.cine) this.cine.skip(); };
     skipBtn.addEventListener('pointerdown', this._skipTap);
@@ -119,13 +120,14 @@ CZ.Game = class Game {
     this.scene.fog = new THREE.Fog(data.theme.fog, 28, 95);
     this.scene.background = new THREE.Color(data.theme.sky[1]);
     this.hemi.groundColor.set(data.theme.sky[1]); this.hemi.color.set(data.theme.sky[0]).lerp(new THREE.Color(0xffffff), 0.7);
+    this.rim.color.set(data.theme.accent).lerp(new THREE.Color(0xffffff), 0.45);
     for (const a of this.level.abilities) if (this.abilities[a.id]) { a.taken = true; a.mesh.visible = false; }
     this.player = new CZ.Player(this); this.scene.add(this.player.mesh);
     this.checkpoint = { x: data.spawn[0], y: data.spawn[1] }; this.player.respawn(this.checkpoint.x, this.checkpoint.y);
     this.spawnEnemies();
     this.camX = this.player.cx(); this.camY = this.player.cy() + 2; this.camZ = 19;
     U.show('levelselect', false); U.show('complete', false); U.show('hud', true); U.levelName(data.name, data.sub); U.bossBar(null); U.sign(null);
-    U.wheel(this.player.hp, CZ.P.MAX_HP); U.parts(this.abilities);
+    U.parts(this.abilities);
     CZ.Spr.paint();
     CZ.Audio.playMusic(data.song);
     CZ.Touch.setVisible(true); CZ.Touch.syncAbilities(this.abilities);
@@ -170,12 +172,12 @@ CZ.Game = class Game {
   completeLevel() {
     const U = CZ.UI, data = this.level.data; this.state = 'complete'; CZ.Touch.setVisible(false); CZ.Audio.sfx.exit();
     this.save.level = Math.max(this.save.level, this.levelIndex + 1); this.save.time += this.levelTime; CZ.writeSave(this.save);
-    U.complete(this.levelIndex === CZ.LEVELS.length - 1 ? 'FACTORY ESCAPED' : 'LEVEL CLEARED',
+    U.complete(this.levelIndex === CZ.LEVELS.length - 1 ? 'OUT.' : 'LEVEL CLEARED',
       `<div class="stat"><span>${data.name}</span></div>`
       + U.stat('clock', CZ.fmtTime(this.levelTime))
       + U.stat('skull', `${this.levelDeaths} DEATHS`)
-      + U.stat('cheese', `PARTS ${Object.keys(this.abilities).length}/${CZ.ABILITY_ORDER.length}`));
-    U.$('btn-next').textContent = this.levelIndex === CZ.LEVELS.length - 1 ? 'GET THE APPLE' : 'NEXT';
+      + U.stat('cheese', `KIT ${Object.keys(this.abilities).length}/${CZ.ABILITY_ORDER.length}`));
+    U.$('btn-next').textContent = this.levelIndex === CZ.LEVELS.length - 1 ? 'GET OUT' : 'NEXT';
   }
   nextLevel() {
     if (this.levelIndex + 1 < CZ.LEVELS.length) this.startLevel(this.levelIndex + 1, false);
@@ -184,10 +186,10 @@ CZ.Game = class Game {
   showEnding() {
     const U = CZ.UI; this.unloadLevel(); this.state = 'ending'; CZ.Touch.setVisible(false); U.show('complete', false); U.show('hud', false);
     this.save.completed = true; if (!this.save.bestTime || this.save.time < this.save.bestTime) this.save.bestTime = this.save.time; CZ.writeSave(this.save);
-    U.ending(`You took the golden patch and rebuilt yourself: a <b>CHEESE MECH</b>, twelve metres of aged cheddar and stolen hitboxes. The dev signs off on it, because the alternative is you finding more bugs.<br><br>Somewhere in the Pantry a floor is still deleted. You will file it Monday.`,
+    U.ending('The door was open. You went through it.',
       U.stat('clock', `TOTAL ${CZ.fmtTime(this.save.time)}`)
       + U.stat('skull', `${this.save.deaths} DEATHS`)
-      + U.stat('apple', 'CHEESE MECH ONLINE'));
+      + U.stat('cheese', 'STILL NOT ROTTEN'));
     CZ.Audio.playMusic('heaven');
   }
 
@@ -206,8 +208,8 @@ CZ.Game = class Game {
     CZ.Comic.pow('DOWN!', [this.player.cx(), this.player.cy() + 3, 0], { kind: 'hit', life: 1 });
     const lines = {
       ratking: ['Tell no one a cheese did this.'],
-      anticheat: ['You checked WHERE I was. Not HOW I got there.'],
-      god: ['You left the collision box in. Classic.'],
+      anticheat: ['Ungraded. Unstoppable.'],
+      god: ['Nobody is putting me back.'],
     }[this.level.boss.kind];
     if (lines) this.sayLines(lines);
   }
@@ -356,11 +358,12 @@ CZ.Game = class Game {
     cam.position.set(this.camX + sh.x, this.camY + sh.y, this.camZ);
     cam.lookAt(this.camX + sh.x, this.camY + sh.y, 0);
     this.sun.position.set(this.camX + 14, this.camY + 26, 22); this.sun.target.position.set(this.camX, this.camY, 0);
+    this.rim.position.set(this.camX - 16, this.camY + 12, -18);
     L.setSky(this.camX, this.camY);
   }
   updateHUD() {
     const U = CZ.UI, p = this.player;
-    U.wheel(p.hp, CZ.P.MAX_HP); U.timer(this.levelTime);
+    U.timer(this.levelTime);
     U.noclipMeter(!!this.abilities.noclip, p.noclipMeter / CZ.P.NOCLIP_MAX);
     if (this.boss) U.bossBar(this.boss);
   }

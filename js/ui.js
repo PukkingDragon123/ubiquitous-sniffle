@@ -5,18 +5,13 @@ CZ.UI = (() => {
   const show = (id, on = true) => $(id).classList.toggle('hidden', !on);
   let dialogState = null, typeTimer = null, toastTimer = null, signShown = null;
 
-  // The health meter is the wheel: each hit is a wedge cut out of it.
-  function wheel(cur, max) {
-    const el = $('wheel-meter'); if (!el) return;
-    const i = el.firstElementChild; if (!i) return;
-    const frac = Math.max(0, cur / max);
-    i.style.background = `conic-gradient(var(--cheese) 0turn ${frac}turn, rgba(20,13,7,.35) ${frac}turn 1turn)`;
-    el.classList.toggle('low', frac <= 1 / max + 0.01);
-  }
+  // No health meter anywhere: the wheel you are playing IS the health bar, and
+  // every hit cuts a wedge out of it.
+  function wheel() {}
   function timer() {}
   function levelName() {}
 
-  // Mech parts you have bolted on.
+  // The upgrades you have rolled into.
   let partSig = '';
   function parts(ab) {
     const el = $('parts'); if (!el) return;

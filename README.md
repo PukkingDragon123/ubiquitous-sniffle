@@ -1,38 +1,21 @@
-# CHEEZ-IT — File a Hole in This Game
+# CHEEZ-IT — Get Out Before You Rot
 
-A 3D side-scrolling platformer about a wheel of cheese with a grudge, built with Three.js and no build tools.
+A 3D side-scrolling platformer about a wheel of cheese escaping the place that left it to rot, built with Three.js
+and no build tools.
 
-You were a mech pilot, losing a duel on a grassland. Then you noticed the ground had no collision, clipped through
-it, came up behind the red mech and took its head off. A rubber duck descended, introduced itself as the dev, and
-turned you into a wheel of cheese. You are going to build your own mech out of whatever this cellar has.
+You are a wheel of cheese on a cellar shelf. Nobody is coming back for you. The wheel beside you is already green,
+and the mould is working its way along the shelf. So you roll off the shelf and go looking for the door.
 
-## The opening is a fight you play
+## The opening
 
-The game boots straight into it. Two panelled mechs stand in a grassland and both of them are ragdolls - verlet
-points, stick joints, joints that snap - so nothing is animated by hand. You drive the blue one:
+Four short beats, about ten seconds, skippable with the SKIP button in the corner:
 
-| Action | Key | Touch |
-| --- | --- | --- |
-| Walk | LEFT / RIGHT | thumbstick |
-| Jump | SPACE | JUMP |
-| Beam saber | SHIFT | SWING |
+1. A forgotten shelf in a dark cellar - *"They forgot me down here."*
+2. The mould takes your neighbour, then starts on you - *"That one rotted." / "I'M NEXT."*
+3. You rock until you tip, and hit the floor - **THUD**
+4. The gap of light under the cellar door, and one decision - *"Not today."*
 
-On a phone the duel gets its own control layout: the floating stick, a big JUMP,
-a SWING button, and SKIP moved to the top corner so it is never under your thumb.
-
-Nothing in the fight is keyframed. The torso is sprung over the hips, the legs run a stride cycle with the hips
-rising over each planted foot, the arms counter-swing against the legs, the knees tuck in mid-air, and a sword swing
-winds up before it whips through and drags the shoulders with it - all of it spring targets on the same rig the
-physics is solving, so a hit or a missing limb bends the animation instead of breaking it.
-
-Hits are found by sweeping the blade against the other rig, so a downward cut still lands on a mech that is already
-on the ground. Three hits and a mech starts coming apart: an arm, a leg, then the head, each one a stick that snaps
-and a piece that falls. Win and you take the red mech's head off. Lose and the floor turns out to have no collision:
-you fall through it, come up behind red, and take its head off anyway. Either way a rubber duck descends on a beam
-of light, says it spent nine months on that arena, and turns you into a wheel of cheese.
-
-Every line is a pixel-art cloud balloon and every hit is a comic impact word. There is no title screen, no dialogue
-box, and no HUD in the fight. SKIP is a button in the corner.
+Every line is a pixel-art cloud balloon. There is no title screen and no dialogue box anywhere in this game.
 
 ## What you do
 
@@ -45,11 +28,13 @@ You are a wheel. Four things, no tech trees:
 | Spin | SHIFT | Spin attack: smashes crates, kills what it touches |
 | Poke | C | A toothpick pops out to flip levers and prod enemies |
 
-Damage is literal: every hit **cuts a wedge out of the wheel**, and the meter in the corner is the cheese itself.
+Damage is literal: every hit **cuts a wedge out of the wheel**. There is no health bar in the HUD, because you are
+the health bar - look at how much cheese is left.
 Stand near molten cheese and you **soften** - you sag, you slow down, and if you cook through you are a puddle.
 
-Upgrades come from machines in the world, not from floating orbs. Roll into a press and it bolts a part on:
-spring legs, a thruster, grip claws, a hammer fist, a winch arm, a phase core. By the last world you are a mech.
+Upgrades come from machines in the world, not from floating orbs. Roll into a press and something gets done to you:
+a bouncier rind, a coat of wax, a stickier crust, more dead weight, a length of cheese string, and finally enough
+holes to slip through a wall.
 
 ## Play
 
@@ -74,11 +59,11 @@ Three.js is loaded from cdnjs, so an internet connection is needed the first tim
 | Jump (hold for higher) | SPACE / Z / W / ↑ |
 | Spin | SHIFT / X |
 | Poke | C / E |
-| Spring legs (double jump) | Jump again in the air, once installed |
-| Grip claws (wall cling) | Hold toward a wall to slide, Jump to kick off |
-| Hammer fist (ground pound) | ↓ / S in the air |
-| Winch arm (grapple) | C / E near a blue node, Jump to fling |
-| Phase core (noclip) | Hold V / Q (meter refills on the ground) |
+| Bounce rind (double jump) | Jump again in the air, once you have it |
+| Sticky crust (wall cling) | Hold toward a wall to slide, Jump to kick off |
+| Dead weight (ground pound) | ↓ / S in the air |
+| Cheese string (grapple) | C / E near a blue node, Jump to fling |
+| Hole slip (noclip) | Hold V / Q (meter refills on the ground) |
 | Pause / Mute / Restart at checkpoint | ESC or P / M / R |
 
 Gamepads work too (A jump, B/RB dash, X grapple, Y noclip, D-pad/stick move).
@@ -89,8 +74,8 @@ On-screen controls appear automatically on touch devices, and the HUD shrinks to
 
 - **Floating thumbstick** — press anywhere in the left half of the screen and the stick snaps to your thumb. Flick it
   down in mid-air to ground pound; hold it up or down while spinning to aim the spin.
-- **Action buttons** on the right: a large JUMP, plus SPIN, POKE and PHASE. Each button appears only once the part
-  is installed, so the controls grow with the game. The same stick and buttons drive the mech in the opening fight.
+- **Action buttons** on the right: a large JUMP, plus SPIN, POKE and PHASE. Spin and poke are always there - the
+  wheel can do both from the start - and PHASE appears once you have the holes for it.
 - **Pause** sits in the top-left corner. SKIP in the corner ends the opening.
 - Portrait mode shows a "turn sideways" nudge, but the game is fully playable either way if you dismiss it.
 
@@ -107,12 +92,12 @@ claws, hammer fist, winch arm, phase core.
 
 1. **The Cheese Cellar** — one authored room: wine racks, barrels, a giant cheese press, cobwebs and spiders.
    Learn to roll, spin through crates, poke a lever, and feed yourself into the first machine.
-2. **The Grater Line** — conveyors, graters, moving platforms. Unlock: thruster.
-3. **The Melting Vats** — molten cheese and shafts. Unlock: grip claws.
-4. **The Packaging Plant** — presses and cracked floors. Unlock: hammer fist. **Boss: RAT KING** (stomp the crown).
-5. **The Ventilation Ducts** — fans and hook nodes. Unlock: winch arm.
-6. **The Firewall** — lasers and corrupt data. Unlock: phase core. **Boss: ANTI-CHEAT.EXE** (phase through its shield).
-7. **The Dev's Pantry** — everything at once. **Final boss: THE DEV** (a rubber duck who deletes the floor while you climb for the golden patch).
+2. **The Grater Line** — conveyors, graters, moving platforms. Unlock: wax skate.
+3. **The Melting Vats** — molten cheese and shafts. Unlock: sticky crust.
+4. **The Packaging Plant** — presses and cracked floors. Unlock: dead weight. **Boss: RAT KING** (stomp the crown).
+5. **The Ventilation Ducts** — fans and hook nodes. Unlock: cheese string.
+6. **The Firewall** — lasers and sorting gear. Unlock: hole slip. **Boss: THE SORTER** (slip inside its scanner).
+7. **The Loading Dock** — everything at once, and the door out. **Final boss: THE CHEESEMONGER** (he takes the floor away while you climb).
 
 Progress and installed parts save to `localStorage`.
 
@@ -142,6 +127,12 @@ every icon, portrait and glyph is hand-authored pixel art.
   spin.
 - **Cheese everywhere.** Drips ooze off every panel and off ledges in the world, where they stretch, break and
   fall, and the wheel throws a trail of crumbs whenever it is rolling fast or spinning.
+- **Lit like a room.** Key, fill and a cool rim light pick every silhouette off the background; cellar lamps throw
+  visible cones of light; dust drifts up through them; a vignette and a faint scanline wash frame the screen.
+- **Things that live here.** The rat has a snout, whiskers, flicking ears, a whipping three-part tail and four feet
+  that step; the spider hangs on a thread on eight two-jointed legs; the mould spore is a spiked puffball with one
+  enormous eye that follows you; the molten blob drips and gurns; the turret wears hazard stripes and its lens flares
+  red before it fires.
 
 ## Code layout
 
@@ -160,9 +151,7 @@ js/player.js    the cheese: movement controller + squash/stretch visuals
 js/enemies.js   rat, spore, blob, turret, projectiles
 js/bosses.js    Rat King, Anti-Cheat.exe, God of Games
 js/ui.js        DOM helpers
-js/ragdoll.js   verlet ragdoll solver + the mech rig built on it (balance, swings, severed limbs)
-js/cinematic.js the playable opening: grassland, the duel, the duck, the curse
-js/mech.js      the scripted mech model used outside the fight
+js/cinematic.js the opening: a shelf, the mould, the fall, the door
 js/comic.js     speech balloons, impact words, speed lines, halftone
 js/touch.js     on-screen thumbstick + buttons for touch devices
 js/main.js      game loop, camera, state machine, interactions, progress

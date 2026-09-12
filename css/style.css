@@ -167,6 +167,11 @@ button:nth-of-type(even){transform:rotate(.7deg)}
 #complete-title{color:var(--glitch)}
 
 /* ── flash + toast ──────────────────────────────────────────────────── */
+/* a soft vignette and a faint scanline wash: the whole game sits inside a frame */
+#vignette{position:fixed;inset:0;pointer-events:none;z-index:18;
+  background:
+    repeating-linear-gradient(0deg, rgba(0,0,0,.16) 0 1px, transparent 1px 3px),
+    radial-gradient(ellipse at 50% 48%, transparent 46%, rgba(10,6,4,.55) 100%)}
 #flash{position:fixed;inset:0;pointer-events:none;background:#fff;opacity:0;transition:opacity .3s;z-index:59}
 #toast{position:fixed;top:150px;bottom:auto;left:50%;transform:translateX(-50%) rotate(-1deg);z-index:55;
   padding:13px 22px;font-family:var(--pixel);font-size:22px;line-height:1.5;max-width:80vw;text-align:center;

@@ -103,7 +103,9 @@ CZ.Comic = (() => {
     layer.appendChild(el);
     // never more than two impact words at once, and never stacked exactly
     while (bursts.length >= 2) { const old = bursts.shift(); old.el.remove(); }
-    const jitter = [(Math.random() - 0.5) * 90, (Math.random() - 0.5) * 60];
+    // push each word well clear of the last one, so two hits never stack
+    const side = bursts.length ? -Math.sign(bursts[bursts.length - 1].off[0] || 1) : (Math.random() < 0.5 ? -1 : 1);
+    const jitter = [side * (70 + Math.random() * 90), (Math.random() - 0.5) * 120];
     const off = opts.off || [0, 0];
     const b = { el, anchor, life: opts.life ?? 0.75, t: 0, off: [off[0] + jitter[0], off[1] + jitter[1]], spin: (Math.random() - 0.5) * 16 };
     bursts.push(b);

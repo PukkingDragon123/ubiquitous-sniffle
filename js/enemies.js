@@ -38,14 +38,53 @@ CZ.Enemy = class Enemy {
 CZ.Rat = class Rat extends CZ.Enemy {
   constructor(game, d) {
     super(game, d); this.w = 1.2; this.h = 0.75; this.color = 0x8a8a96; this.small = true; this.speed = d.speed || 2.6; this.facing = d.dir || -1;
-    const E = CZ.Effects;
-    const body = new THREE.Mesh(new THREE.SphereGeometry(0.42, 7, 5), E.toon(0x8a8a96)); body.scale.set(1.4, 0.85, 1); body.castShadow = true; E.outline(body, 0.07); this.mesh.add(body); this.body = body;
-    const head = new THREE.Mesh(new THREE.SphereGeometry(0.28, 6, 5), E.toon(0x9a9aa6)); head.position.set(-0.55, 0.05, 0); head.scale.set(1.3, 1, 1); E.outline(head, 0.06); this.mesh.add(head); this.head = head;
-    const nose = new THREE.Mesh(new THREE.SphereGeometry(0.08, 8, 8), E.basic(0xff7a9a)); nose.position.set(-0.36, -0.02, 0); head.add(nose);
-    [[-0.15, 0.22, 0.1], [-0.15, 0.22, -0.1]].forEach(p => { const ear = new THREE.Mesh(new THREE.SphereGeometry(0.12, 8, 8), E.toon(0xffaabb)); ear.position.set(...p); ear.scale.z = 0.4; head.add(ear); });
-    const eye = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.14, 0.14), E.basic(0x1a0f0a)); eye.position.set(-0.15, 0.08, 0.24); head.add(eye);
-    const eye2 = eye.clone(); eye2.position.z = -0.24; head.add(eye2);
-    const tail = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.06, 0.9, 6), E.toon(0xffaabb)); tail.position.set(0.85, 0.05, 0); tail.rotation.z = Math.PI / 2 + 0.4; this.mesh.add(tail); this.tail = tail;
+    const E = CZ.Effects, box = (w, h, d, c) => { const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), E.toon(c)); m.castShadow = true; return m; };
+    // A rat reads side-on: long low body, a small head set forward with a notch
+    // behind it, a pale snout, one big cartoon eye, and a tail that whips.
+    const body = box(0.92, 0.44, 0.56, 0x6e6e7c); body.position.set(0.1, 0.0, 0);
+    E.outline(body, 0.06); this.mesh.add(body); this.body = body;
+    const back = box(0.66, 0.16, 0.5, 0x83838f); back.position.set(0.14, 0.22, 0); this.mesh.add(back);
+    const belly = box(0.8, 0.14, 0.5, 0xb2b2be); belly.position.set(0.1, -0.2, 0); this.mesh.add(belly);
+
+    this.head = new THREE.Group(); this.head.position.set(-0.46, -0.02, 0); this.mesh.add(this.head);
+    const skull = box(0.34, 0.34, 0.42, 0x7a7a88); E.outline(skull, 0.05); this.head.add(skull);
+    const snout = box(0.26, 0.18, 0.26, 0xb2b2be); snout.position.set(-0.24, -0.07, 0); this.head.add(snout);
+    const nose = box(0.11, 0.1, 0.11, 0xff7a9a); nose.position.set(-0.38, -0.07, 0); this.head.add(nose);
+    this.ears = [];
+    for (const s2 of [-1, 1]) {
+      const ear = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 0.06, 8), E.toon(0xffaabb));
+      ear.rotation.x = Math.PI / 2; ear.position.set(0.06, 0.24, s2 * 0.14);
+      E.outline(ear, 0.04); this.head.add(ear); this.ears.push(ear);
+      const inner = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.07, 8), E.toon(0xd4707f));
+      inner.rotation.x = Math.PI / 2; inner.position.z = s2 * 0.01; ear.add(inner);
+      // one cartoon eye per side: white, pupil, glint
+      const white = new THREE.Mesh(new THREE.CircleGeometry(0.1, 10), E.basic(0xffffff));
+      white.position.set(-0.12, 0.05, s2 * 0.215); white.rotation.y = s2 > 0 ? 0 : Math.PI; this.head.add(white);
+      const pup = new THREE.Mesh(new THREE.CircleGeometry(0.055, 8), E.basic(0x140c06));
+      pup.position.set(-0.02, 0, 0.01); white.add(pup);
+      const glint = new THREE.Mesh(new THREE.CircleGeometry(0.02, 6), E.basic(0xffffff));
+      glint.position.set(-0.02, 0.025, 0.01); pup.add(glint);
+      for (const wy of [0.0, -0.09]) {
+        const w = box(0.3, 0.025, 0.025, 0xe8e2d8);
+        w.position.set(-0.46, wy - 0.05, s2 * 0.11); w.rotation.z = s2 * 0.1 + (wy ? -0.18 : 0.1);
+        this.head.add(w);
+      }
+    }
+    // tail: three chained segments, curling up and whipping as it runs
+    this.tail = []; let parent = this.mesh, off = 0.56;
+    for (let i = 0; i < 3; i++) {
+      const pivot = new THREE.Group(); pivot.position.set(off, i === 0 ? 0.12 : 0, 0); parent.add(pivot);
+      if (i === 0) pivot.rotation.z = 0.6;
+      const seg = box(0.3 - i * 0.04, 0.13 - i * 0.025, 0.13 - i * 0.025, 0xe08a9a);
+      seg.position.x = 0.15; pivot.add(seg);
+      this.tail.push(pivot); parent = pivot; off = 0.28;
+    }
+    // four feet that actually step
+    this.feet = [];
+    for (const s2 of [-1, 1]) for (const fx of [-0.24, 0.34]) {
+      const ft = box(0.19, 0.16, 0.16, 0x5a5a66); ft.position.set(fx, -0.3, s2 * 0.2);
+      this.mesh.add(ft); this.feet.push({ ft, x: fx, ph: (fx < 0 ? 0 : Math.PI) + (s2 < 0 ? 0 : Math.PI) });
+    }
   }
   update(dt) {
     this.t += dt; const solids = this.solids();
@@ -57,7 +96,15 @@ CZ.Rat = class Rat extends CZ.Enemy {
     if (r.grounded && !CZ.groundAhead(this, this.facing, solids)) this.facing *= -1;
     this.place();
     this.mesh.scale.x = this.facing < 0 ? 1 : -1;
-    this.body.scale.y = 0.85 + Math.sin(this.t * 14) * 0.05; this.tail.rotation.z = Math.PI / 2 + 0.4 + Math.sin(this.t * 8) * 0.3;
+    // scuttle: body bob, ear twitch, tail whip, feet stepping in pairs
+    const g = this.t * 13;
+    this.body.position.y = Math.abs(Math.sin(g)) * 0.05;
+    this.body.scale.y = 1 + Math.sin(g * 2) * 0.04;
+    this.head.position.y = -0.02 + Math.abs(Math.sin(g + 0.6)) * 0.04;
+    this.head.rotation.z = Math.sin(this.t * 2.2) * 0.07;
+    for (const e of this.ears) e.rotation.z = Math.sin(this.t * 5.5) * 0.25;
+    this.tail.forEach((pv, i) => { pv.rotation.z = (i === 0 ? 0.6 : 0) + Math.sin(g * 0.5 - i * 0.8) * (0.4 - i * 0.08); });
+    for (const f of this.feet) f.ft.position.y = -0.3 + Math.max(0, Math.sin(g + f.ph)) * 0.13;
   }
 };
 
@@ -65,16 +112,44 @@ CZ.Spore = class Spore extends CZ.Enemy {
   constructor(game, d) {
     super(game, d); this.w = 0.9; this.h = 0.9; this.color = 0x62d26f; this.small = true; this.x0 = d.x; this.y0 = d.y; this.amp = d.amp || 1.5; this.speed = d.speed || 2;
     const E = CZ.Effects;
-    const body = new THREE.Mesh(new THREE.SphereGeometry(0.42, 6, 5), E.toon(0x62d26f)); body.castShadow = true; E.outline(body, 0.07); this.mesh.add(body); this.body = body;
-    for (let i = 0; i < 8; i++) { const sp = new THREE.Mesh(new THREE.ConeGeometry(0.1, 0.35, 5), E.toon(0x3aa04a)); const a = i / 8 * Math.PI * 2; sp.position.set(Math.cos(a) * 0.42, Math.sin(a) * 0.42, 0); sp.rotation.z = a - Math.PI / 2; body.add(sp); }
-    const eye = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.28, 0.1), E.basic(0xffffff)); eye.position.set(0, 0.02, 0.4); body.add(eye);
-    const pupil = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.14, 0.1), E.basic(0x1a0f0a)); pupil.position.z = 0.06; eye.add(pupil);
+    const body = new THREE.Mesh(new THREE.IcosahedronGeometry(0.42, 0), E.toon(0x62d26f));
+    body.castShadow = true; E.outline(body, 0.07); this.mesh.add(body); this.body = body;
+    // blotches of darker mould over the skin
+    for (let i = 0; i < 5; i++) {
+      const b = new THREE.Mesh(new THREE.IcosahedronGeometry(CZ.rand(0.12, 0.2), 0), E.toon(0x3aa04a));
+      const a = CZ.rand(0, 6.3), p2 = CZ.rand(-1, 1);
+      b.position.set(Math.cos(a) * 0.36, Math.sin(a) * 0.36, p2 * 0.28); body.add(b);
+    }
+    this.spikes = [];
+    for (let i = 0; i < 7; i++) {
+      const sp = new THREE.Mesh(new THREE.ConeGeometry(0.11, 0.4, 4), E.toon(0x2f8a3f));
+      const a = i / 7 * Math.PI * 2;
+      sp.position.set(Math.cos(a) * 0.44, Math.sin(a) * 0.44, 0); sp.rotation.z = a - Math.PI / 2;
+      body.add(sp); this.spikes.push({ sp, a });
+    }
+    // one big dumb eye
+    const eye = new THREE.Mesh(new THREE.CircleGeometry(0.24, 12), E.basic(0xffffff));
+    eye.position.set(0, 0.04, 0.42); this.mesh.add(eye); this.eye = eye;
+    const rim = new THREE.Mesh(new THREE.CircleGeometry(0.29, 12), E.basic(0x1a2f16));
+    rim.position.set(0, 0.04, 0.4); this.mesh.add(rim);
+    this.pupil = new THREE.Mesh(new THREE.CircleGeometry(0.12, 10), E.basic(0x140c06));
+    this.pupil.position.z = 0.02; eye.add(this.pupil);
   }
   update(dt) {
     this.t += dt;
     this.x = this.x0 + Math.sin(this.t * this.speed * 0.5) * 2.2 - this.w / 2;
     this.y = this.y0 + Math.sin(this.t * this.speed) * this.amp - this.h / 2;
-    this.place(); this.body.rotation.z += dt * 1.5; this.body.scale.setScalar(1 + Math.sin(this.t * 5) * 0.06);
+    this.place();
+    this.body.rotation.z += dt * 1.2;
+    this.body.scale.setScalar(1 + Math.sin(this.t * 5) * 0.07);
+    for (const s2 of this.spikes) s2.sp.scale.y = 1 + Math.sin(this.t * 6 + s2.a * 2) * 0.25;
+    // the eye keeps track of the cheese
+    const p = this.game.player;
+    if (p) {
+      const dx = CZ.clamp((p.cx() - this.cx()) * 0.05, -0.1, 0.1);
+      const dy = CZ.clamp((p.cy() - this.cy()) * 0.05, -0.1, 0.1);
+      this.pupil.position.set(dx, dy, 0.02);
+    }
   }
 };
 
@@ -82,9 +157,26 @@ CZ.Blob = class Blob extends CZ.Enemy {
   constructor(game, d) {
     super(game, d); this.w = 1.1; this.h = 0.95; this.color = 0xff8a1f; this.hopT = 0.8 + Math.random();
     const E = CZ.Effects;
-    const body = new THREE.Mesh(new THREE.SphereGeometry(0.55, 7, 5), new THREE.MeshToonMaterial({ map: CZ.Tex.get('goo', 'magma'), color: 0xffffff, emissive: 0x331100 })); body.scale.set(1, 0.85, 0.9); body.castShadow = true; E.outline(body, 0.07); this.mesh.add(body); this.body = body;
-    [[-0.18, 0.12], [0.18, 0.12]].forEach(([x, y]) => { const e = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.24, 0.1), E.basic(0xffffff)); e.position.set(x, y, 0.5); const p = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.12, 0.1), E.basic(0x1a0f0a)); p.position.z = 0.06; e.add(p); body.add(e); });
-    const mouth = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.16, 0.1), E.basic(0x5a1a00)); mouth.position.set(0, -0.2, 0.5); body.add(mouth);
+    const skin = new THREE.MeshToonMaterial({ map: CZ.Tex.get('goo', 'magma'), color: 0xffffff, emissive: 0x3a1400 });
+    const body = new THREE.Mesh(new THREE.SphereGeometry(0.55, 8, 6), skin);
+    body.scale.set(1.05, 0.85, 0.9); body.castShadow = true; E.outline(body, 0.07);
+    this.mesh.add(body); this.body = body;
+    // it is molten, so it drips
+    this.drip = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.4, 0.16), E.toon(0xffb347));
+    this.drip.position.set(0.18, -0.5, 0.22); this.mesh.add(this.drip);
+    // two eyes and a gummy mouth, all on the front face
+    this.eyes = [];
+    for (const [x, y, r] of [[-0.2, 0.14, 0.16], [0.19, 0.1, 0.13]]) {
+      const rim = new THREE.Mesh(new THREE.CircleGeometry(r + 0.05, 10), E.basic(0x5a1a00));
+      rim.position.set(x, y, 0.52); this.mesh.add(rim);
+      const e = new THREE.Mesh(new THREE.CircleGeometry(r, 10), E.basic(0xffffff));
+      e.position.z = 0.02; rim.add(e);
+      const pup = new THREE.Mesh(new THREE.CircleGeometry(r * 0.55, 8), E.basic(0x140c06));
+      pup.position.z = 0.02; e.add(pup);
+      this.eyes.push({ pup, r });
+    }
+    const mouth = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.14, 0.08), E.basic(0x5a1a00));
+    mouth.position.set(0, -0.2, 0.52); this.mesh.add(mouth); this.mouth = mouth;
   }
   update(dt) {
     this.t += dt; const solids = this.solids(); const p = this.game.player;
@@ -103,7 +195,14 @@ CZ.Blob = class Blob extends CZ.Enemy {
       }
     } else if (r.hitX) this.vx = 0;
     this.place();
-    const sq = r.grounded ? 0.8 + Math.max(0, 0.3 - this.hopT) : 1.15; this.body.scale.y = CZ.damp(this.body.scale.y, sq, 14, dt);
+    const sq = r.grounded ? 0.8 + Math.max(0, 0.3 - this.hopT) : 1.15;
+    this.body.scale.y = CZ.damp(this.body.scale.y, sq, 14, dt);
+    this.body.scale.x = CZ.damp(this.body.scale.x, 2.05 - sq, 14, dt);
+    // the drip stretches while it is in the air and snaps back on landing
+    this.drip.scale.y = CZ.damp(this.drip.scale.y, r.grounded ? 0.5 : 1.5, 8, dt);
+    this.drip.position.y = -0.5 - this.drip.scale.y * 0.12;
+    this.mouth.scale.y = r.grounded ? 1 : 2.2;
+    for (const e of this.eyes) e.pup.position.x = CZ.clamp((p.cx() - this.cx()) * 0.05, -e.r * 0.4, e.r * 0.4);
   }
 };
 
@@ -111,17 +210,46 @@ CZ.Turret = class Turret extends CZ.Enemy {
   constructor(game, d) {
     super(game, d); this.w = 1.3; this.h = 1.3; this.color = 0x7a86a0; this.dir = d.dir || -1; this.rate = d.rate || 2; this.cd = (d.phase || 0) + 1;
     const E = CZ.Effects;
-    const base = new THREE.Mesh(new THREE.BoxGeometry(1.3, 0.5, 1.3), new THREE.MeshToonMaterial({ map: CZ.Tex.tiled('plate', 'steel', 1.3, 1) })); base.position.y = -0.4; E.edges(base); this.mesh.add(base);
-    const body = new THREE.Mesh(new THREE.BoxGeometry(1.0, 0.9, 1.0), new THREE.MeshToonMaterial({ map: CZ.Tex.tiled('plate', 'steel', 1, 1) })); body.position.y = 0.2; E.edges(body); E.outline(body, 0.06); this.mesh.add(body);
-    const barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.22, 0.9, 6), E.toon(0x2a2a2e)); barrel.rotation.z = Math.PI / 2; barrel.position.set(this.dir * 0.8, 0.25, 0); this.mesh.add(barrel); this.barrel = barrel;
-    const eye = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.3, 0.1), E.basic(0xff2d55)); eye.position.set(this.dir * 0.3, 0.35, 0.5); this.mesh.add(eye); this.eye = eye;
+    const plate = (w, h, d) => new THREE.Mesh(new THREE.BoxGeometry(w, h, d), new THREE.MeshToonMaterial({ map: CZ.Tex.tiled('plate', 'steel', w, h) }));
+    const base = plate(1.35, 0.42, 1.3); base.position.y = -0.46; E.edges(base); this.mesh.add(base);
+    for (const s2 of [-1, 1]) {                       // bolts holding it down
+      const bolt = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.16, 6), E.toon(0x3b4855));
+      bolt.position.set(s2 * 0.5, -0.26, 0.45); this.mesh.add(bolt);
+    }
+    const housing = plate(0.95, 0.86, 1.0); housing.position.y = 0.16; E.edges(housing); E.outline(housing, 0.06);
+    this.mesh.add(housing); this.housing = housing;
+    // hazard stripes across the housing
+    const stripe = new THREE.Mesh(new THREE.PlaneGeometry(0.95, 0.2), new THREE.MeshBasicMaterial({
+      map: CZ.Tex.custom('hazard', 16, (g, N) => {
+        g.fillStyle = '#ffcc33'; g.fillRect(0, 0, N, N);
+        g.fillStyle = '#241608';
+        for (let i = -N; i < N; i += 6) { g.beginPath(); g.moveTo(i, 0); g.lineTo(i + 5, 0); g.lineTo(i + 11, N); g.lineTo(i + 6, N); g.fill(); }
+      }, [3, 1]),
+    }));
+    stripe.position.set(0, 0.48, 0.51); this.mesh.add(stripe);
+    const barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.19, 0.24, 0.95, 8), E.toon(0x2a2a2e));
+    barrel.rotation.z = Math.PI / 2; barrel.position.set(this.dir * 0.8, 0.2, 0);
+    E.outline(barrel, 0.05); this.mesh.add(barrel); this.barrel = barrel;
+    const muzzle = new THREE.Mesh(new THREE.CylinderGeometry(0.27, 0.27, 0.16, 8), E.toon(0x4a5060));
+    muzzle.rotation.z = Math.PI / 2; muzzle.position.x = this.dir * 0.5; barrel.add(muzzle);
+    // the lens it aims with
+    const socket = new THREE.Mesh(new THREE.CircleGeometry(0.24, 10), E.basic(0x241608));
+    socket.position.set(this.dir * 0.24, 0.38, 0.52); this.mesh.add(socket);
+    const eye = new THREE.Mesh(new THREE.CircleGeometry(0.15, 10), E.basic(0xff2d55));
+    eye.position.z = 0.02; socket.add(eye); this.eye = eye;
+    // the lens only throws light when it is about to fire, or it stains the room red
+    this.glow = new THREE.PointLight(0xff2d55, 0, 2.4); this.glow.position.set(this.dir * 0.5, 0.38, 1.1); this.mesh.add(this.glow);
     this.place();
   }
   update(dt) {
     this.t += dt; const p = this.game.player;
     const near = Math.abs(p.cx() - this.cx()) < 24 && Math.abs(p.cy() - this.cy()) < 10;
     if (near) this.cd -= dt;
-    this.eye.scale.setScalar(this.cd < 0.3 ? 1.5 : 1);
+    const hot = this.cd < 0.35;
+    this.eye.scale.setScalar(hot ? 1.45 : 1);
+    this.eye.material = CZ.Effects.basic(hot && Math.floor(this.t * 14) % 2 ? 0xffffff : 0xff2d55);
+    this.glow.intensity = hot ? 1.6 : 0;
+    this.housing.rotation.z = Math.sin(this.t * 2) * 0.015;
     if (this.cd <= 0) {
       this.cd = this.rate; CZ.Audio.sfx.shoot();
       this.game.projectiles.push(new CZ.Projectile(this.game, this.cx() + this.dir * 0.9, this.cy() + 0.25, this.dir * 9, 0));
@@ -158,21 +286,32 @@ CZ.Spider = class Spider extends CZ.Enemy {
     const E = CZ.Effects;
     this.thread = new THREE.Mesh(new THREE.BoxGeometry(0.05, 1, 0.05), new THREE.MeshBasicMaterial({ color: 0xe8e2d8, transparent: true, opacity: 0.6 }));
     game.scene.add(this.thread);
-    const body = new THREE.Mesh(new THREE.SphereGeometry(0.34, 8, 6), E.toon(0x2b2229));
-    body.scale.set(1, 0.85, 0.9); body.castShadow = true; E.outline(body, 0.06); this.mesh.add(body); this.body = body;
-    const head = new THREE.Mesh(new THREE.SphereGeometry(0.2, 7, 5), E.toon(0x3a2f38));
-    head.position.set(0, 0.05, 0.3); this.mesh.add(head);
-    for (const s of [-1, 1]) for (const [ex, ey] of [[0.09, 0.07], [0.16, 0.01]]) {
-      const eye = new THREE.Mesh(new THREE.SphereGeometry(0.05, 6, 5), E.basic(0xff4b5c));
-      eye.position.set(s * ex, ey, 0.42); this.mesh.add(eye);
+    const body = new THREE.Mesh(new THREE.SphereGeometry(0.36, 9, 7), E.toon(0x2b2229));
+    body.scale.set(1, 0.9, 0.95); body.castShadow = true; E.outline(body, 0.06); this.mesh.add(body); this.body = body;
+    const stripe = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.22, 0.1), E.toon(0x7a2436));
+    stripe.position.set(0, 0.06, 0.34); body.add(stripe);
+    const head = new THREE.Mesh(new THREE.SphereGeometry(0.22, 8, 6), E.toon(0x3a2f38));
+    head.position.set(0, 0.02, 0.36); E.outline(head, 0.05); this.mesh.add(head); this.spiderHead = head;
+    for (const s2 of [-1, 1]) for (const [ex, ey, er] of [[0.08, 0.08, 0.06], [0.17, 0.02, 0.045]]) {
+      const eye = new THREE.Mesh(new THREE.SphereGeometry(er, 6, 5), E.basic(0xff4b5c));
+      eye.position.set(s2 * ex, ey, 0.2); head.add(eye);
     }
+    for (const s2 of [-1, 1]) {                        // fangs
+      const f = new THREE.Mesh(new THREE.ConeGeometry(0.05, 0.16, 4), E.toon(0xe8e2d8));
+      f.position.set(s2 * 0.07, -0.16, 0.14); f.rotation.x = 0.5; head.add(f);
+    }
+    // eight legs, each a thigh with a shin hanging off it
     this.legs = [];
-    for (const s of [-1, 1]) for (let i = 0; i < 4; i++) {
-      const leg = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.5, 0.06), E.toon(0x1a1016));
-      leg.position.set(s * 0.28, -0.05, -0.2 + i * 0.16); leg.rotation.z = s * 0.9; leg.rotation.x = (i - 1.5) * 0.2;
-      this.mesh.add(leg); this.legs.push({ leg, s, i });
-    }
-    this.place();
+    for (const s2 of [-1, 1]) for (let i = 0; i < 4; i++) {
+      const hip = new THREE.Group(); hip.position.set(s2 * 0.2, 0.02, -0.18 + i * 0.14); this.mesh.add(hip);
+      const thigh = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.07, 0.07), E.toon(0x1a1016));
+      thigh.position.x = s2 * 0.21; hip.add(thigh);
+      const knee = new THREE.Group(); knee.position.x = s2 * 0.42; hip.add(knee);
+      const shin = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.4, 0.07), E.toon(0x1a1016));
+      shin.position.y = -0.2; knee.add(shin);
+      hip.rotation.z = s2 * 0.5; knee.rotation.z = -s2 * 0.4;
+      this.legs.push({ hip, knee, s: s2, i });
+    }    this.place();
   }
   update(dt) {
     this.t += dt;
@@ -183,7 +322,12 @@ CZ.Spider = class Spider extends CZ.Enemy {
     this.y = this.top - this.down + Math.sin(this.t * 2.4) * 0.12 - this.h / 2;
     this.x = this.d.x - this.w / 2;
     this.place();
-    for (const { leg, s, i } of this.legs) leg.rotation.z = s * (0.9 + Math.sin(this.t * 9 + i) * 0.28);
+    for (const { hip, knee, s, i } of this.legs) {
+      const w = Math.sin(this.t * 7 + i * 1.3 + (s > 0 ? Math.PI : 0));
+      hip.rotation.z = s * (0.5 + w * 0.22);
+      knee.rotation.z = -s * (0.4 + w * 0.3);
+    }
+    this.spiderHead.rotation.z = Math.sin(this.t * 3) * 0.1;
     const topY = this.top + 1.6, len = Math.max(0.1, topY - this.cy());
     this.thread.position.set(this.cx(), this.cy() + len / 2, 0);
     this.thread.scale.y = len;
@@ -198,18 +342,32 @@ CZ.BugCrawl = class BugCrawl extends CZ.Enemy {
     this.w = 0.7; this.h = 0.42; this.color = 0x62d26f; this.small = true; this.speed = d.speed || 3.4;
     this.facing = -1; this.stompable = true;
     const E = CZ.Effects;
-    const body = new THREE.Mesh(new THREE.SphereGeometry(0.3, 8, 6), E.toon(0x3f8f4a));
+    const body = new THREE.Mesh(new THREE.SphereGeometry(0.3, 8, 6), E.toon(0x2f6b38));
     body.scale.set(1.3, 0.7, 0.9); body.castShadow = true; E.outline(body, 0.05); this.mesh.add(body); this.body = body;
-    const shell = new THREE.Mesh(new THREE.SphereGeometry(0.26, 8, 6), E.toon(0x62d26f));
-    shell.scale.set(1.1, 0.7, 0.85); shell.position.y = 0.08; this.mesh.add(shell);
-    for (const s of [-1, 1]) {
+    // a shell split down the middle, each half lifting as it scuttles
+    this.shell = [];
+    for (const s2 of [-1, 1]) {
+      const half = new THREE.Mesh(new THREE.SphereGeometry(0.27, 8, 6, 0, Math.PI), E.toon(0x62d26f));
+      half.scale.set(1.15, 0.75, 0.85); half.position.set(0.03, 0.1, 0);
+      half.rotation.y = s2 > 0 ? 0 : Math.PI; E.outline(half, 0.04);
+      this.mesh.add(half); this.shell.push({ half, s: s2 });
+    }
+    const headB = new THREE.Mesh(new THREE.SphereGeometry(0.17, 7, 6), E.toon(0x24522b));
+    headB.position.set(-0.3, 0.02, 0); this.mesh.add(headB);
+    for (const s2 of [-1, 1]) {
       const eye = new THREE.Mesh(new THREE.SphereGeometry(0.06, 6, 5), E.basic(0xffffff));
-      eye.position.set(-0.3, 0.08, s * 0.12); this.mesh.add(eye);
+      eye.position.set(-0.12, 0.06, s2 * 0.1); headB.add(eye);
+      const pup = new THREE.Mesh(new THREE.SphereGeometry(0.03, 6, 5), E.basic(0x140c06));
+      pup.position.set(-0.04, 0, 0); eye.add(pup);
+      const ant = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.03, 0.03), E.toon(0x1a1016));
+      ant.position.set(-0.2, 0.12, s2 * 0.07); ant.rotation.z = 0.5; ant.rotation.y = s2 * 0.4;
+      headB.add(ant);
     }
     this.legs = [];
-    for (const s of [-1, 1]) for (let i = 0; i < 3; i++) {
-      const leg = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.22, 0.05), E.toon(0x1a1016));
-      leg.position.set(-0.2 + i * 0.2, -0.2, s * 0.2); this.mesh.add(leg); this.legs.push({ leg, s, i });
+    for (const s2 of [-1, 1]) for (let i = 0; i < 3; i++) {
+      const leg = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.24, 0.05), CZ.Effects.toon(0x1a1016));
+      leg.position.set(-0.2 + i * 0.2, -0.2, s2 * 0.2); this.mesh.add(leg);
+      this.legs.push({ leg, s: s2, i });
     }
   }
   update(dt) {
@@ -223,6 +381,8 @@ CZ.BugCrawl = class BugCrawl extends CZ.Enemy {
     this.place();
     this.mesh.scale.x = this.facing < 0 ? 1 : -1;
     for (const { leg, s, i } of this.legs) leg.rotation.z = Math.sin(this.t * 22 + i * 2 + (s > 0 ? Math.PI : 0)) * 0.6;
+    for (const { half, s } of this.shell) half.rotation.z = Math.sin(this.t * 11 + (s > 0 ? 0 : Math.PI)) * 0.09;
+    this.body.position.y = Math.abs(Math.sin(this.t * 11)) * 0.03;
   }
 };
 

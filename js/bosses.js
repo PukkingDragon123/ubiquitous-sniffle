@@ -125,10 +125,10 @@ CZ.RatKing = class RatKing extends CZ.Boss {
   }
 };
 
-// ───────────────────────── ANTI-CHEAT.EXE ─────────────────────────
+// ───────────────────────── THE SORTER ─────────────────────────
 CZ.AntiCheat = class AntiCheat extends CZ.Boss {
   constructor(game, arena) {
-    super(game, arena); this.name = 'ANTI-CHEAT.EXE'; this.hp = this.maxHp = 3;
+    super(game, arena); this.name = 'THE SORTER'; this.hp = this.maxHp = 3;
     this.cx = arena.x + arena.w / 2; this.cy = 6.5; this.w = 2.2; this.h = 2.2; this.ang = 0; this.spin = 1.4; this.attackT = 2.5; this.attackN = 0; this.rate = 3.4;
     const E = CZ.Effects;
     this.core = new THREE.Mesh(new THREE.OctahedronGeometry(1.1, 0), new THREE.MeshToonMaterial({ map: CZ.Tex.get('circuit', 'data'), color: 0xff5577, emissive: 0x660011 })); E.outline(this.core, 0.1); this.group.add(this.core);
@@ -156,7 +156,7 @@ CZ.AntiCheat = class AntiCheat extends CZ.Boss {
     this.spin += 1.2; this.rate = Math.max(1.8, this.rate - 0.6);
     const p = this.game.player; p.vy = 15; p.vx = (p.cx() < this.cx ? -1 : 1) * 10; p.iframes = 1.2; p.jumpsUsed = 1; p.canDash = true; // blast the player out of the shield
     for (let i = 0; i < 10; i++) this.game.projectiles.push(new CZ.Projectile(this.game, this.cx, this.cy, Math.cos(i / 10 * Math.PI * 2) * 7, Math.sin(i / 10 * Math.PI * 2) * 7, { color: 0xff2d55, life: 2.5 }));
-    this.game.toast(['ANTI-CHEAT: "INTEGRITY VIOLATION. RECALIBRATING."', 'ANTI-CHEAT: "ERROR: PLAYER IS INSIDE THE SHIELD. HOW."'][2 - this.hp] || '');
+    this.game.toast(['THE SORTER: "UNGRADED ITEM. RESCANNING."', 'THE SORTER: "ITEM IS INSIDE THE SCANNER. HOW."'][2 - this.hp] || '');
   }
   think(dt) {
     const p = this.game.player, A = this.arena;
@@ -195,9 +195,9 @@ CZ.AntiCheat = class AntiCheat extends CZ.Boss {
       const dir = p.cx() < this.cx ? 1 : -1; const x0 = dir > 0 ? A.x + 1 : A.x + A.w - 2;
       const h = { kind: 'sweep', x: x0, y: 0, w: 0.9, h: A.h, dir, life: 1.0 + A.w / 8, activeAt: A.w / 8, active: false };
       h.mesh = this.column(0, 0, h.w, h.h, 0xff2d55, 0.2); h.mesh.position.set(h.x + h.w / 2, h.h / 2, 0.2);
-      this.game.toast('ANTI-CHEAT: "SCANNING FOR ILLEGAL MOVEMENT."'); this.hazards.push(h); CZ.Audio.sfx.laser();
+      this.game.toast('THE SORTER: "SCANNING."'); this.hazards.push(h); CZ.Audio.sfx.laser();
     } else {
-      this.game.toast('ANTI-CHEAT: "ISSUING BAN HAMMER."');
+      this.game.toast('THE SORTER: "STAMPING."');
       for (let i = 0; i < 3; i++) {
         const x = CZ.clamp(p.cx() + (i - 1) * 4.5 + p.vx * 0.4, A.x + 1, A.x + A.w - 4) - 1.5;
         const h = { kind: 'hammer', x, y: A.h + 2, w: 3, h: 2, life: 0.8 + 2.4, activeAt: 2.4, active: false };
@@ -208,10 +208,10 @@ CZ.AntiCheat = class AntiCheat extends CZ.Boss {
     }
   }
 };
-// ───────────────────────── THE DEV (rubber duck, holds the patch) ─────────────────────────
+// ───────────────────────── THE CHEESEMONGER (he left you to rot) ─────────────────────────
 CZ.GodOfGames = class GodOfGames extends CZ.Boss {
   constructor(game, arena) {
-    super(game, arena); this.name = 'THE DEV'; this.hp = this.maxHp = 5;
+    super(game, arena); this.name = 'THE CHEESEMONGER'; this.hp = this.maxHp = 5;
     const A = arena; this.fx = A.x + A.w - 9; this.fy = 13;
     this.appleSpots = [[A.x + 61, 19.2], [A.x + 12, 17], [A.x + 36, 20.4], [A.x + 68, 8.2], [A.x + 32, 13.5]];
     this.appleI = 0; this.ax = this.appleSpots[0][0]; this.ay = this.appleSpots[0][1];
@@ -254,10 +254,10 @@ CZ.GodOfGames = class GodOfGames extends CZ.Boss {
     CZ.Effects.burst(this.ax, this.ay, 0xffd700, 24, { spread: 10, up: 6, life: 1, size: 1.4 });
     this.boltRate *= 0.85; this.handRate *= 0.85; this.delRate *= 0.85;
     const p = this.game.player; p.vy = Math.max(p.vy, 9); p.jumpsUsed = 1; p.canDash = true;
-    this.game.toast(['THE DEV: "PATCH 1.1 — APPLE RELOCATED. NERFED FLOOR."', 'THE DEV: "PATCH 1.2 — YOU WERE NOT SUPPOSED TO REACH THAT."', 'THE DEV: "PATCH 1.3 — I AM DELETING MORE FLOOR."', 'THE DEV: "PATCH 1.4 — ...how are you doing this."'][this.maxHp - this.hp - 1] || '');
+    this.game.toast(['THE CHEESEMONGER: "Get back on the shelf."', 'THE CHEESEMONGER: "You are not even ripe."', 'THE CHEESEMONGER: "I am taking the floor away."', 'THE CHEESEMONGER: "...how are you still rolling."'][this.maxHp - this.hp - 1] || '');
     CZ.Audio.sfx.god();
   }
-  onDeathStart() { this.game.toast('THE DEV: "...fine. FINE. Take it."'); }
+  onDeathStart() { this.game.toast('THE CHEESEMONGER: "...fine. Go on then."'); }
   think(dt) {
     const p = this.game.player, A = this.arena;
     // face + apple visuals
@@ -290,7 +290,7 @@ CZ.GodOfGames = class GodOfGames extends CZ.Boss {
     if (this.delT <= 0) {
       this.delT = this.delRate; const n = 1 + Math.floor((this.maxHp - this.hp) / 2);
       const cands = this.plats.filter(s => !s.broken && !s.deleting); for (let i = 0; i < n && cands.length; i++) { const s = cands.splice((Math.random() * cands.length) | 0, 1)[0]; s.deleting = 0.9; }
-      this.game.toast('THE DEV: "DELETING FLOOR."'); CZ.Audio.sfx.laser();
+      this.game.toast('THE CHEESEMONGER: "Mind the floor."'); CZ.Audio.sfx.laser();
     }
     for (const s of this.plats) {
       if (s.deleting !== undefined && s.deleting > 0) { s.deleting -= dt; s.mesh.visible = Math.floor(this.t * 20) % 2 === 0; if (s.deleting <= 0) { s.broken = true; s.mesh.visible = false; s.restore = 3.2; s.deleting = undefined; CZ.Effects.burst(s.x + s.w / 2, s.y + 0.3, 0xffffff, 10, { spread: 5, up: 3, gravity: 0 }); } }

@@ -19,9 +19,6 @@
     <div id="parts"></div>
   </div>
   <div id="hud-center"></div>
-  <div id="hud-right">
-    <div id="wheel-meter"><i></i></div>
-  </div>
   <div id="noclip-meter" class="hidden"><div id="noclip-fill"></div></div>
   <div id="boss-bar" class="hidden"><div id="boss-name"></div><div class="bar"><div id="boss-fill"></div></div></div>
 </div>
@@ -41,7 +38,7 @@
 <!-- Level select -->
 <div id="levelselect" class="panel hidden">
   <h2 class="graffiti">CHEEZ-IT</h2>
-  <p class="tip">A wheel of cheese with a grudge. Pick a world.</p>
+  <p class="tip">One wheel of cheese, one way out. Pick a world.</p>
   <div id="level-list"></div>
   <button id="btn-controls">CONTROLS</button>
   <button id="btn-replay-intro">REPLAY THE OPENING</button>
@@ -62,7 +59,7 @@
     <tr><td>PAUSE / MUTE / RETRY</td><td>ESC or P / M / R</td></tr>
   </table>
   <p class="tip mobile-only">ON A PHONE: drag the left stick to move, flick it down in the air to CRASH DIVE, and tap the buttons on the right. Buttons appear as you unlock each tech.</p>
-  <p class="tip">You are a wheel. Rolling builds speed and keeps it. Spin into crates, barrels and enemies. Poke anything that looks like it moves.</p>
+  <p class="tip">You are a wheel. Rolling builds speed and keeps it. Spin into crates and barrels. Poke anything that looks like it moves. Every hit cuts a wedge out of you.</p>
   <button class="back" data-back>BACK</button>
 </div>
 
@@ -83,8 +80,8 @@
 
 <!-- Ending -->
 <div id="ending" class="panel hidden">
-  <i class="spr big-spr" data-spr="apple"></i>
-  <h2 class="graffiti">YOU ARE HUMAN AGAIN</h2>
+  <i class="spr big-spr" data-spr="cheese"></i>
+  <h2 class="graffiti">YOU GOT OUT</h2>
   <div id="ending-text"></div>
   <div id="ending-stats"></div>
   <button id="btn-ending-title">BACK TO TITLE</button>
@@ -125,6 +122,7 @@
 
 <div id="comic" class="hidden"></div>
 
+<div id="vignette"></div>
 <div id="flash"></div>
 
 
@@ -137,8 +135,6 @@
 <script src="js/textures.js"></script>
 <script src="js/effects.js"></script>
 <script src="js/comic.js"></script>
-<script src="js/mech.js"></script>
-<script src="js/ragdoll.js"></script>
 <script src="js/level.js"></script>
 <script src="js/player.js"></script>
 <script src="js/enemies.js"></script>

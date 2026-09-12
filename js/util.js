@@ -70,18 +70,18 @@ CZ.P = {
 
 // Ability metadata: id → display.
 CZ.ABILITIES = {
-  doubleJump: { name: 'SPRING LEGS', ico: 'tech-jump', key: 'JUMP again in mid-air',
-    desc: 'The game only checks "grounded" once per jump. Nobody said you can\'t jump AGAIN.' },
-  dash: { name: 'THRUSTER', ico: 'tech-dash', key: 'SHIFT / X  (+ direction)',
-    desc: 'Hitboxes turn off for 9 frames. Dash through GLITCH WALLS (green) and straight through enemies. Dash on the ground, then jump right away to keep the speed.' },
-  wallJump: { name: 'GRIP CLAWS', ico: 'tech-wall', key: 'Hold toward a wall, then JUMP',
-    desc: 'Walls are just floors the dev rotated. Slide down them, kick off them.' },
-  pound: { name: 'HAMMER FIST', ico: 'tech-pound', key: 'DOWN / S  in the air',
-    desc: 'Fall damage got applied to the FLOOR instead of you. Slam down to shatter CRACKED tiles, squish enemies and bounce.' },
-  grapple: { name: 'WINCH ARM', ico: 'tech-hook', key: 'C / E  near a blue node',
-    desc: 'The dev left their debug grapple hook in the build. Pull yourself to HOOK NODES (blue) and fling.' },
-  noclip: { name: 'PHASE CORE', ico: 'tech-ghost', key: 'Hold V / Q',
-    desc: 'You found the dev console. Phase through CORRUPT blocks (purple) while the meter lasts. Refills on solid ground.' },
+  doubleJump: { name: 'BOUNCE RIND', ico: 'tech-jump', key: 'JUMP again in mid-air',
+    desc: 'A rind with some spring left in it.' },
+  dash: { name: 'WAX SKATE', ico: 'tech-dash', key: 'SHIFT / X  (+ direction)',
+    desc: 'A coat of wax. You go where you are pointed, fast.' },
+  wallJump: { name: 'STICKY CRUST', ico: 'tech-wall', key: 'Hold toward a wall, then JUMP',
+    desc: 'Ripe enough to stick to a wall and push off it.' },
+  pound: { name: 'DEAD WEIGHT', ico: 'tech-pound', key: 'DOWN / S  in the air',
+    desc: 'Drop like a whole wheel. Cracked floors do not survive it.' },
+  grapple: { name: 'CHEESE STRING', ico: 'tech-hook', key: 'C / E  near a blue node',
+    desc: 'One long string, thrown at anything hanging.' },
+  noclip: { name: 'HOLE SLIP', ico: 'tech-ghost', key: 'Hold V / Q',
+    desc: 'You are mostly holes. Slip through what is in the way.' },
 };
 CZ.ABILITY_ORDER = ['doubleJump', 'dash', 'wallJump', 'pound', 'grapple', 'noclip'];
 

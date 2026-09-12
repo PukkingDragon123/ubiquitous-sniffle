@@ -49,7 +49,7 @@ CZ.LEVELS = (() => {
       sky: ['#20120c', '#4a2a16'], fog: '#2a1810', block: '#7a4f28', blockAlt: '#5c3a1c',
       plat: '#c08a4e', accent: '#ffcc33', bg: 'cellar' },
     spawn: [4, 0],
-    intro: ['A cellar. Fine. I have wheels now.'],
+    intro: ['Out. Before the mould gets here.'],
     items: [
       floor(0, 166, 0, 4), floor(171, 186, 0, 4),
       solid(-2, 0, 2, 15), solid(186, 0, 2, 15),
@@ -252,7 +252,7 @@ CZ.LEVELS = (() => {
     ] },
 
   // ───────────────────────────── 6. THE FIREWALL ─────────────────────────────
-  { id: 'firewall', name: 'THE FIREWALL', sub: 'World 6 · Boss: ANTI-CHEAT.EXE', song: 'digital', width: 330, deathY: -9,
+  { id: 'firewall', name: 'THE FIREWALL', sub: 'World 6 · Boss: THE SORTER', song: 'digital', width: 330, deathY: -9,
     theme: { tile: ['circuit', 'data'], prop: ['circuit', 'data'], sky: ['#05030f', '#2a1a5a'], fog: '#1a1040', block: '#2c2a58', blockAlt: '#1f1d40', plat: '#4a4890', accent: '#39ff88', bg: 'digital' },
     spawn: [3, 0],
     items: [
@@ -283,15 +283,15 @@ CZ.LEVELS = (() => {
       enemy('spore', 240, 4, { amp: 2, speed: 3 }),
       hook(246, 9), goo(250, 262, -1), solid(250, -5, 12, 3),
       floor(262, 330),
-      talk(266, ['ANTI-CHEAT: UNAUTHORISED MOVEMENT.']),
+      talk(266, ['THE SORTER: UNGRADED ITEM.']),
       solid(328, 0, 2, 22),
       plat(280, 4, 4), plat(312, 4, 4), hook(299, 10),
       boss('anticheat', 270, 58, 16),
       exit(322),
     ] },
 
-  // ───────────────────────────── 7. THE DEV'S PANTRY ─────────────────────────────
-  { id: 'pantry', name: "THE DEV'S PANTRY", sub: 'Final - Boss: THE DEV', song: 'heaven', width: 340, deathY: -12,
+  // ───────────────────────────── 7. THE LOADING DOCK ─────────────────────────────
+  { id: 'pantry', name: 'THE LOADING DOCK', sub: 'Final - Boss: THE CHEESEMONGER', song: 'heaven', width: 340, deathY: -12,
     theme: { tile: ['cloud', 'marble'], prop: ['cloud', 'marble'], sky: ['#ffb6d9', '#ffe9a8'], fog: '#ffd6a8', block: '#f6f2ff', blockAlt: '#dcd4f5', plat: '#ffffff', accent: '#ffd700', bg: 'heaven' },
     spawn: [3, 0],
     items: [
@@ -319,7 +319,7 @@ CZ.LEVELS = (() => {
       bounce(227, 8, 2), 
       hook(234, 16), plat(240, 8, 6), corrupt(246, 8, 3, 8), solid(246, 4, 10, 4),
       floor(256, 340, 0),
-      talk(260, ['THE DEV: I am deleting the floor.']),
+      talk(260, ['THE CHEESEMONGER: back on the shelf.']),
       solid(338, 0, 2, 30),
       wind(268, 0, 4, 18, 75),
       plat(280, 7, 4), plat(290, 11, 4), plat(318, 9, 4), plat(328, 4, 4),
