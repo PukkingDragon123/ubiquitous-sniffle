@@ -63,23 +63,18 @@ CZ.Player = class Player {
     this.blinkT = 2.4;
     this.ey = { open: 1, size: 1, lift: 0 };
 
+    // The mouth never opens. It is a drawn line and nothing else: it bends from
+    // a grin to a grimace, wobbles and stretches, but there is no hole in the
+    // cheese and nothing behind it.
     this.mouth = new THREE.Group(); this.mouth.position.set(0, 0.06, 0); this.face.add(this.mouth);
-    // the dark inside, a half-disc that opens under the smile line
-    this.maw = new THREE.Mesh(new THREE.CircleGeometry(1, 18, Math.PI, Math.PI), flat(0x5c1220));
-    this.maw.position.z = -0.01; this.mouth.add(this.maw);
-    // the smile itself: a row of chunky pixels that trace the curve
     this.lip = [];
     const LIPS = 13;
     for (let i = 0; i < LIPS; i++) {
       const m = new THREE.Mesh(new THREE.BoxGeometry(0.085, 0.085, 0.03), flat(0x22131a));
       this.mouth.add(m); this.lip.push(m);
     }
-    // A stupid little tongue that flops out whenever this is going badly or
-    // extremely well, which is most of the time.
-    this.tongue = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.3, 0.06), flat(0xff7a9a));
-    this.tongue.position.set(0.04, -0.3, 0.02); this.tongue.visible = false; this.mouth.add(this.tongue);
     // how the smile is sitting right now, damped toward whatever the mood wants
-    this.sm = { curve: 0.16, open: 0.06, wob: 0, wide: 1 };
+    this.sm = { curve: 0.16, wob: 0, wide: 1 };
 
     // mech parts, revealed as they are installed
     this.parts = {};
@@ -95,24 +90,49 @@ CZ.Player = class Player {
     this.ghostMat = new THREE.MeshBasicMaterial({ color: 0x39ff88, transparent: true, opacity: 0.5 });
   }
 
-  // The wheel is drawn as a partial cylinder: missing wedges are damage.
+  // Damage is bites taken out of the rim, never wedges taken out of the middle.
+  //
+  // This used to cut a sector out of the whole disc, which meant the missing
+  // part always reached the centre - and the face lives at the centre, so at
+  // low health the eyes and the smile were left hanging in mid-air with no
+  // cheese behind them. A solid core carries the face and only the outer ring
+  // gets eaten, so the wheel can lose most of its edge and still have a face.
   rebuildWheel() {
-    const frac = CZ.clamp(this.hp / CZ.P.MAX_HP, 0.001, 1);
-    const span = Math.PI * 2 * frac;
-    if (this.wheelMesh) { CZ.Effects.disposeTree(this.wheelMesh); }
+    if (this.wheelMesh) CZ.Effects.disposeTree(this.wheelMesh);
+    const r = this.r, core = r * 0.58, D = 1.0;
+    const hits = CZ.clamp(CZ.P.MAX_HP - this.hp, 0, 3);
     const g = new THREE.Group();
-    const body = new THREE.Mesh(new THREE.CylinderGeometry(this.r, this.r, 1.0, 24, 1, false, 0, span), this.cheeseMat);
-    body.rotation.x = Math.PI / 2; body.castShadow = true; g.add(body);
-    const rind = new THREE.Mesh(new THREE.CylinderGeometry(this.r + 0.04, this.r + 0.04, 0.3, 24, 1, false, 0, span), this.rindMat);
-    rind.rotation.x = Math.PI / 2; g.add(rind);
-    if (frac < 0.999) {                       // cut faces, pale like fresh cheese
-      const cut = new THREE.MeshToonMaterial({ color: 0xffe98a, side: THREE.DoubleSide });
-      for (const a of [0, span]) {
-        const f = new THREE.Mesh(new THREE.PlaneGeometry(this.r, 1.0), cut);
-        f.position.set(Math.cos(a) * this.r / 2, Math.sin(a) * this.r / 2, 0);
-        f.rotation.z = a - Math.PI / 2; f.rotation.y = Math.PI / 2;
-        g.add(f);
-      }
+    const cutMat = new THREE.MeshToonMaterial({ color: 0xffe98a, side: THREE.DoubleSide });
+
+    // the core: always a full disc, always under the face
+    const centre = new THREE.Mesh(new THREE.CylinderGeometry(core, core, D, 20), this.cheeseMat);
+    centre.rotation.x = Math.PI / 2; centre.castShadow = true; g.add(centre);
+
+    // Where the bites go. Fixed angles, so the same amount of damage always
+    // looks the same and a hit never reshuffles the whole wheel.
+    const BITE = [1.15, 4.0, 2.5], W = 1.0;
+    const cuts = BITE.slice(0, hits).map(a => [a - W / 2, a + W / 2]).sort((p, q) => p[0] - q[0]);
+    // the arcs of rim that survive, between one bite and the next
+    const arcs = [];
+    if (!cuts.length) arcs.push([0, Math.PI * 2]);
+    else for (let i = 0; i < cuts.length; i++) {
+      const from = cuts[i][1];
+      const to = cuts[(i + 1) % cuts.length][0] + (i === cuts.length - 1 ? Math.PI * 2 : 0);
+      if (to - from > 0.03) arcs.push([from, to - from]);
+    }
+    for (const [th0, len] of arcs) {
+      const ring = new THREE.Mesh(new THREE.CylinderGeometry(r, r, D, 24, 1, false, th0, len), this.cheeseMat);
+      ring.rotation.x = Math.PI / 2; ring.castShadow = true; g.add(ring);
+      const rind = new THREE.Mesh(new THREE.CylinderGeometry(r + 0.04, r + 0.04, 0.3, 24, 1, false, th0, len), this.rindMat);
+      rind.rotation.x = Math.PI / 2; g.add(rind);
+    }
+    // The floor of each bite, in pale fresh-cut cheese. The sides of the bite
+    // need nothing: a partial cylinder already closes itself off with two flat
+    // radial faces, and adding more planes there only gives you slivers poking
+    // out past the rim.
+    for (const [c0, c1] of cuts) {
+      const back = new THREE.Mesh(new THREE.CylinderGeometry(core + 0.012, core + 0.012, D * 0.99, 14, 1, true, c0, c1 - c0), cutMat);
+      back.rotation.x = Math.PI / 2; g.add(back);
     }
     this.wheelMesh = g; this.wheel.add(g);
   }
@@ -292,19 +312,18 @@ CZ.Player = class Player {
   // it. `wide` stretches the whole thing sideways.
   updateFace(dt) {
     const mood = this.mood(), S = this.sm;
-    let curve = 0.27, open = 0, wob = 0, wide = 1;
-    if (mood === 'happy') { curve = 0.5; open = 1; }
-    else if (mood === 'determined') { curve = 0.2; open = 0.78; wide = 1.2; }
-    else if (mood === 'squish') { curve = 0.12; open = 0; wide = 1.6; }
-    else if (mood === 'scared') { curve = -0.42; open = 0.92; wide = 0.55; }
-    else if (mood === 'hurt') { curve = -0.34; open = 0.72; wob = 0.05; wide = 0.85; }
-    else if (mood === 'melting') { curve = -0.14; open = 0.5; wob = 0.02; wide = 1.15; }
-    else if (mood === 'strain') { curve = -0.22; open = 0.45; wide = 0.75; }
-    if (this.charge > 0.05) { curve = -0.08 - this.charge * 0.14; open = 0.75; wide = 0.75; }
-    if (this.dizzy > 0) { curve = 0.04; open = 0.95; wob = 0.06; }
+    let curve = 0.27, wob = 0, wide = 1;
+    if (mood === 'happy') { curve = 0.46; wide = 1.1; }
+    else if (mood === 'determined') { curve = 0.16; wide = 1.25; }
+    else if (mood === 'squish') { curve = 0.12; wide = 1.6; }
+    else if (mood === 'scared') { curve = -0.4; wide = 0.55; }
+    else if (mood === 'hurt') { curve = -0.34; wob = 0.05; wide = 0.85; }
+    else if (mood === 'melting') { curve = -0.16; wob = 0.025; wide = 1.15; }
+    else if (mood === 'strain') { curve = -0.22; wide = 0.75; }
+    if (this.charge > 0.05) { curve = -0.1 - this.charge * 0.16; wide = 0.72; }
+    if (this.dizzy > 0) { curve = 0.04; wob = 0.07; wide = 1.1; }
     // a grin spreads; a wince snaps on
     S.curve = CZ.damp(S.curve, curve, curve < S.curve ? 30 : 15, dt);
-    S.open = CZ.damp(S.open, open, 18, dt);
     S.wob = CZ.damp(S.wob, wob, 18, dt);
     S.wide = CZ.damp(S.wide, wide, 16, dt);
 
@@ -312,7 +331,7 @@ CZ.Player = class Player {
     // open: how far the lids are down. size: how big the eye goes. lift: where
     // it sits, so a grin pushes the eyes up into it the way a real one does.
     let eOpen = 1, eSize = 1, eLift = 0;
-    if (mood === 'happy') { eOpen = 0.45; eSize = 1.05; eLift = 0.03; }
+    if (mood === 'happy') { eOpen = 0.38; eSize = 1.12; eLift = 0.03; }
     else if (mood === 'determined') { eOpen = 0.5; eSize = 1.1; eLift = -0.01; }
     else if (mood === 'squish') { eOpen = 0.35; eSize = 1.3; eLift = -0.05; }
     else if (mood === 'scared') { eOpen = 1; eSize = 1.45; eLift = 0.02; }
@@ -344,22 +363,7 @@ CZ.Player = class Player {
       m.rotation.z = Math.atan2(2 * bow * u, 1.7);          // follow the slope
       m.scale.set(1.15, 1.05, 1);
     }
-    // the hole, sized so its rim is exactly where the lip runs
-    const h = Math.abs(bow) * S.open;
-    this.maw.visible = h > 0.022;
-    this.maw.scale.set(halfW * 0.94, Math.max(0.02, h), 1);
-    this.maw.rotation.z = bow < 0 ? Math.PI : 0;            // a grimace opens upward
-    this.maw.position.y = 0;
-    this.mouth.position.y = -0.07 + Math.abs(bow) * 0.25 + this.heat * 0.02;
-    // the tongue lolls out of an open mouth, never out of a closed one
-    const lolling = (this.dizzy > 0 || this.squish > 0.4 || this.heat > 0.5
-      || Math.abs(this.vx) > 20) && h > 0.07;
-    this.tongue.visible = lolling;
-    if (lolling) {
-      this.tongue.scale.y = 1 + Math.sin(this.time * 17) * 0.3;
-      this.tongue.position.set(0.04 + Math.sin(this.time * 9) * 0.05, -h * 0.9, 0.02);
-      this.tongue.rotation.z = Math.sin(this.time * 11) * 0.45 - this.vx * 0.015;
-    }
+    this.mouth.position.y = -0.06 + Math.abs(bow) * 0.25 + this.heat * 0.02;
   }
 
   partCount() { return CZ.ABILITY_ORDER.filter(id => this.has(id)).length; }

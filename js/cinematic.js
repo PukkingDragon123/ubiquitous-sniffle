@@ -127,17 +127,14 @@ CZ.Cinematic = class Cinematic {
       }
       this.blinkT = 1.6;
       const mouth = new THREE.Group(); mouth.position.set(0, -r * 0.04, r * 0.54); g.add(mouth);
-      const maw = new THREE.Mesh(new THREE.CircleGeometry(1, 16, Math.PI, Math.PI),
-        new THREE.MeshBasicMaterial({ color: 0x5c1220 }));
-      maw.position.z = -0.01; mouth.add(maw);
       const lip = [];
       for (let i = 0; i < 11; i++) {
         const m = new THREE.Mesh(new THREE.BoxGeometry(r * 0.1, r * 0.1, 0.04),
           new THREE.MeshBasicMaterial({ color: 0x22131a }));
         mouth.add(m); lip.push(m);
       }
-      this.smile = { mouth, maw, lip, halfW: r * 0.56, curve: 0.16, open: 0.06, r };
-      this.setSmile(0.16, 0.06);
+      this.smile = { mouth, lip, halfW: r * 0.56, curve: 0.16, r };
+      this.setSmile(0.16);
     }
     return g;
   }
@@ -173,10 +170,11 @@ CZ.Cinematic = class Cinematic {
   }
   once(id, fn) { if (this.said[id]) return; this.said[id] = true; fn(); }
   heroAnchor(dy = 3.4, dx = 0) { return () => [this.hero.position.x + dx, this.hero.position.y + dy, this.hero.position.z]; }
-  // Bend the cutscene smile. curve: + is a grin, - is a grimace.
-  setSmile(curve, open, wob = 0) {
+  // Bend the cutscene smile. curve: + is a grin, - is a grimace. It is a line,
+  // not a hole - the mouth never opens.
+  setSmile(curve, wob = 0) {
     const S = this.smile; if (!S) return;
-    S.curve = curve; S.open = open;
+    S.curve = curve;
     const k = S.halfW * 2, N = S.lip.length;
     for (let i = 0; i < N; i++) {
       const u = (i / (N - 1)) * 2 - 1;
@@ -185,21 +183,17 @@ CZ.Cinematic = class Cinematic {
       m.rotation.z = Math.atan2(2 * curve * u, 1.9);
       m.scale.set(1.25, 1.1, 1);
     }
-    const rr = Math.abs(curve) * open * k;
-    S.maw.visible = rr > 0.05;
-    S.maw.scale.set(S.halfW * 0.94, Math.max(0.03, rr), 1);
-    S.maw.rotation.z = curve < 0 ? Math.PI : 0;
   }
   // The cutscene has four beats and the mouth plays all of them: bored on the
   // shelf, appalled by the mould, wide open on the way down, set on the way out.
   faceBeat(dt) {
     if (!this.smile) return;
     const S = this.smile;
-    let curve = 0.14, open = 0.1, wob = 0, eOpen = 1, eSize = 1;
-    if (this.phase === 'shelf') { curve = 0.13; open = 0.1 + Math.sin(this.t * 1.4) * 0.04; eOpen = 0.7; }
-    else if (this.phase === 'mould') { curve = -0.4; open = 0.85; wob = 0.05; eSize = 1.35; }
-    else if (this.phase === 'fall') { curve = -0.22; open = 1; wob = 0.03; eSize = 1.3; }
-    else if (this.phase === 'out') { curve = 0.52; open = 0.85; eOpen = 0.4; eSize = 1.1; }
+    let curve = 0.14, wob = 0, eOpen = 1, eSize = 1;
+    if (this.phase === 'shelf') { curve = 0.13 + Math.sin(this.t * 1.4) * 0.02; eOpen = 0.7; }
+    else if (this.phase === 'mould') { curve = -0.4; wob = 0.05; eSize = 1.35; }
+    else if (this.phase === 'fall') { curve = -0.26; wob = 0.03; eSize = 1.3; }
+    else if (this.phase === 'out') { curve = 0.52; eOpen = 0.4; eSize = 1.1; }
     // the dots blink and squint along with it
     if (this.eyes) {
       this.blinkT -= dt;
@@ -210,9 +204,8 @@ CZ.Cinematic = class Cinematic {
       for (const d of this.eyes) d.scale.set(S.es, S.es * S.eo, 1);
     }
     S.tc = CZ.damp(S.tc === undefined ? curve : S.tc, curve, 7, dt);
-    S.to = CZ.damp(S.to === undefined ? open : S.to, open, 7, dt);
     S.tw = CZ.damp(S.tw === undefined ? wob : S.tw, wob, 7, dt);
-    this.setSmile(S.tc, S.to, S.tw);
+    this.setSmile(S.tc, S.tw);
   }
 
   // ---------- timeline ----------

@@ -69,6 +69,10 @@ holes to slip through a wall.
 
 ## Play
 
+The game opens on a short cutscene and drops you straight into world one. From the pause menu, QUIT takes you to the
+main menu: PLAY (which reads CONTINUE once you are past world one and puts you back at the furthest one you reached),
+WORLDS, CONTROLS, SETTINGS, and a button to watch the opening again.
+
 A single-file build is also available: run `node build.js` and open `dist/cheez-it.html`.
 
 ### From the repo
@@ -183,13 +187,14 @@ every icon, portrait and glyph is hand-authored pixel art.
   comes from hard offset shadows instead. The boss name shudders and prompts blink; all motion respects
   `prefers-reduced-motion`.
 - **Two dots and a smile.** The eyes are just dots - no whites, no glint, nothing rattling around inside - so all
-  they do is squint, widen, blink and drift the way you are travelling. The mouth does the acting: how far the smile
-  bends, how far it opens, and how badly it wobbles. A grin spreads; a wince snaps on. Roll fast and the mouth opens
-  into a delighted gawp while the eyes squeeze into two happy dashes; wind up a spin and both narrow; take a hit and
-  the mouth flips into a shaking grimace; go flat and the whole face stretches across the wheel; and at enough speed
-  a tongue lolls out of it. The dark inside is sized so the lip always lands exactly on the rim of the hole instead
-  of cutting across it, and a grimace opens upward rather than down. The opening cutscene plays the same face through
-  its four beats.
+  they do is squint, widen, blink and drift the way you are travelling. The mouth never opens: it is a drawn line
+  that bends, wobbles and stretches, and there is no hole in the cheese behind it. A grin spreads; a wince snaps on.
+  Roll fast and the smile widens while the eyes squeeze into two happy dashes; wind up a spin and both narrow; take
+  a hit and the line flips into a shaking grimace; go flat and the whole face stretches across the wheel. The opening
+  cutscene plays the same face through its four beats.
+- **Damage is bites out of the rim.** Every hit takes a chunk out of the edge of the wheel, down to a pale
+  fresh-cut floor, at a fixed angle so the same amount of damage always looks the same. It never cuts a wedge to the
+  middle: the face lives at the centre, and a solid core keeps it backed no matter how chewed the edge gets.
 - **Destruction with weight.** A broken object throws big slabs and small shards from the same hit, sprayed away
   from where it was struck and carrying the speed of whatever hit it. Shards have less mass, so the same blow throws
   them further and the air stops them sooner. Each piece asks the level what is actually underneath it, so a heap

@@ -82,8 +82,14 @@ CZ.Game = class Game {
     const U = CZ.UI, $ = U.$;
     const gesture = () => CZ.Audio.resume();
     window.addEventListener('pointerdown', gesture, { once: true }); window.addEventListener('keydown', gesture, { once: true });
-    $('btn-controls').onclick = () => { U.show('levelselect', false); U.show('controls', true); };
-    $('btn-settings').onclick = () => { U.show('levelselect', false); this.openSettings(false); };
+    $('btn-play').onclick = () => {
+      // straight back into the furthest world you have reached
+      const i = CZ.clamp(this.save.level | 0, 0, CZ.LEVELS.length - 1);
+      U.show('title', false); this.startLevel(i, false);
+    };
+    $('btn-worlds').onclick = () => { U.show('title', false); this.showWorlds(); };
+    $('btn-controls').onclick = () => { U.show('title', false); U.show('controls', true); };
+    $('btn-settings').onclick = () => { U.show('title', false); this.openSettings(false); };
     $('btn-pause-settings').onclick = () => { U.show('pause', false); this.openSettings(true); };
     $('btn-erase').onclick = () => {
       if (this._eraseArmed) {
@@ -99,7 +105,7 @@ CZ.Game = class Game {
     };
     $('btn-replay-intro').onclick = () => this.startIntro();
     document.querySelectorAll('[data-back]').forEach(b => b.onclick = () => {
-      U.show('controls', false); U.show('settings', false);
+      U.show('controls', false); U.show('settings', false); U.show('levelselect', false);
       if (this._settingsFromPause) { this._settingsFromPause = false; U.show('pause', true); this.state = 'paused'; CZ.Touch.setVisible(false); }
       else this.showMenu();
     });
@@ -144,7 +150,8 @@ CZ.Game = class Game {
     if (this.screenMat) this.screenMat.uniforms.levels.value = o.palette ? CZ.COLOR_LEVELS : 64;
   }
 
-  // The world picker doubles as the main menu now that the title screen is gone.
+  // The main menu: a title, a PLAY button that puts you back where you were,
+  // and the doors to everything else.
   showMenu() {
     const U = CZ.UI;
     this.unloadLevel();
@@ -152,12 +159,18 @@ CZ.Game = class Game {
     if (this.cine) { this.cine.dispose(); this.cine = null; }
     U.cineShow(false); U.cineFx(0, 0); CZ.Comic.show(false);
     U.show('hud', false); U.show('complete', false); U.show('ending', false); U.show('unlock', false);
-    U.show('controls', false); U.show('settings', false);
+    U.show('controls', false); U.show('settings', false); U.show('levelselect', false);
     U.sign(null); CZ.Touch.setMode('play'); CZ.Touch.setVisible(false);
-    U.levelList(CZ.LEVELS, this.save, i => { U.show('levelselect', false); this.startLevel(i, false); });
-    U.show('levelselect', true);
+    U.$('btn-play').textContent = this.save.level > 0 ? 'CONTINUE' : 'PLAY';
+    U.show('title', true);
     this.state = 'menu';
     CZ.Audio.playMusic('factory');
+  }
+  // The world picker, one step in from the menu.
+  showWorlds() {
+    const U = CZ.UI;
+    U.levelList(CZ.LEVELS, this.save, i => { U.show('levelselect', false); this.startLevel(i, false); });
+    U.show('levelselect', true);
   }
 
   // ---------- opening cinematic ----------
@@ -165,7 +178,8 @@ CZ.Game = class Game {
     this.unloadLevel();
     if (this.cine) { this.cine.dispose(); this.cine = null; }
     const U = CZ.UI;
-    U.show('hud', false); U.show('complete', false); U.show('ending', false); U.show('levelselect', false);
+    U.show('hud', false); U.show('complete', false); U.show('ending', false);
+    U.show('levelselect', false); U.show('title', false);
     U.cineShow(true); CZ.Comic.show(true);
     this.cine = new CZ.Cinematic(this);
     this.cine.camera.aspect = this.camera.aspect; this.cine.camera.updateProjectionMatrix();
@@ -222,7 +236,7 @@ CZ.Game = class Game {
     this.checkpoint = { x: data.spawn[0], y: data.spawn[1] }; this.player.respawn(this.checkpoint.x, this.checkpoint.y);
     this.spawnEnemies();
     this.camX = this.player.cx(); this.camY = this.player.cy() + 2; this.camZ = 19;
-    U.show('levelselect', false); U.show('complete', false); U.show('hud', true); U.levelName(data.name, data.sub); U.bossBar(null); U.sign(null);
+    U.show('levelselect', false); U.show('title', false); U.show('complete', false); U.show('hud', true); U.levelName(data.name, data.sub); U.bossBar(null); U.sign(null);
     U.parts(this.abilities); U.wrecked(0);
     CZ.Spr.paint();
     CZ.Audio.playMusic(data.song);
