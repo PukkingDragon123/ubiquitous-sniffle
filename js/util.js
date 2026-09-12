@@ -1,9 +1,14 @@
 // Shared helpers + constants. Everything lives on window.CZ (classic scripts, no build step).
 window.CZ = window.CZ || {};
 
-// Internal render height. Higher = crisper; the world art is kept simple and flat
-// so it reads clearly at this resolution.
-CZ.PIXEL_HEIGHT = 540;
+// Internal render height. The whole 3D scene is drawn this tall and then blown
+// up with nearest-neighbour, so this is the game's pixel size. 360 lands on an
+// exact 2x at 720p, 3x at 1080p and 4x at 1440p: no half pixels, no shimmer.
+CZ.PIXEL_HEIGHT = 360;
+// How many steps each colour channel is allowed. Quantising to this with an
+// ordered dither is what turns a lit 3D render into something that looks drawn
+// rather than rendered.
+CZ.COLOR_LEVELS = 14;
 
 CZ.clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 CZ.lerp = (a, b, t) => a + (b - a) * t;

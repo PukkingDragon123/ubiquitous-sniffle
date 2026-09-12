@@ -24,7 +24,46 @@ CZ.Game = class Game {
     });
     this.screenScene = new THREE.Scene();
     this.screenCam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
-    this.screenQuad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), new THREE.MeshBasicMaterial({ map: this.rt.texture }));
+    // The upscale pass also crushes the render down to a small palette with a
+    // 4x4 ordered dither, on the low-res grid rather than the screen grid, so
+    // the banding lands on pixel boundaries and reads as deliberate.
+    this.screenMat = new THREE.ShaderMaterial({
+      uniforms: {
+        map: { value: this.rt.texture },
+        res: { value: new THREE.Vector2(320, 180) },
+        levels: { value: CZ.COLOR_LEVELS },
+      },
+      vertexShader: `varying vec2 vUv;
+        void main(){ vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }`,
+      fragmentShader: `
+        uniform sampler2D map; uniform vec2 res; uniform float levels;
+        varying vec2 vUv;
+        float bayer(vec2 p){
+          vec2 m = mod(p, 4.0);
+          int i = int(m.x) + int(m.y) * 4;
+          float t = 0.0;
+          if(i==0)t=0.0;      else if(i==1)t=8.0;  else if(i==2)t=2.0;  else if(i==3)t=10.0;
+          else if(i==4)t=12.0;else if(i==5)t=4.0;  else if(i==6)t=14.0; else if(i==7)t=6.0;
+          else if(i==8)t=3.0; else if(i==9)t=11.0; else if(i==10)t=1.0; else if(i==11)t=9.0;
+          else if(i==12)t=15.0;else if(i==13)t=7.0;else if(i==14)t=13.0;else t=5.0;
+          return (t + 0.5) / 16.0;
+        }
+        // The render target is an sRGB texture, so the sampler hands back linear
+        // light. Encode it back before quantising: a palette has to be cut in
+        // the space the eye sees, or every step lands in the highlights.
+        vec3 toSRGB(vec3 c){
+          return mix(c * 12.92, 1.055 * pow(max(c, vec3(0.0)), vec3(1.0 / 2.4)) - 0.055,
+                     step(vec3(0.0031308), c));
+        }
+        void main(){
+          vec3 c = clamp(toSRGB(texture2D(map, vUv).rgb), 0.0, 1.0);
+          float t = bayer(floor(vUv * res));
+          gl_FragColor = vec4(floor(c * levels + t) / levels, 1.0);
+        }`,
+      depthTest: false, depthWrite: false,
+    });
+    this.screenQuad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), this.screenMat);
+    this.screenQuad.frustumCulled = false;
     this.screenScene.add(this.screenQuad);
 
     this.save = CZ.loadSave() || CZ.newSave();
@@ -124,6 +163,7 @@ CZ.Game = class Game {
     const U = CZ.UI, data = CZ.LEVELS[i];
     this.levelIndex = i; this.levelTime = 0; this.levelDeaths = 0;
     this.level = new CZ.Level(data, this.scene, this);
+    CZ.Effects.setLevel(this.level);        // debris lands on real geometry
     this.scene.fog = new THREE.Fog(data.theme.fog, 28, 95);
     this.scene.background = new THREE.Color(data.theme.sky[1]);
     this.hemi.groundColor.set(data.theme.sky[1]); this.hemi.color.set(data.theme.sky[0]).lerp(new THREE.Color(0xffffff), 0.7);
@@ -441,6 +481,7 @@ CZ.Game = class Game {
     // Fixed vertical resolution keeps the pixel size identical on every screen.
     const ph = CZ.PIXEL_HEIGHT, pw = Math.max(2, Math.round(ph * (w / h)));
     this.rt.setSize(pw, ph);
+    if (this.screenMat) this.screenMat.uniforms.res.value.set(pw, ph);
     if (this.cine) { this.cine.camera.aspect = w / h; this.cine.camera.updateProjectionMatrix(); }
   }
   render() {
@@ -455,6 +496,7 @@ CZ.Game = class Game {
 };
 
 window.addEventListener('DOMContentLoaded', () => {
+  CZ.Frame.install();       // every UI edge is a generated 9-slice sprite
   CZ.Spr.paint();
   CZ.Comic.init();
   window.game = new CZ.Game();

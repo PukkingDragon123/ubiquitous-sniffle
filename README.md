@@ -141,28 +141,43 @@ Progress and installed parts save to `localStorage`.
 Everything is drawn at runtime. There are no image files in this repository, and the game uses **no emoji anywhere** -
 every icon, portrait and glyph is hand-authored pixel art.
 
-- **Pixel-art rendering.** The 3D world renders into a 540px-tall buffer and is upscaled with nearest-neighbour
-  filtering, so the whole game lands on a chunky pixel grid. Every surface carries a procedural pixel texture
-  generated on a 32px canvas: stone brick, riveted plate, corrugated cardboard, cracked magma, circuit board,
-  ducting, cloud marble, cheese, conveyor belts.
+- **Pixel-art rendering.** The 3D world renders into a 360px-tall buffer and is upscaled with nearest-neighbour
+  filtering - an exact 2x at 720p, 3x at 1080p, 4x at 1440p, so there are no half pixels and nothing shimmers. The
+  upscale pass then crushes the frame to 14 steps per channel with a 4x4 ordered dither, evaluated on the low-res
+  grid rather than the screen grid so the banding lands on pixel boundaries. The result is a lit 3D scene that reads
+  as drawn rather than rendered. Every surface carries a procedural pixel texture generated on a 32px canvas: stone
+  brick, riveted plate, corrugated cardboard, cracked magma, circuit board, ducting, cloud marble, cheese, belts.
 - **Three depths per world.** A dithered sky, two parallax background layers of themed props, the play plane, and a
   foreground layer of pipes, girders and chains that sweeps past in front of the camera.
 - **Cloud balloons.** Every line of speech is a pixel-art cloud drawn per balloon on a 4px grid - a body with fat
   round lobes all around the rim, a chunky ink outline and three shrinking tail puffs - sized to the text, tracking
   a point in the 3D world, and never more than one on screen at a time.
-- **Almost no words.** No title screen, no dialogue box, no signposts, no tutorial text. The HUD is a cheese wheel
-  meter and a row of installed parts; the upgrade card is an icon, a name and a key.
-- **Cardboard UI.** Panels and buttons are corrugated cardboard with hard pixel borders and a drop step instead of
-  soft shadows, tilted slightly like taped-up signs.
-- **Two bitmap faces.** Silkscreen for display type - titles, upgrade names, impact words - and Jersey 25 for
-  everything else. Both are real pixel fonts, so nothing is anti-aliased into mush at size. The boss name shudders
-  and prompts blink; all motion respects `prefers-reduced-motion`.
+- **Almost no words.** No title screen, no dialogue box, no signposts, no tutorial text. The HUD is a row of
+  installed parts and a tally of what you have wrecked; the upgrade card is an icon, a name and a key.
+- **A UI made of pixels, not of CSS.** Every frame, button, plank and chain link in the interface is drawn pixel by
+  pixel on a small canvas in `js/frames.js` and handed to CSS as a 9-slice `border-image`, blown up with
+  nearest-neighbour at an integer scale. Nothing is a rounded rectangle with a gradient on it. Panels are a leaf of
+  parchment in a tooled leather edge with gold studs pinning the corners; the upgrade card and the HUD slots are
+  ornate gold banding with a scroll in every corner over a dark wood field; buttons are struck brass; the touch
+  controls are blued steel; meters sit in a dark slot cut into an iron-capped plank; the wreck tally hangs off a
+  length of chain.
+- **Two bitmap faces.** Press Start 2P for anything short and loud - titles, keys, labels, impact words - and
+  Pixelify Sans for anything you actually have to read. Both are real pixel fonts, so nothing is anti-aliased into
+  mush at size, and neither carries a fat outline: a thick stroke fills in a bitmap face's counters, so the depth
+  comes from hard offset shadows instead. The boss name shudders and prompts blink; all motion respects
+  `prefers-reduced-motion`.
 - **Toy googly eyes.** Two of them, mismatched in size and height, each a black plastic case with a white backing, a
   loose disc inside and a domed lens with a highlight over the top. The disc has no centring spring, because a real
   googly eye does not: it is a weight that falls to the bottom, gets thrown around when the case accelerates, and
   slides along the rim it collides with. Wind up a spin and both of them whirl.
-- **Cheese everywhere.** Drips ooze off every panel and off ledges in the world, where they stretch, break and
-  fall, and the wheel throws a trail of crumbs whenever it is rolling fast or spinning.
+- **Destruction with weight.** A broken object throws big slabs and small shards from the same hit, sprayed away
+  from where it was struck and carrying the speed of whatever hit it. Shards have less mass, so the same blow throws
+  them further and the air stops them sooner. Each piece asks the level what is actually underneath it, so a heap
+  lands on the ledge it was knocked off rather than on one imaginary plane - and if the thing it settled on is
+  destroyed a moment later, it notices and falls. Pieces bounce with less spring each time, tumble down into a slide,
+  creep to a stop and lie flat-side-down. Dust blooms out of the break and puffs again wherever a piece lands hard.
+- **Cheese everywhere.** Drips ooze off ledges in the world, where they stretch, break and fall, and the wheel throws
+  a trail of crumbs whenever it is rolling fast or spinning.
 - **Lit like a room.** Key, fill and a cool rim light pick every silhouette off the background; cellar lamps throw
   visible cones of light; dust drifts up through them; a vignette and a faint scanline wash frame the screen.
 - **Things that live here.** The rat has a snout, whiskers, flicking ears, a whipping three-part tail and four feet
@@ -176,12 +191,13 @@ every icon, portrait and glyph is hand-authored pixel art.
 index.html      DOM overlay (HUD, dialog, menus) + script tags
 css/style.css   UI styling
 js/util.js      constants (all physics tuning lives in CZ.P), ability metadata, save helpers
+js/frames.js    every UI frame, button and chain link, drawn pixel by pixel as a 9-slice sprite
 js/sprites.js   hand-authored 16x16 pixel-art sprites: icons, portraits, glyphs (no emoji)
 js/textures.js  procedural pixel textures for every 3D surface
 js/audio.js     procedural WebAudio SFX + chiptune sequencer
 js/input.js     keyboard/gamepad → actions with press/hold edges
 js/levels.js    level data (a tiny DSL: floor/plat/ramp/boost/hazard/mover/glitch/cracked/hook/...)
-js/effects.js   toon materials, outlines, particles, screen shake
+js/effects.js   toon materials, outlines, particles, chunky debris, dust, screen shake
 js/level.js     level runtime: meshes, animation, collision queries, parallax backgrounds
 js/player.js    the cheese: movement controller + squash/stretch visuals
 js/enemies.js   rat, spore, blob, turret, projectiles

@@ -485,23 +485,23 @@ CZ.Level = class Level {
   // momentum it takes; `box` is where it stands relative to the prop's anchor.
   static get JUNK() {
     return {
-      bottle:      { tough: 0, box: [-0.5, 0, 1.0, 2.0],  n: 9,  d: 0.8, word: ['TINK', 'SHNK', 'GLASS!'],
+      bottle:      { tough: 0, box: [-0.5, 0, 1.0, 2.0],  n: 9,  d: 0.8, dust: 0xb9c9b4, word: ['TINK', 'SHNK', 'GLASS!'],
         colors: [0x2f5a34, 0x4a7a50, 0xe8dcc0, 0x9fd4b0] },
-      web:         { tough: 0, box: [-1.6, -1.6, 3.2, 3.2], n: 7, d: 0.4, word: ['PFFT', 'EW'],
+      web:         { tough: 0, box: [-1.6, -1.6, 3.2, 3.2], n: 7, d: 0.4, dust: 0xcfcac2, word: ['PFFT', 'EW'],
         colors: [0xe8e2d8, 0xc8c2b8, 0x1a1016] },
-      cheesewheel: { tough: 3, box: [-1.3, 0, 2.6, 1.6],  n: 14, d: 1.2, word: ['SPLORT', 'CANNIBAL!', 'GLORP'],
+      cheesewheel: { tough: 3, box: [-1.3, 0, 2.6, 1.6],  n: 14, d: 1.2, dust: 0xe0c489, word: ['SPLORT', 'CANNIBAL!', 'GLORP'],
         colors: [0xffcc33, 0xe8892a, 0xffe98a, 0xd98a2a] },
-      knifeblock:  { tough: 4, box: [-0.8, 0, 1.6, 2.6],  n: 12, d: 1.0, word: ['CLATTER', 'YIKES'],
+      knifeblock:  { tough: 4, box: [-0.8, 0, 1.6, 2.6],  n: 12, d: 1.0, dust: 0xa98a63, word: ['CLATTER', 'YIKES'],
         colors: [0x8a5a2b, 0x6a4522, 0xc8d0dc, 0x2b2229] },
-      lamp:        { tough: 4, box: [-1.1, -1.6, 2.2, 2.6], n: 10, d: 1.0, word: ['POP!', 'DARK NOW', 'TINKLE'],
+      lamp:        { tough: 4, box: [-1.1, -1.6, 2.2, 2.6], n: 10, d: 1.0, dust: 0xc8bba4, word: ['POP!', 'DARK NOW', 'TINKLE'],
         colors: [0x4a3a2a, 0xffe6a8, 0xf6f6f8, 0x3b3038] },
-      crate:       { tough: 4, box: [-1.2, 0, 2.4, 0],    n: 15, d: 1.6, word: ['KRAK', 'SPLINTERS', 'BONK'],
+      crate:       { tough: 4, box: [-1.2, 0, 2.4, 0],    n: 15, d: 1.6, dust: 0xc4a87e, word: ['KRAK', 'SPLINTERS', 'BONK'],
         colors: [0xd9a066, 0xb8834a, 0x8f5a2c, 0xe8c08a] },
-      rack:        { tough: 7, box: [-2.4, 0, 4.8, 5.8],  n: 22, d: 1.6, word: ['CRUNCH', 'WHUMP', 'VINTAGE'],
+      rack:        { tough: 7, box: [-2.4, 0, 4.8, 5.8],  n: 22, d: 1.6, dust: 0xb09274, word: ['CRUNCH', 'WHUMP', 'VINTAGE'],
         colors: [0x8a5a2b, 0x6a4522, 0x6b2436, 0x3f5a2a, 0xd9a066] },
-      shelf:       { tough: 7, box: [-2.3, 0, 4.6, 5.8],  n: 24, d: 1.6, word: ['CRASH', 'AVALANCHE', 'OOPS'],
+      shelf:       { tough: 7, box: [-2.3, 0, 4.6, 5.8],  n: 24, d: 1.6, dust: 0xc0a37c, word: ['CRASH', 'AVALANCHE', 'OOPS'],
         colors: [0x8a5a2b, 0x6a4522, 0xffcc33, 0xe8892a] },
-      vat:         { tough: 14, box: [-3.2, 0, 6.4, 6.2], n: 30, d: 2.6, word: ['KABOOM', 'MILK EVERYWHERE'],
+      vat:         { tough: 14, box: [-3.2, 0, 6.4, 6.2], n: 30, d: 2.6, dust: 0xd8c9ae, word: ['KABOOM', 'MILK EVERYWHERE'],
         colors: [0xa06a3a, 0xc98a4a, 0xfff3d0, 0x7a5a34] },
     };
   }
@@ -522,7 +522,8 @@ CZ.Level = class Level {
     this.wrecked++;
     CZ.Effects.smash({ x: it.box.x, y: it.box.y, w: it.box.w, h: it.box.h, d: j.d }, {
       count: j.n, colors: j.colors, power: 0.9 + j.tough * 0.03,
-      floor: Math.min(it.y, it.box.y), vx: this.game && this.game.player ? this.game.player.vx * 0.3 : 0,
+      floor: Math.min(it.y, it.box.y), dust: j.dust,
+      vx: this.game && this.game.player ? this.game.player.vx * 0.35 : 0,
     });
     CZ.Effects.burst(it.box.x + it.box.w / 2, it.box.y + it.box.h / 2, j.colors[0], 8,
       { spread: 7, up: 5, life: 0.5, size: 0.9 });
@@ -889,6 +890,19 @@ CZ.Level = class Level {
     return best;
   }
   blocking(f = {}) { const out = []; for (const s of this.solids) if (this.solidFor(s, f)) out.push(s); return out; }
+  // The highest surface at x that is at or below y — what a falling piece of
+  // debris is going to land on. Falls back to the kill plane over a pit.
+  groundAt(x, y) {
+    let best = this.data.deathY - 2;
+    for (const s of this.solids) {
+      if (s.broken || x < s.x || x > s.x + s.w) continue;
+      const top = s.y + s.h;
+      if (top <= y + 0.5 && top > best) best = top;
+    }
+    const r = this.rampAt(x);
+    if (r && r.y <= y + 0.5 && r.y > best) best = r.y;
+    return best;
+  }
 
   breakCrate(s) {
     if (s.broken) return; s.broken = true; s.mesh.visible = false;
@@ -901,7 +915,8 @@ CZ.Level = class Level {
     CZ.Effects.smash({ x: s.x, y: s.y, w: s.w, h: s.h, d: 2.4 }, {
       count: heavy ? 16 : 11, power: heavy ? 1.25 : 1,
       colors: heavy ? [0x7a4a22, 0x8f5a2c, 0x5a3a18, 0x6a6f7a] : [0xd9a066, 0xb8834a, 0x8f5a2c, 0xe8c08a],
-      floor: Math.min(s.y, 0.2), vx: (this.game && this.game.player ? this.game.player.vx * 0.25 : 0),
+      dust: heavy ? 0x9c8464 : 0xd8bc90,
+      floor: Math.min(s.y, 0.2), vx: (this.game && this.game.player ? this.game.player.vx * 0.3 : 0),
     });
     CZ.Effects.burst(s.x + s.w / 2, s.y + s.h / 2, 0xe8c08a, 10, { spread: 8, up: 5, life: 0.5, size: 0.8 });
     CZ.Audio.sfx.crack(); CZ.Effects.shake(heavy ? 0.9 : 0.5);
@@ -915,8 +930,11 @@ CZ.Level = class Level {
     d.broken = true; if (d.bar) d.bar.broken = true;
     d.mesh.visible = false;
     CZ.Effects.smash({ x: d.x - 2, y: d.y, w: 4, h: 7.4, d: 1.2 }, {
-      count: 26, power: 1.5, colors: [0xb08a5a, 0x8a5a2b, 0x6a4522, 0x6a6f7a, 0xc8d0dc], floor: d.y,
+      count: 30, power: 1.6, colors: [0xb08a5a, 0x8a5a2b, 0x6a4522, 0x6a6f7a, 0xc8d0dc],
+      dust: 0xcbb08a, floor: d.y,
+      vx: (this.game && this.game.player ? this.game.player.vx * 0.4 : 0),
     });
+    CZ.Effects.puff(d.x, d.y + 2, 10, { color: 0xe8d5b0, size: 2.2, spread: 3, blow: 6, life: 1.5 });
     CZ.Effects.burst(d.x, 3.6, 0xffe6a8, 26, { spread: 15, up: 10, life: 1.1, size: 1.4 });
     CZ.Audio.sfx.bossDie(); CZ.Effects.shake(1.8);
     if (this.game) this.game.hitstop(0.12);
@@ -933,7 +951,7 @@ CZ.Level = class Level {
   breakCracked(s) {
     if (s.broken) return; s.broken = true; s.mesh.visible = false;
     CZ.Effects.smash({ x: s.x, y: s.y, w: s.w, h: s.h, d: 3 }, {
-      count: 14, colors: [0x7a5f3a, 0x5f4828, 0x8d7048], floor: s.y - 0.4,
+      count: 16, colors: [0x7a5f3a, 0x5f4828, 0x8d7048], dust: 0xa8967a, floor: s.y - 0.4,
     });
     CZ.Audio.sfx.crack(); CZ.Effects.shake(0.7);
     if (this.game) this.game.hitstop(0.05);
