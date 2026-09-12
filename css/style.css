@@ -11,10 +11,10 @@
   --paper:#f6e9c8; --lamp:#ffc266;
   --glitch:#39ff88; --alarm:#ff2d55; --void:#100a12;
   --pix:4px;
-  /* one pixel-art face for everything: Pixelify Sans, heavy for the big type */
-  --graffiti:'Pixelify Sans', 'Courier New', monospace;
-  --pixel:'Pixelify Sans', 'Courier New', monospace;
-  --body:'Pixelify Sans', 'Courier New', monospace;
+  /* two true bitmap faces: Silkscreen for the big type, Jersey 25 for the rest */
+  --graffiti:'Silkscreen', 'Courier New', monospace;
+  --pixel:'Jersey 25', 'Courier New', monospace;
+  --body:'Jersey 25', 'Courier New', monospace;
 }
 *{box-sizing:border-box}
 html,body{margin:0;height:100%;overflow:hidden;background:var(--void);color:var(--paper);
@@ -57,9 +57,9 @@ canvas#game{position:fixed;inset:0;width:100%;height:100%;display:block;image-re
     radial-gradient(circle at 8px 0, var(--ink) 10px, transparent 11px) 0 6px/30px 24px repeat-x;}
 
 /* ── type ───────────────────────────────────────────────────────────── */
-.graffiti{font-family:var(--graffiti);font-weight:700;letter-spacing:2px;line-height:.95;
-  color:var(--cheese);-webkit-text-stroke:7px var(--ink);paint-order:stroke fill;
-  text-shadow:7px 7px 0 var(--wine)}
+.graffiti{font-family:var(--graffiti);font-weight:700;letter-spacing:1px;line-height:1.15;
+  color:var(--cheese);-webkit-text-stroke:5px var(--ink);paint-order:stroke fill;
+  text-shadow:5px 5px 0 var(--wine)}
 h1,h2{margin:0}
 
 /* ── HUD ────────────────────────────────────────────────────────────── */
@@ -70,7 +70,7 @@ h1,h2{margin:0}
 #hp .heart{width:42px;height:42px;background-size:100% 100%;image-rendering:pixelated;
   filter:drop-shadow(3px 3px 0 rgba(0,0,0,.6));transition:transform .12s, filter .12s}
 #hp .heart.lost{filter:grayscale(1) brightness(.4);transform:scale(.78) translateY(4px)}
-.tape-chip{display:flex;align-items:center;gap:9px;padding:7px 14px;font-family:var(--pixel);font-size:23px;
+.tape-chip{display:flex;align-items:center;gap:9px;padding:7px 14px;font-family:var(--pixel);font-size:26px;
   background:var(--paper);color:var(--ink);border:var(--pix) solid var(--ink);
   box-shadow:0 var(--pix) 0 rgba(0,0,0,.55);transform:rotate(-1.2deg)}
 .tape-chip .spr{width:24px;height:24px}
@@ -80,9 +80,9 @@ h1,h2{margin:0}
 .part .spr{width:28px;height:28px}
 .part.fresh{animation:slam .3s steps(3)}
 #hud-center{text-align:center}
-#level-name{font-family:var(--graffiti);font-size:clamp(38px,5.4vw,72px);color:var(--cheese-lt);letter-spacing:2px;
-  -webkit-text-stroke:6px var(--ink);paint-order:stroke fill;text-shadow:5px 5px 0 var(--wine)}
-#timer{font-family:var(--pixel);font-size:26px;color:var(--paper);text-shadow:3px 3px 0 var(--ink);margin-top:8px;
+#level-name{font-family:var(--graffiti);font-size:clamp(24px,3.2vw,42px);color:var(--cheese-lt);letter-spacing:2px;
+  -webkit-text-stroke:4px var(--ink);paint-order:stroke fill;text-shadow:4px 4px 0 var(--wine)}
+#timer{font-family:var(--pixel);font-size:29px;color:var(--paper);text-shadow:3px 3px 0 var(--ink);margin-top:8px;
   font-variant-numeric:tabular-nums}
 #hud-right{display:flex;justify-content:flex-end}
 /* the wheel meter is the cheese itself: each hit cuts a wedge out of it */
@@ -96,7 +96,7 @@ h1,h2{margin:0}
 #noclip-fill{height:100%;width:100%;background:#b455ff;
   background-image:repeating-linear-gradient(90deg,rgba(255,255,255,.35) 0 4px,transparent 4px 8px);transition:width .05s linear}
 #boss-bar{position:fixed;left:50%;top:72px;transform:translateX(-50%);width:min(620px,86vw);text-align:center;z-index:21}
-#boss-name{font-family:var(--graffiti);font-size:49px;color:var(--alarm);margin-bottom:8px;
+#boss-name{font-family:var(--graffiti);font-size:28px;color:var(--alarm);margin-bottom:8px;
   -webkit-text-stroke:6px var(--ink);paint-order:stroke fill;animation:shudder 2.4s steps(2) infinite}
 #boss-bar .bar{height:24px;border:var(--pix) solid var(--ink);background:#3a1a1a;box-shadow:0 var(--pix) 0 var(--ink)}
 #boss-fill{height:100%;width:100%;background:var(--alarm);
@@ -105,7 +105,7 @@ h1,h2{margin:0}
 
 /* ── in-world sign ──────────────────────────────────────────────────── */
 #sign{position:fixed;left:50%;bottom:104px;transform:translateX(-50%) rotate(-.8deg);z-index:22;
-  padding:14px 24px;max-width:min(720px,92vw);text-align:center;font-size:33px;line-height:1.35;
+  padding:14px 24px;max-width:min(720px,92vw);text-align:center;font-size:37px;line-height:1.35;
   pointer-events:none;animation:slam .18s steps(3)}
 #sign::before{content:'';position:absolute;left:50%;top:-11px;transform:translateX(-50%);width:64px;height:15px;
   background:rgba(246,233,200,.6);border:2px solid rgba(20,13,7,.5)}
@@ -116,57 +116,74 @@ h1,h2{margin:0}
 .portrait-frame{width:112px;height:112px;flex:none;background:var(--paper);border:var(--pix) solid var(--ink);
   box-shadow:inset 0 0 0 3px var(--wine);display:grid;place-items:center;padding:7px}
 #dialog .text-wrap{flex:1;min-width:0}
-#dialog .who{display:inline-block;font-family:var(--pixel);font-size:19px;color:var(--ink);letter-spacing:1px;
+#dialog .who{display:inline-block;font-family:var(--pixel);font-size:21px;color:var(--ink);letter-spacing:1px;
   background:var(--cheese);border:3px solid var(--ink);padding:5px 10px;margin-bottom:12px}
-#dialog .text{font-size:36px;line-height:1.4;min-height:66px}
-#dialog .hint{font-family:var(--pixel);font-size:16px;opacity:.55;text-align:right;margin-top:10px;
+#dialog .text{font-size:40px;line-height:1.4;min-height:66px}
+#dialog .hint{font-family:var(--pixel);font-size:18px;opacity:.55;text-align:right;margin-top:10px;
   animation:blink 1.1s steps(2) infinite}
 @keyframes blink{50%{opacity:.12}}
 
 /* ── unlock card ────────────────────────────────────────────────────── */
 #unlock{position:fixed;inset:0;z-index:50;display:grid;place-items:center;background:rgba(16,10,18,.76)}
 #unlock .card{width:min(660px,93vw);padding:30px 38px 40px;text-align:center;animation:slam .28s steps(4)}
-#unlock .eyebrow{font-family:var(--pixel);font-size:20px;color:var(--paper);letter-spacing:3px;
+#unlock .eyebrow{font-family:var(--pixel);font-size:22px;color:var(--paper);letter-spacing:3px;
   background:var(--wine);display:inline-block;padding:7px 12px;border:3px solid var(--ink)}
-#unlock .name{font-size:clamp(55px,9.45vw,99px);margin:8px 0 12px}
-#unlock .desc{font-size:30px;line-height:1.45;margin:0 auto 16px;max-width:42ch;color:var(--ink)}
+#unlock .name{font-size:clamp(30px,5vw,52px);margin:8px 0 12px}
+#unlock .desc{font-size:34px;line-height:1.45;margin:0 auto 16px;max-width:42ch;color:var(--ink)}
 #unlock .key{display:inline-block;background:var(--ink);color:var(--glitch);padding:10px 16px;
-  font-family:var(--pixel);font-size:20px}
-#unlock .hint{font-family:var(--pixel);font-size:16px;margin-top:18px;opacity:.6;animation:blink 1.1s steps(2) infinite}
+  font-family:var(--pixel);font-size:22px}
+#unlock .hint{font-family:var(--pixel);font-size:18px;margin-top:18px;opacity:.6;animation:blink 1.1s steps(2) infinite}
 @keyframes slam{from{transform:scale(.6) rotate(-3deg)}to{transform:scale(1) rotate(0)}}
 
 /* ── buttons: oak tags nailed to the wall ───────────────────────────── */
-button{font-family:var(--pixel);font-size:26px;letter-spacing:1px;padding:16px 30px;cursor:pointer;
+button{font-family:var(--pixel);font-size:29px;letter-spacing:1px;padding:16px 30px;cursor:pointer;
   background-color:var(--oak);color:var(--paper);border:var(--pix) solid var(--ink);
   background-image:repeating-linear-gradient(90deg, rgba(0,0,0,.2) 0 3px, rgba(255,255,255,.07) 3px 6px, transparent 6px 15px);
   box-shadow:0 6px 0 var(--ink);transform:rotate(-.6deg);transition:transform .07s steps(2), box-shadow .07s, background-color .1s, color .1s}
 button:hover,button:focus-visible{background-color:var(--cheese);color:var(--ink);transform:rotate(.8deg) translateY(-3px);box-shadow:0 9px 0 var(--ink)}
 button:focus-visible{outline:3px dashed var(--glitch);outline-offset:4px}
 button:active{transform:translateY(4px) rotate(0);box-shadow:0 2px 0 var(--ink)}
-button.big{font-size:38px;padding:20px 50px;background-color:var(--cheese);color:var(--ink)}
+button.big{font-size:43px;padding:20px 50px;background-color:var(--cheese);color:var(--ink)}
 button:nth-of-type(even){transform:rotate(.7deg)}
 
 /* ── panels ─────────────────────────────────────────────────────────── */
 .panel{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%) rotate(-.5deg);z-index:50;
   min-width:min(620px,93vw);max-height:92vh;overflow:auto;padding:22px 30px 40px;
   display:flex;flex-direction:column;gap:12px;align-items:center;text-align:center;color:var(--paper)}
-.panel h2{font-size:clamp(40px,6.4vw,64px);margin-bottom:2px}
-.panel table{border-collapse:collapse;font-size:26px;width:100%;color:var(--ink)}
+.panel h2{font-size:clamp(26px,4vw,40px);margin-bottom:2px}
+.panel table{border-collapse:collapse;font-size:29px;width:100%;color:var(--ink)}
 .panel td{padding:8px 14px;border-bottom:3px dashed rgba(20,13,7,.3);text-align:left}
-.panel td:first-child{font-family:var(--pixel);font-size:16px;white-space:nowrap;color:var(--wine-dk)}
-.panel .tip{font-size:21px;max-width:50ch;line-height:1.45;margin:0;color:var(--ink)}
+.panel td:first-child{font-family:var(--pixel);font-size:18px;white-space:nowrap;color:var(--wine-dk)}
+.panel .tip{font-size:24px;max-width:50ch;line-height:1.45;margin:0;color:var(--ink)}
 #level-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(184px,1fr));gap:10px;width:100%}
-#level-list button{font-family:var(--body);font-size:20px;padding:9px 8px;display:flex;flex-direction:column;
+#level-list button{font-family:var(--body);font-size:22px;padding:9px 8px;display:flex;flex-direction:column;
   gap:7px;align-items:center;transform:rotate(0)}
-#level-list button .n{font-family:var(--pixel);font-size:14px;opacity:.7}
+#level-list button .n{font-family:var(--pixel);font-size:16px;opacity:.7}
 #level-list button:disabled{opacity:.32;cursor:not-allowed;filter:grayscale(1);box-shadow:0 3px 0 var(--ink)}
-#complete-stats,#ending-stats{font-size:32px;line-height:1.7;display:flex;flex-direction:column;gap:6px;align-items:center;color:var(--ink)}
-.stat{display:flex;align-items:center;gap:12px;font-family:var(--pixel);font-size:20px}
+#complete-stats,#ending-stats{font-size:36px;line-height:1.7;display:flex;flex-direction:column;gap:6px;align-items:center;color:var(--ink)}
+.stat{display:flex;align-items:center;gap:12px;font-family:var(--pixel);font-size:22px}
 .stat .spr{width:26px;height:26px}
-#ending-text{font-size:29px;max-width:50ch;line-height:1.55;color:var(--ink)}
+#ending-text{font-size:32px;max-width:50ch;line-height:1.55;color:var(--ink)}
 #complete-title{color:var(--glitch)}
 
 /* ── flash + toast ──────────────────────────────────────────────────── */
+/* ═══ kitchen map between stages ═════════════════════════════════════ */
+#map{position:fixed;inset:0;z-index:54;background:#140d07;display:grid;place-items:center}
+#map canvas{width:100%;height:100%;object-fit:contain;image-rendering:pixelated}
+
+/* ═══ door QTE ═══════════════════════════════════════════════════════ */
+#qte{position:fixed;inset:0;z-index:56;display:grid;place-items:center;pointer-events:auto}
+#qte .ring-wrap{position:relative;width:260px;height:260px;display:grid;place-items:center}
+#qte .band{position:absolute;width:110px;height:110px;border:5px dashed var(--glitch);
+  border-radius:50%;opacity:.9;animation:bandPulse .5s steps(2) infinite}
+@keyframes bandPulse{50%{opacity:.45}}
+#qte .ring{position:absolute;width:260px;height:260px;border:9px solid var(--cheese);border-radius:50%;
+  box-shadow:0 0 0 5px var(--ink), inset 0 0 0 5px var(--ink);will-change:transform}
+#qte .key{position:relative;font-family:var(--pixel);font-weight:700;font-size:38px;color:var(--ink);
+  background:var(--cheese);border:var(--pix) solid var(--ink);padding:10px 18px;
+  box-shadow:0 var(--pix) 0 var(--ink);animation:slam .12s steps(2)}
+#qte.hit .ring{border-color:#fff}
+
 /* a soft vignette and a faint scanline wash: the whole game sits inside a frame */
 #vignette{position:fixed;inset:0;pointer-events:none;z-index:18;
   background:
@@ -174,7 +191,7 @@ button:nth-of-type(even){transform:rotate(.7deg)}
     radial-gradient(ellipse at 50% 48%, transparent 46%, rgba(10,6,4,.55) 100%)}
 #flash{position:fixed;inset:0;pointer-events:none;background:#fff;opacity:0;transition:opacity .3s;z-index:59}
 #toast{position:fixed;top:150px;bottom:auto;left:50%;transform:translateX(-50%) rotate(-1deg);z-index:55;
-  padding:13px 22px;font-family:var(--pixel);font-size:22px;line-height:1.5;max-width:80vw;text-align:center;
+  padding:13px 22px;font-family:var(--pixel);font-size:25px;line-height:1.5;max-width:80vw;text-align:center;
   background:var(--ink);color:var(--cheese);border:var(--pix) solid var(--cheese);box-shadow:0 var(--pix) 0 rgba(0,0,0,.6);
   animation:slam .16s steps(3)}
 
@@ -188,12 +205,12 @@ button:nth-of-type(even){transform:rotate(.7deg)}
 #cine .bar.top{transform-origin:top}
 #cine .bar.bottom{transform-origin:bottom}
 #cine-caption{position:absolute;left:50%;bottom:13vh;transform:translateX(-50%);
-  font-family:var(--pixel);font-size:clamp(19px,2.29vw,30px);line-height:1.7;letter-spacing:1px;
+  font-family:var(--pixel);font-size:clamp(21px,2.52vw,34px);line-height:1.7;letter-spacing:1px;
   color:var(--paper);text-shadow:3px 3px 0 #000;text-align:center;max-width:86vw;
   padding:12px 20px;background:rgba(16,10,18,.55);border-left:var(--pix) solid var(--cheese);
   animation:slam .12s steps(2)}
 #cine-skip{position:absolute;right:20px;bottom:calc(11vh + 16px);pointer-events:auto;
-  font-family:var(--pixel);font-size:17px;letter-spacing:1px;padding:10px 16px;
+  font-family:var(--pixel);font-size:19px;letter-spacing:1px;padding:10px 16px;
   background-color:rgba(20,13,7,.72);color:var(--paper);border:3px solid var(--paper);
   box-shadow:none;transform:none;opacity:.65}
 #cine-skip:hover{background-color:var(--cheese);color:var(--ink);border-color:var(--ink);opacity:1;transform:none}
@@ -219,7 +236,7 @@ html.touch, html.touch body{touch-action:none;overscroll-behavior:none;-webkit-t
 #tc-stick.active #tc-stick-base{border-color:var(--cheese)}
 #tc-stick-knob{width:58px;height:58px;background:var(--cheese);border:var(--pix) solid var(--ink);
   box-shadow:0 var(--pix) 0 var(--ink);will-change:transform}
-#tc-stick .tc-hint{font-family:var(--pixel);font-size:14px;letter-spacing:2px;color:var(--paper);opacity:.6;
+#tc-stick .tc-hint{font-family:var(--pixel);font-size:16px;letter-spacing:2px;color:var(--paper);opacity:.6;
   text-shadow:2px 2px 0 var(--ink)}
 #tc-buttons{position:absolute;right:max(18px,env(safe-area-inset-right));bottom:max(18px,env(safe-area-inset-bottom));
   display:grid;grid-template-columns:repeat(2,auto);gap:12px;align-items:end;justify-items:center;pointer-events:none}
@@ -228,10 +245,10 @@ html.touch, html.touch body{touch-action:none;overscroll-behavior:none;-webkit-t
   background-color:var(--paper);color:var(--ink);border:var(--pix) solid var(--ink);box-shadow:0 6px 0 var(--ink);
   transform:rotate(0);transition:transform .06s steps(2), box-shadow .06s, background-color .08s}
 .tc-btn .spr{width:28px;height:28px}
-.tc-btn .lbl{font-family:var(--pixel);font-size:12px;line-height:1;font-weight:700}
+.tc-btn .lbl{font-family:var(--pixel);font-size:13px;line-height:1;font-weight:700}
 .tc-btn.tc-lg{width:112px;height:112px;grid-column:2;grid-row:1 / span 2;background-color:var(--cheese)}
 .tc-btn.tc-lg .spr{width:44px;height:44px}
-.tc-btn.tc-lg .lbl{font-size:15px}
+.tc-btn.tc-lg .lbl{font-size:17px}
 .tc-btn.tc-sm{width:76px;height:76px;grid-column:1}
 .tc-btn.pressed{transform:translateY(5px);box-shadow:0 1px 0 var(--ink);background-color:var(--glitch)}
 .tc-btn[hidden]{display:none}
@@ -242,8 +259,8 @@ html.touch #hud-left{padding-left:60px}
 
 #rotate{position:fixed;inset:0;z-index:60;display:grid;place-items:center;background:rgba(16,10,18,.96);
   text-align:center;padding:24px}
-#rotate .inner{display:flex;flex-direction:column;align-items:center;gap:20px;font-size:30px;line-height:1.5}
-#rotate span{font-family:var(--pixel);font-size:14px;opacity:.65}
+#rotate .inner{display:flex;flex-direction:column;align-items:center;gap:20px;font-size:34px;line-height:1.5}
+#rotate span{font-family:var(--pixel);font-size:16px;opacity:.65}
 .rotating{animation:tilt 1.8s steps(4) infinite}
 @keyframes tilt{0%,100%{transform:rotate(0)}50%{transform:rotate(-90deg)}}
 .mobile-only{display:none}
@@ -254,52 +271,52 @@ html.touch .mobile-only{display:block}
   :root{--pix:3px}
   #hud{padding:8px 10px}
   #hp .heart{width:28px;height:28px}
-  .tape-chip{font-size:16px;padding:4px 9px}
+  .tape-chip{font-size:18px;padding:4px 9px}
   .tape-chip .spr{width:16px;height:16px}
   .limb{width:26px;height:26px;border-width:2px}
   .limb .spr{width:17px;height:17px}
   #limbs{gap:4px}
-  #level-name{font-size:clamp(23px,4.59vw,38px)}
-  #timer{font-size:16px;margin-top:3px}
-  .tech{min-width:0;padding:4px 5px;font-size:12px}
+  #level-name{font-size:clamp(16px,3.2vw,26px)}
+  #timer{font-size:18px;margin-top:3px}
+  .tech{min-width:0;padding:4px 5px;font-size:13px}
   .tech .spr{width:18px;height:18px}
   .tech .k{display:none}
   #techs{gap:4px}
   #boss-bar{top:48px;width:min(440px,76vw)}
-  #boss-name{font-size:28px}
+  #boss-name{font-size:19px}
   #boss-bar .bar{height:15px}
   #noclip-meter{bottom:auto;top:8px;width:140px;height:12px}
-  #sign{bottom:auto;top:84px;font-size:23px;padding:9px 15px;max-width:min(460px,84vw)}
+  #sign{bottom:auto;top:84px;font-size:26px;padding:9px 15px;max-width:min(460px,84vw)}
   #dialog{bottom:auto;top:10px;width:min(680px,95vw);padding:11px 13px;gap:12px}
   .portrait-frame{width:64px;height:64px;padding:4px}
-  #dialog .text{font-size:23px;min-height:40px}
-  #dialog .who{font-size:13px;margin-bottom:5px;padding:3px 6px}
-  #dialog .hint{font-size:12px}
-  #toast{top:auto;bottom:calc(max(18px,env(safe-area-inset-bottom)) + 172px);font-size:14px;padding:8px 13px;max-width:74vw}
+  #dialog .text{font-size:26px;min-height:40px}
+  #dialog .who{font-size:15px;margin-bottom:5px;padding:3px 6px}
+  #dialog .hint{font-size:13px}
+  #toast{top:auto;bottom:calc(max(18px,env(safe-area-inset-bottom)) + 172px);font-size:16px;padding:8px 13px;max-width:74vw}
   #unlock .card{padding:18px 20px 26px}
   .ico-spr{width:58px;height:58px;margin:3px auto}
-  #unlock .name{font-size:clamp(38px,9.45vw,55px)}
-  #unlock .desc{font-size:22px}
-  #unlock .key{font-size:14px;padding:7px 11px}
-  #unlock .eyebrow{font-size:14px;padding:5px 8px}
+  #unlock .name{font-size:clamp(24px,6vw,34px)}
+  #unlock .desc{font-size:25px}
+  #unlock .key{font-size:16px;padding:7px 11px}
+  #unlock .eyebrow{font-size:16px;padding:5px 8px}
   .panel{padding:18px 20px 26px;min-width:min(480px,94vw);gap:11px}
-  .panel h2{font-size:clamp(35px,6.75vw,46px)}
-  .panel table{font-size:19px}
+  .panel h2{font-size:clamp(22px,4.4vw,30px)}
+  .panel table{font-size:21px}
   .panel td{padding:5px 8px}
-  .panel td:first-child{font-size:12px}
-  .panel .tip{font-size:19px}
-  button{font-size:17px;padding:11px 18px;box-shadow:0 4px 0 var(--ink)}
-  button.big{font-size:23px;padding:13px 28px}
+  .panel td:first-child{font-size:13px}
+  .panel .tip{font-size:21px}
+  button{font-size:19px;padding:11px 18px;box-shadow:0 4px 0 var(--ink)}
+  button.big{font-size:26px;padding:13px 28px}
   #level-list{grid-template-columns:repeat(auto-fill,minmax(132px,1fr));gap:8px}
-  #level-list button{font-size:17px;padding:9px 5px}
-  .stat{font-size:14px}
-  #complete-stats,#ending-stats{font-size:22px}
-  #ending-text{font-size:20px}
+  #level-list button{font-size:19px;padding:9px 5px}
+  .stat{font-size:16px}
+  #complete-stats,#ending-stats{font-size:25px}
+  #ending-text{font-size:22px}
   .big-spr{width:52px;height:52px}
   #title{gap:20px}
   #title .sub{margin-top:60px;padding:7px 11px}
   .logo-drips i{width:12px}
-  #cine-caption{font-size:17px;padding:8px 12px;bottom:12vh}
+  #cine-caption{font-size:19px;padding:8px 12px;bottom:12vh}
   #cine .bar{height:9vh}
 }
 @media (max-height:430px){
@@ -308,9 +325,9 @@ html.touch .mobile-only{display:block}
   #tc-stick .tc-hint{display:none}
   .tc-btn.tc-lg{width:88px;height:88px}
   .tc-btn.tc-lg .spr{width:34px;height:34px}
-  .tc-btn.tc-lg .lbl{font-size:12px}
+  .tc-btn.tc-lg .lbl{font-size:13px}
   .tc-btn .spr{width:22px;height:22px}
-  .tc-btn .lbl{font-size:10px}
+  .tc-btn .lbl{font-size:11px}
   .tc-btn.tc-sm{width:62px;height:62px}
   .tc-btn.tc-sm .lbl{display:none}
   #title .menu{gap:10px}
@@ -328,17 +345,17 @@ html.touch .mobile-only{display:block}
 /* The balloon body is a pixel-art cloud drawn per bubble in comic.js. */
 .bubble{position:absolute;transform:translate(-50%,-100%);font-weight:700;
   color:var(--ink);max-width:min(460px,58vw);text-align:center;
-  font-family:var(--pixel);font-size:clamp(22px,2.56vw,35px);line-height:1.7;letter-spacing:.5px;
+  font-family:var(--pixel);font-size:clamp(25px,2.82vw,39px);line-height:1.7;letter-spacing:.5px;
   background-repeat:no-repeat;image-rendering:pixelated;
   animation:bubblePop .16s steps(3);transition:opacity .22s}
 .bubble.gone{opacity:0}
 @keyframes bubblePop{from{transform:translate(-50%,-100%) scale(.4)}to{transform:translate(-50%,-100%) scale(1)}}
-.bubble.shout{font-size:clamp(25px,3.1vw,44px)}
-.bubble.small{font-family:var(--body);font-size:clamp(23px,2.7vw,38px);text-transform:lowercase}
+.bubble.shout{font-size:clamp(28px,3.41vw,49px)}
+.bubble.small{font-family:var(--body);font-size:clamp(26px,2.97vw,43px);text-transform:lowercase}
 
 .pow{position:absolute;transform:translate(-50%,-50%);font-weight:700;
-  font-family:var(--graffiti);font-size:clamp(35px,4.59vw,67px);letter-spacing:1px;color:var(--cheese);
-  -webkit-text-stroke:6px var(--ink);paint-order:stroke fill;text-shadow:5px 5px 0 var(--wine);white-space:nowrap}
+  font-family:var(--graffiti);font-size:clamp(22px,3.1vw,42px);letter-spacing:1px;color:var(--cheese);
+  -webkit-text-stroke:5px var(--ink);paint-order:stroke fill;text-shadow:4px 4px 0 var(--wine);white-space:nowrap}
 .pow.slash{color:#fff;text-shadow:8px 8px 0 #2b6fd8}
 .pow.glitch{color:var(--glitch);text-shadow:8px 8px 0 var(--ink);animation:powGlitch .1s steps(2) infinite}
 @keyframes powGlitch{0%{transform:translate(-50%,-50%) translateX(-4px)}100%{transform:translate(-50%,-50%) translateX(5px)}}
@@ -365,7 +382,7 @@ html.touch .mobile-only{display:block}
   #wheel-meter{width:48px;height:48px;padding:3px}
   .part{width:30px;height:30px;border-width:2px}
   .part .spr{width:19px;height:19px}
-  .bubble{font-size:16px;padding:8px 12px;max-width:62vw}
-  .bubble.shout{font-size:17px;padding:14px 18px}
-  .pow{font-size:clamp(26px,6.75vw,44px);-webkit-text-stroke:4px var(--ink)}
+  .bubble{font-size:18px;padding:8px 12px;max-width:62vw}
+  .bubble.shout{font-size:19px;padding:14px 18px}
+  .pow{font-size:clamp(29px,7.43vw,49px);-webkit-text-stroke:4px var(--ink)}
 }

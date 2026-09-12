@@ -101,6 +101,8 @@ CZ.Level = class Level {
         if (s.w >= 5 && s.y > 1.5) this.addDrips(mesh, s);
       }
     }
+    // anything marked as a crate is breakable, whatever skin it wears
+    if (s.crate) s.breakable = true;
     mesh.position.set(s.x + s.w / 2, s.y + s.h / 2, 0);
     s.mesh = mesh; this.group.add(mesh);
   }
@@ -233,16 +235,35 @@ CZ.Level = class Level {
       mesh.add(orb, r1, r2); it.orb = orb; it.rings = [r1, r2];
       mesh.add(new THREE.PointLight(0x39ff88, 6, 8));
       mesh.position.set(it.x, it.y + 0.3, 0.5);
-    } else if (kind === 'exit') {
-      const c = th.accent;
-      const l = new THREE.Mesh(new THREE.BoxGeometry(0.55, 3.6, 1), this.flat(c)), r = l.clone();
-      const top = new THREE.Mesh(new THREE.BoxGeometry(3.3, 0.55, 1), this.flat(c));
-      l.position.set(-1.38, 1.8, 0); r.position.set(1.38, 1.8, 0); top.position.set(0, 3.58, 0);
-      const portal = new THREE.Mesh(new THREE.PlaneGeometry(2.2, 3.2), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.55, side: THREE.DoubleSide }));
-      portal.position.set(0, 1.6, 0); it.portal = portal;
-      E.edges(l); E.edges(r); E.edges(top);
-      mesh.add(l, r, top, portal); mesh.position.set(it.x, it.y, 0);
-      const light = new THREE.PointLight(0xffffff, 8, 10); light.position.y = 2; mesh.add(light);
+    } else if (kind === 'door') {
+      // A heavy door: oak planks, iron bands, big bolts, and a light behind it.
+      const frame = new THREE.Mesh(new THREE.BoxGeometry(5.2, 8.4, 1.2), new THREE.MeshToonMaterial({ map: CZ.Tex.tiled('wood', 'timber', 3, 5) }));
+      frame.position.y = 4.2; E.edges(frame); mesh.add(frame);
+      const slab = new THREE.Mesh(new THREE.BoxGeometry(3.9, 7.2, 0.9), new THREE.MeshToonMaterial({ map: CZ.Tex.tiled('wood', 'timber', 2, 4), color: 0xb08a5a }));
+      slab.position.set(0, 3.8, 0.5); slab.castShadow = true; E.edges(slab); mesh.add(slab); it.slab = slab;
+      for (const dy of [1.8, 5.8]) {
+        const band = new THREE.Mesh(new THREE.BoxGeometry(4.1, 0.55, 1.1), this.flat(0x6a6f7a));
+        band.position.set(0, dy, 0.5); mesh.add(band);
+        for (const dx of [-1.6, 1.6]) {
+          const bolt = new THREE.Mesh(new THREE.SphereGeometry(0.17, 7, 6), this.flat(0xc8d0dc));
+          bolt.position.set(dx, dy, 1.05); mesh.add(bolt);
+        }
+      }
+      const handle = new THREE.Mesh(new THREE.TorusGeometry(0.42, 0.11, 6, 12), this.flat(0x8a6a3a));
+      handle.position.set(1.2, 3.6, 1.05); mesh.add(handle);
+      // light leaking under it: that is where you are going
+      const leak = new THREE.Mesh(new THREE.PlaneGeometry(4, 0.45), new THREE.MeshBasicMaterial({ color: 0xffe6a8 }));
+      leak.position.set(0, 0.24, 1.02); mesh.add(leak); it.leak = leak;
+      mesh.add(new THREE.PointLight(0xffd27a, 4, 12));
+      // the cracks it picks up when you hit it too slowly
+      it.cracks = [];
+      for (let i = 0; i < 3; i++) {
+        const c = new THREE.Mesh(new THREE.PlaneGeometry(2.4, 3.2),
+          new THREE.MeshBasicMaterial({ map: CZ.Tex.get('crack', 'stone'), transparent: true, opacity: 0.75 }));
+        c.position.set(CZ.rand(-0.9, 0.9), 2.4 + i * 1.6, 1.0); c.rotation.z = CZ.rand(-0.4, 0.4);
+        c.visible = false; mesh.add(c); it.cracks.push(c);
+      }
+      mesh.position.set(it.x, it.y, 0);
     } else if (kind === 'sign') {
       const post = new THREE.Mesh(new THREE.BoxGeometry(0.2, 1.4, 0.2), this.flat(0x4a2c12)); post.position.y = 0.7; mesh.add(post);
       const board = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.95, 0.14), new THREE.MeshToonMaterial({ map: CZ.Tex.tiled('card', 'cardboard', 1.4, 1) }));
@@ -268,7 +289,14 @@ CZ.Level = class Level {
         case 'check': it.active = false; this.addProp('check', it); this.checks.push(it); break;
         case 'bug': it.taken = false; this.addProp('bug', it); this.bugs.push(it); break;
         case 'ability': it.taken = false; this.addProp('ability', it); this.abilities.push(it); break;
-        case 'exit': this.addProp('exit', it); this.exit = it; break;
+        case 'door': {
+          this.addProp('door', it); this.exit = it; it.hits = 0;
+          // the slab is a solid you have to break, not walk through
+          const bar = { t: 'solid', x: it.x - 1.9, y: it.y, w: 3.8, h: 7.4, x0: it.x - 1.9, y0: it.y,
+            vx: 0, vy: 0, broken: false, door: it, skin: 'none', mesh: it.mesh };
+          this.solids.push(bar); it.bar = bar;
+          break;
+        }
         case 'sign': this.addProp('sign', it); this.signs.push(it); break;
         case 'dialog': it.done = false; this.dialogs.push(it); break;
         case 'enemy': this.enemySpawns.push(it); break;
@@ -416,13 +444,19 @@ CZ.Level = class Level {
     if (it.dir > 0) { shape.moveTo(0, 0); shape.lineTo(it.w, 0); shape.lineTo(it.w, it.h); }
     else { shape.moveTo(0, 0); shape.lineTo(it.w, 0); shape.lineTo(0, it.h); }
     shape.closePath();
-    const geo = new THREE.ExtrudeGeometry(shape, { depth: 4, bevelEnabled: false });
-    geo.translate(0, 0, -2);
-    const mesh = new THREE.Mesh(geo, new THREE.MeshToonMaterial({ map: CZ.Tex.tiled(this.theme.tile[0], this.theme.tile[1], it.w, it.h) }));
+    // Shallower than the floor slab (4 deep) and nudged forward, so the two
+    // never fight over the same pixels where the ramp meets the ground.
+    const geo = new THREE.ExtrudeGeometry(shape, { depth: 3.6, bevelEnabled: false });
+    geo.translate(0, 0, -1.8);
+    // group 0 is the flat faces we look at, group 1 is the surface you roll on
+    const face = new THREE.MeshToonMaterial({ map: CZ.Tex.tiled(this.theme.tile[0], this.theme.tile[1], it.w, it.h) });
+    const surface = new THREE.MeshToonMaterial({ color: this.theme.plat });
+    const mesh = new THREE.Mesh(geo, [face, surface]);
     mesh.castShadow = true; mesh.receiveShadow = true; CZ.Effects.edges(mesh);
-    mesh.position.set(it.x, it.y, 0);
-    const lip = new THREE.Mesh(new THREE.BoxGeometry(Math.hypot(it.w, it.h), 0.22, 4.06), this.flat(this.theme.plat));
-    lip.position.set(it.x + it.w / 2, it.y + it.h / 2, 0);
+    mesh.position.set(it.x, it.y + 0.02, 0);
+    // a bright lip along the slope, sitting just proud of the surface
+    const lip = new THREE.Mesh(new THREE.BoxGeometry(Math.hypot(it.w, it.h), 0.18, 3.68), this.flat(this.theme.accent));
+    lip.position.set(it.x + it.w / 2, it.y + it.h / 2 + 0.02, 0);
     lip.rotation.z = Math.atan2(it.h * it.dir, it.w);
     this.group.add(mesh, lip);
     it.mesh = mesh; this.ramps.push(it);
@@ -709,7 +743,11 @@ CZ.Level = class Level {
         a.orb.scale.setScalar(1 + Math.sin(t * 6) * 0.08);
       }
     }
-    if (this.exit) this.exit.portal.material.opacity = 0.45 + 0.2 * Math.sin(t * 3);
+    if (this.exit && this.exit.leak) {
+      this.exit.leak.scale.y = 1 + Math.sin(t * 2.6) * 0.15;
+      this.exit.mesh.position.x = this.exit.x + (this.exit.shake > 0 ? CZ.rand(-0.18, 0.18) : 0);
+      if (this.exit.shake > 0) this.exit.shake -= dt;
+    }
     for (const c of this.checks) if (c.active) c.flag.rotation.y = Math.sin(t * 6) * 0.25;
     for (const sp of this.spinners) sp.rotation.z += (sp.userData.spin || 1) * dt;
     if (this.motes) for (const d of this.motes) {
@@ -746,9 +784,32 @@ CZ.Level = class Level {
 
   breakCrate(s) {
     if (s.broken) return; s.broken = true; s.mesh.visible = false;
+    // whatever was stacked on top comes down with it
+    for (const o of this.solids) {
+      if (o === s || o.broken || !o.breakable) continue;
+      if (o.x < s.x + s.w && o.x + o.w > s.x && Math.abs(o.y - (s.y + s.h)) < 0.35) this.breakCrate(o);
+    }
     CZ.Effects.burst(s.x + s.w / 2, s.y + s.h / 2, 0x8f5a2c, 20, { spread: 9, up: 6, life: 0.9, size: 1.3 });
     CZ.Audio.sfx.crack(); CZ.Effects.shake(0.4);
     CZ.Comic.pow('CRUNCH', [s.x + s.w / 2, s.y + s.h + 0.8, 0], { kind: 'hit', life: 0.5 });
+  }
+  // The door comes apart in planks and iron.
+  breakDoor() {
+    const d = this.exit; if (!d || d.broken) return;
+    d.broken = true; if (d.bar) d.bar.broken = true;
+    d.mesh.visible = false;
+    CZ.Effects.burst(d.x, 3.6, 0x8f5a2c, 44, { spread: 16, up: 11, life: 1.3, size: 1.9 });
+    CZ.Effects.burst(d.x, 3.6, 0xc8d0dc, 16, { spread: 13, up: 9, life: 1.1, size: 1.1 });
+    CZ.Audio.sfx.bossDie(); CZ.Effects.shake(1.8);
+    CZ.Comic.pow('BOOM', [d.x, 4.4, 0], { kind: 'hit', life: 0.9 });
+  }
+  // A hit that was not fast enough: it shudders and cracks.
+  dentDoor() {
+    const d = this.exit; if (!d || d.broken) return;
+    d.hits = (d.hits || 0) + 1; d.shake = 0.35;
+    if (d.cracks[d.hits - 1]) d.cracks[d.hits - 1].visible = true;
+    CZ.Effects.burst(d.x - 1.8, 3.2, 0x8f5a2c, 10, { spread: 5, up: 4, life: 0.6, size: 1 });
+    CZ.Audio.sfx.crack(); CZ.Effects.shake(0.6);
   }
   breakCracked(s) {
     if (s.broken) return; s.broken = true; s.mesh.visible = false;

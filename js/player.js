@@ -19,7 +19,9 @@ CZ.Player = class Player {
     this.lastSafe = { x: 0, y: 0 };
     this.squash = 1; this.squashV = 0; this.time = 0;
     this.ghosts = [];
-    this.spin = 0; this.spinT = 0; this.spinCd = 0;          // spin attack
+    this.spin = 0; this.spinT = 0; this.spinCd = 0;          // charge spin
+    this.charge = 0; this.chargeOver = 0; this.spinSpeed = 0; this.spinLen = 0.4;
+    this.perfect = false; this.dizzy = 0;
     this.pokeT = 0; this.pokeCd = 0;                          // toothpick poke
     this.roll = 0;                                            // wheel angle
     this.heat = 0; this.melting = 0;                          // how soft the cheese is
@@ -32,6 +34,7 @@ CZ.Player = class Player {
   cy() { return this.y + this.h / 2; }
   flags() { return { dashing: this.dashing, noclip: this.noclip, inGlitch: this.inGlitch, inCorrupt: this.inCorrupt }; }
   spinning() { return this.spinT > 0 || this.dashing; }
+  charging() { return this.charge > 0; }
   // Reach of the poke, in world space, while the toothpick is out.
   pokeBox() {
     if (this.pokeT <= 0) return null;
@@ -51,8 +54,8 @@ CZ.Player = class Player {
 
     // face rides on the front and stays upright while the wheel turns
     this.face = new THREE.Group(); this.face.position.z = 0.56; this.body.add(this.face);
-    // Two googly eyes, deliberately mismatched: different sizes, different
-    // heights, pupils that swing on their own and never quite agree.
+    // Two toy googly eyes, deliberately mismatched: a black plastic case, a
+    // white backing, a loose black disc inside, and a clear domed lens over it.
     this.eyes = [];
     const EYE = [
       { x: -0.25, y: 0.12, r: 0.3, pr: 0.14, tilt: 0.16 },
@@ -60,16 +63,24 @@ CZ.Player = class Player {
     ];
     for (const cfg of EYE) {
       const socket = new THREE.Group(); socket.position.set(cfg.x, cfg.y, 0); socket.rotation.z = cfg.tilt;
-      socket.add(new THREE.Mesh(new THREE.CircleGeometry(cfg.r, 20), new THREE.MeshBasicMaterial({ color: 0x2a1a0e })));
-      const white = new THREE.Mesh(new THREE.CircleGeometry(cfg.r - 0.045, 20), new THREE.MeshBasicMaterial({ color: 0xffffff }));
+      // the plastic case
+      socket.add(new THREE.Mesh(new THREE.CircleGeometry(cfg.r, 22), new THREE.MeshBasicMaterial({ color: 0x1a1016 })));
+      const white = new THREE.Mesh(new THREE.CircleGeometry(cfg.r - 0.04, 22), new THREE.MeshBasicMaterial({ color: 0xf6f6f8 }));
       white.position.z = 0.012; socket.add(white);
-      const pupil = new THREE.Mesh(new THREE.CircleGeometry(cfg.pr, 16), new THREE.MeshBasicMaterial({ color: 0x140c06 }));
+      // the loose disc that rattles around inside it
+      const pupil = new THREE.Mesh(new THREE.CircleGeometry(cfg.pr, 18), new THREE.MeshBasicMaterial({ color: 0x0e0a0c }));
       pupil.position.z = 0.026; socket.add(pupil);
-      const shine = new THREE.Mesh(new THREE.CircleGeometry(cfg.pr * 0.28, 8), new THREE.MeshBasicMaterial({ color: 0xffffff }));
-      shine.position.set(-cfg.pr * 0.3, cfg.pr * 0.34, 0.01); pupil.add(shine);
+      // a domed lens over the top, with the highlight glass always has
+      const dome = new THREE.Mesh(new THREE.SphereGeometry(cfg.r - 0.02, 14, 10, 0, Math.PI * 2, 0, Math.PI / 2.6),
+        new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.14 }));
+      dome.rotation.x = Math.PI / 2; dome.position.z = 0.03; socket.add(dome);
+      const gleam = new THREE.Mesh(new THREE.CircleGeometry(cfg.r * 0.26, 10), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.85 }));
+      gleam.position.set(-cfg.r * 0.38, cfg.r * 0.4, 0.06); socket.add(gleam);
+      const gleam2 = new THREE.Mesh(new THREE.CircleGeometry(cfg.r * 0.1, 8), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.7 }));
+      gleam2.position.set(-cfg.r * 0.12, cfg.r * 0.56, 0.06); socket.add(gleam2);
       this.face.add(socket);
       this.eyes.push({ socket, pupil, px: 0, py: -0.05, vx: 0, vy: 0, tilt: cfg.tilt,
-        R: cfg.r - cfg.pr - 0.02, wob: CZ.rand(0.8, 1.35), phase: CZ.rand(0, 6.3) });
+        R: cfg.r - cfg.pr - 0.03, wob: CZ.rand(0.9, 1.2), phase: CZ.rand(0, 6.3) });
     }
     // the toothpick it pokes with
     this.poker = new THREE.Group(); this.poker.position.set(0, -0.05, 0.15); this.body.add(this.poker);
@@ -82,6 +93,11 @@ CZ.Player = class Player {
     // mech parts, revealed as they are installed
     this.parts = {};
     this.buildParts();
+
+    // the wind-up meter is drawn on the cheese itself: a ring that fills
+    this.ringMat = new THREE.MeshBasicMaterial({ color: 0xffd23f, transparent: true, opacity: 0.95, side: THREE.DoubleSide });
+    this.ring = new THREE.Mesh(new THREE.RingGeometry(this.r + 0.16, this.r + 0.3, 24, 1, Math.PI / 2, 0.001), this.ringMat);
+    this.ring.position.z = 0.6; this.ring.visible = false; this.body.add(this.ring);
 
     this.rope = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 1, 6), new THREE.MeshBasicMaterial({ color: 0x43b8ff }));
     this.rope.visible = false; this.game.scene.add(this.rope);
@@ -191,8 +207,28 @@ CZ.Player = class Player {
     this.squashV += (1 - this.squash) * 260 * dt; this.squashV *= Math.exp(-dt * 14); this.squash += this.squashV * dt;
 
     // rolling: the wheel turns with the distance travelled
-    if (!this.spinning()) this.roll -= (this.vx * dt) / this.r;
-    else this.roll -= dt * 26 * (this.facing || 1);
+    if (this.charge > 0) this.roll -= dt * (8 + this.charge * 46) * (this.facing || 1);
+    else if (!this.spinning()) this.roll -= (this.vx * dt) / this.r;
+    else this.roll -= dt * 30 * (this.facing || 1);
+
+    // the wind-up ring fills as you hold, and flashes white in the sweet spot
+    const P2 = CZ.P, ch = Math.min(1, this.charge);
+    this.ring.visible = this.charge > 0.02;
+    if (this.ring.visible) {
+      const sweet = ch >= P2.PERFECT_FROM && ch <= P2.PERFECT_TO;
+      this.ring.geometry.dispose();
+      this.ring.geometry = new THREE.RingGeometry(this.r + 0.16, this.r + (sweet ? 0.42 : 0.3), 26, 1,
+        Math.PI / 2, Math.max(0.001, ch * Math.PI * 2));
+      this.ringMat.color.setHex(sweet ? 0xffffff : this.charge >= 1 ? 0xff4b5c : 0xffd23f);
+      this.ring.rotation.z = sweet ? Math.sin(this.time * 40) * 0.08 : 0;
+    }
+    // at speed you leave afterimages, and the world starts streaking past
+    const mo = this.momentum();
+    if (mo > 16 && !this.dead) {
+      this.ghostT = (this.ghostT || 0) - dt;
+      if (this.ghostT <= 0) { this.ghostT = 0.04; this.spawnGhost(); }
+    }
+    CZ.Comic.speedLines(mo > 21 && !this.dead);
     this.wheel.rotation.z = this.roll;
 
     // crumbs off the rim, and a trail of them behind a fast roll
@@ -262,21 +298,34 @@ CZ.Player = class Player {
   updateFace(dt) {
     const mood = this.mood();
     for (const e of this.eyes) {
-      // a real googly eye: a weight on a loose spring that overshoots, rattles
-      // off the rim and takes its time settling
+      // A real googly eye has no centring spring: the disc is a weight on a
+      // slippery floor. Gravity pulls it down, the case dragging it around
+      // throws it about, and the rim it slides along takes the edge off.
       const R = e.R;
-      e.vx += (-this.accelX * 0.07 * e.wob - e.px * 15 + Math.sin(this.time * 5.5 + e.phase) * 1.4) * dt;
-      e.vy += (-11 * e.wob - (this.vy > 6 ? 10 : 0) - e.py * 15) * dt;
-      e.vx *= Math.exp(-dt * 2.1); e.vy *= Math.exp(-dt * 2.1);
+      e.vx += (-this.accelX * 0.055 * e.wob) * dt;
+      e.vy += (-14 * e.wob - (this.vy > 6 ? 7 : 0)) * dt;
+      e.vx *= Math.exp(-dt * 1.1); e.vy *= Math.exp(-dt * 1.1);
       e.px += e.vx * dt; e.py += e.vy * dt;
       const d = Math.hypot(e.px, e.py);
-      if (d > R) { const k = R / d; e.px *= k; e.py *= k; e.vx *= -0.5; e.vy *= -0.5; }
-      if (this.spinning()) { const a = this.time * 22 * e.wob + e.phase; e.px = Math.cos(a) * R; e.py = Math.sin(a) * R; e.vx = e.vy = 0; }
-      else if (mood === 'poke') { e.px = CZ.damp(e.px, this.facing * R * 0.8, 18, dt); e.py = CZ.damp(e.py, 0, 18, dt); e.vx = e.vy = 0; }
+      if (d > R) {
+        const nx = e.px / d, ny = e.py / d;
+        e.px = nx * R; e.py = ny * R;
+        const vn = e.vx * nx + e.vy * ny;          // radial part bounces, the
+        e.vx -= nx * vn * 1.45; e.vy -= ny * vn * 1.45;   // tangential part slides on
+        e.vx *= 0.86; e.vy *= 0.86;
+      }
+      if (this.charge > 0.05) {                     // winding up spins them
+        const a = this.time * (10 + this.charge * 40) * e.wob + e.phase;
+        e.px = Math.cos(a) * R; e.py = Math.sin(a) * R; e.vx = e.vy = 0;
+      } else if (this.spinning()) {
+        const a = this.time * 24 * e.wob + e.phase;
+        e.px = Math.cos(a) * R; e.py = Math.sin(a) * R; e.vx = e.vy = 0;
+      } else if (mood === 'poke') {
+        e.px = CZ.damp(e.px, this.facing * R * 0.8, 18, dt); e.py = CZ.damp(e.py, 0, 18, dt); e.vx = e.vy = 0;
+      }
       e.pupil.position.set(e.px, e.py, 0.026);
-      e.pupil.scale.setScalar(mood === 'scared' ? 0.55 : mood === 'melting' ? 1.35 : mood === 'hurt' ? 1.2 : 1);
-      // the eye itself is glued on badly and wobbles with the wheel
-      e.socket.rotation.z = e.tilt + Math.sin(this.time * 3.2 + e.phase) * 0.08;
+      e.pupil.scale.setScalar(mood === 'scared' ? 0.62 : mood === 'melting' ? 1.3 : mood === 'hurt' ? 1.2 : 1);
+      e.socket.rotation.z = e.tilt + Math.sin(this.time * 3.2 + e.phase) * 0.06;
     }
     this.blinkT -= dt; if (this.blinkT < 0) this.blinkT = 1.6 + Math.random() * 3.4;
     const open = this.blinkT < 0.11 ? 0.08 : mood === 'determined' || mood === 'poke' ? 0.58
@@ -286,6 +335,78 @@ CZ.Player = class Player {
 
   partCount() { return CZ.ABILITY_ORDER.filter(id => this.has(id)).length; }
 
+  // ---------- the charge spin ----------
+  // Hold SPIN to wind up on the spot, release to launch. Let go inside the
+  // bright band at the top of the wind-up and it launches much harder; hold
+  // past the top for too long and it fizzles out.
+  updateCharge(dt, axis) {
+    const P = CZ.P, I = CZ.Input;
+    if (this.spinT > 0) {                    // already launched: coast it out
+      this.spinT -= dt;
+      const k = Math.max(0.3, this.spinT / this.spinLen);
+      this.vx = this.facing * this.spinSpeed * k;
+      if (Math.random() < 0.6) {
+        CZ.Effects.burst(this.cx() - this.facing * this.r, this.y + 0.15, this.perfect ? 0xffffff : 0xffe98a, 1,
+          { spread: 2, up: 1.4, life: 0.3, size: 0.7 });
+      }
+      if (this.spinT <= 0) this.perfect = false;
+      return;
+    }
+    const held = I.held('dash') && !this.dashing && !this.has('dash');
+    if (held && this.spinCd <= 0) {
+      if (this.charge === 0) { CZ.Audio.sfx.dash(); this.chargeOver = 0; }
+      this.charge = Math.min(1.45, this.charge + dt / P.CHARGE_TIME);
+      // plant yourself: winding up costs you your speed
+      this.vx = CZ.damp(this.vx, 0, P.CHARGE_GRIP, dt);
+      if (axis) this.facing = axis;
+      if (this.charge >= 1) {
+        this.chargeOver += dt;
+        if (this.chargeOver > P.OVERCHARGE) {   // held too long: it fizzles
+          this.fizzle();
+          return;
+        }
+      }
+      const heavy = this.charge > P.PERFECT_FROM;
+      if (Math.random() < (heavy ? 0.9 : 0.35)) {
+        const a = CZ.rand(0, 6.3);
+        CZ.Effects.burst(this.cx() + Math.cos(a) * this.r, this.cy() + Math.sin(a) * this.r * 0.6,
+          heavy ? 0xffffff : 0xffd23f, 1, { spread: 1.6, up: 2, life: 0.35, size: heavy ? 0.9 : 0.6 });
+      }
+      CZ.Effects.shake(this.charge * 0.18);
+      return;
+    }
+    if (this.charge > 0) this.release();
+  }
+  release() {
+    const P = CZ.P;
+    const c = Math.min(1, this.charge);
+    this.perfect = c >= P.PERFECT_FROM && c <= P.PERFECT_TO;
+    this.spinSpeed = this.perfect ? P.LAUNCH_PERFECT : CZ.lerp(P.LAUNCH_MIN, P.LAUNCH_MAX, c);
+    this.spinLen = 0.3 + c * 0.5;
+    this.spinT = this.spinLen;
+    this.spinCd = P.SPIN_COOLDOWN;
+    this.charge = 0; this.chargeOver = 0;
+    this.vx = this.facing * this.spinSpeed;
+    if (this.perfect) {
+      this.iframes = Math.max(this.iframes, 0.5);
+      CZ.Audio.sfx.unlock(); CZ.Effects.shake(1.1);
+      CZ.Comic.pow('PERFECT', [this.cx(), this.cy() + 1.8, 0], { kind: 'glitch', life: 0.7 });
+      CZ.Effects.burst(this.cx(), this.cy(), 0xffffff, 22, { spread: 9, up: 5, life: 0.6, size: 1.2 });
+    } else {
+      CZ.Audio.sfx.dash(); CZ.Effects.shake(0.4 + c * 0.5);
+      CZ.Effects.burst(this.cx(), this.cy(), 0xffd23f, 10 + c * 14, { spread: 6, up: 3, life: 0.5, size: 1 });
+    }
+  }
+  fizzle() {
+    this.charge = 0; this.chargeOver = 0; this.spinT = 0;
+    this.spinCd = 0.7; this.vy = Math.max(this.vy, 5); this.dizzy = 0.8;
+    CZ.Audio.sfx.hurt();
+    CZ.Comic.pow('FLOP', [this.cx(), this.cy() + 1.6, 0], { kind: 'hit', life: 0.6 });
+    CZ.Effects.burst(this.cx(), this.cy(), 0xd9931f, 10, { spread: 4, up: 2, life: 0.5, size: 0.8 });
+  }
+  // How much damage your speed is worth right now.
+  momentum() { return Math.abs(this.vx) + (this.spinT > 0 ? 6 : 0); }
+
   // ---------- damage ----------
   respawn(x, y) {
     const P = CZ.P;
@@ -293,7 +414,8 @@ CZ.Player = class Player {
     const healed = this.hp !== P.MAX_HP; this.hp = P.MAX_HP; if (healed) this.rebuildWheel();
     this.dead = false; this.iframes = 0.5; this.dashing = false; this.pounding = false; this.grappling = false; this.hanging = false; this.hook = null;
     this.noclip = false; this.noclipMeter = P.NOCLIP_MAX; this.inCorrupt = false; this.inGlitch = false; this.jumpsUsed = 0; this.canDash = true;
-    this.spinT = 0; this.spinCd = 0; this.pokeT = 0; this.pokeCd = 0; this.heat = 0;
+    this.spinT = 0; this.spinCd = 0; this.charge = 0; this.chargeOver = 0; this.dizzy = 0;
+    this.pokeT = 0; this.pokeCd = 0; this.heat = 0;
     this.lastSafe = { x: this.x, y: this.y }; this.facing = 1;
     this.mesh.visible = true;
   }
@@ -414,17 +536,9 @@ CZ.Player = class Player {
         if (dx !== 0) this.facing = CZ.sign(dx);
         CZ.Audio.sfx.dash(); CZ.Effects.burst(this.cx(), this.cy(), 0x39ff88, 8, { spread: 3, up: 0, gravity: 0, life: 0.3 });
         this.dashGhostT = 0;
-      } else if (!this.has('dash') && this.spinCd <= 0) {
-        this.spinT = P.SPIN_TIME; this.spinCd = P.SPIN_COOLDOWN + P.SPIN_TIME;
-        this.vx = this.facing * P.SPIN_SPEED;
-        CZ.Audio.sfx.dash(); CZ.Effects.burst(this.cx(), this.cy(), 0xffd23f, 8, { spread: 4, up: 1, life: 0.3 });
       }
     }
-    if (this.spinT > 0) {
-      this.spinT -= dt;
-      this.vx = this.facing * P.SPIN_SPEED * Math.max(0.35, this.spinT / P.SPIN_TIME);
-      if (Math.random() < 0.5) CZ.Effects.burst(this.cx(), this.y + 0.1, 0xffe98a, 1, { spread: 2, up: 1, life: 0.25, size: 0.6 });
-    }
+    this.updateCharge(dt, axis);
     if (this.dashing) {
       this.dashT -= dt; this.vx = this.dashDir.x * P.DASH_SPEED; this.vy = this.dashDir.y * P.DASH_SPEED;
       this.dashGhostT -= dt; if (this.dashGhostT <= 0) { this.dashGhostT = 0.03; this.spawnGhost(); }
@@ -442,8 +556,9 @@ CZ.Player = class Player {
     if (this.pounding) { this.vy = -P.POUND_SPEED; this.vx = CZ.damp(this.vx, 0, 6, dt); }
 
     // ---- rolling ----
-    if (!this.dashing && !this.pounding && this.spinT <= 0) {
-      const top = P.RUN_SPEED * (1 - this.heat * 0.4);          // soft cheese does not roll well
+    if (this.dizzy > 0) this.dizzy -= dt;
+    if (!this.dashing && !this.pounding && this.spinT <= 0 && this.charge <= 0) {
+      const top = P.RUN_SPEED * (1 - this.heat * 0.4) * (this.dizzy > 0 ? 0.45 : 1);
       const excess = Math.abs(this.vx) > top;
       if (axis !== 0) {
         const accel = (this.grounded ? P.ROLL_ACCEL : P.AIR_ACCEL) * (1 - this.heat * 0.5);
@@ -512,26 +627,34 @@ CZ.Player = class Player {
     const solids = L.blocking(f);
     if (this.groundSolid && !this.groundSolid.broken && this.groundSolid.conveyor) this.x += this.groundSolid.conveyor * dt;
     const wasGrounded = this.grounded;
+    const mo = this.momentum();                    // speed is the weapon
     this.x += this.vx * dt; this.wallDir = 0;
-    for (const s of solids) if (CZ.overlap(this.aabb(), s)) {
+    for (const s of solids) if (!s.broken && CZ.overlap(this.aabb(), s)) {
       if (this.y >= s.y + s.h - 0.1 && this.vy <= 0.01) continue;
+      const preX = this.x;                         // where we were before being pushed out
       const penL = this.x + this.w - s.x, penR = s.x + s.w - this.x;
       if (penL <= penR) { this.x = s.x - this.w; if (!this.grounded) this.wallDir = 1; }
       else { this.x = s.x + s.w; if (!this.grounded) this.wallDir = -1; }
-      if (s.breakable && (this.dashing || this.spinT > 0)) { this.game.level.breakCrate(s); continue; }
+      if (s.door) { this.game.hitDoor(mo); this.vx = -CZ.sign(this.vx || this.facing) * 4; break; }
+      if (s.breakable && (this.dashing || this.spinT > 0 || mo >= (s.hard || CZ.P.SMASH_CRATE))) {
+        this.game.level.breakCrate(s);
+        this.x = preX;                             // you go through it, not into it
+        this.vx *= s.hard ? 0.72 : 0.94;           // heavy things cost you speed
+        continue;
+      }
       if (this.dashing) this.dashT = 0;
       if (this.spinT > 0) this.spinT = 0;
       if (this.vx !== 0 && !this.dashing) this.vx = s.mover ? s.vx : 0;
     }
     this.y += this.vy * dt;
     this.grounded = false; let landed = null;
-    for (const s of solids) if (CZ.overlap(this.aabb(), s)) {
+    for (const s of solids) if (!s.broken && CZ.overlap(this.aabb(), s)) {
       if (this.vy <= 0) { this.y = s.y + s.h; landed = s; this.grounded = true; if (this.vy < 0) this.vy = 0; }
       else { this.y = s.y - this.h; this.vy = Math.min(this.vy, 0); if (this.dashing && this.dashDir.y > 0) this.dashT = 0; }
     }
     if (!this.grounded && this.vy <= 0.5) {
       const probe = { x: this.x + 0.06, y: this.y - 0.1, w: this.w - 0.12, h: 0.12 };
-      for (const s of solids) if (CZ.overlap(probe, s)) { landed = s; this.grounded = true; this.y = s.y + s.h; if (this.vy < 0) this.vy = 0; break; }
+      for (const s of solids) if (!s.broken && CZ.overlap(probe, s)) { landed = s; this.grounded = true; this.y = s.y + s.h; if (this.vy < 0) this.vy = 0; break; }
     }
     // ramps: sit on the slope surface and let gravity pull you along it
     const ramp = L.rampAt(this.cx());
@@ -549,7 +672,7 @@ CZ.Player = class Player {
     }
     if (!this.grounded) {
       const pr = { x: this.x - 0.08, y: this.y + 0.1, w: this.w + 0.16, h: this.h - 0.2 };
-      for (const s of solids) if (CZ.overlap(pr, s)) { this.wallDir = this.cx() < s.x + s.w / 2 ? 1 : -1; break; }
+      for (const s of solids) if (!s.broken && CZ.overlap(pr, s)) { this.wallDir = this.cx() < s.x + s.w / 2 ? 1 : -1; break; }
     }
     this.groundSolid = landed;
     if (this.grounded) {

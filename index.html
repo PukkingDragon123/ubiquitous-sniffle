@@ -6,7 +6,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <title>CHEEZ-IT — File a Hole in This Game</title>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400..700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&family=Jersey+25&display=swap">
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -122,6 +122,18 @@
 
 <div id="comic" class="hidden"></div>
 
+<!-- Between stages: the kitchen map, with your route across it -->
+<div id="map" class="hidden"><canvas id="map-canvas"></canvas></div>
+
+<!-- Door QTE: a shrinking ring, a target band, one key -->
+<div id="qte" class="hidden">
+  <div class="ring-wrap">
+    <i class="band"></i>
+    <i class="ring"></i>
+    <span class="key">SPACE</span>
+  </div>
+</div>
+
 <div id="vignette"></div>
 <div id="flash"></div>
 
@@ -140,6 +152,7 @@
 <script src="js/enemies.js"></script>
 <script src="js/bosses.js"></script>
 <script src="js/ui.js"></script>
+<script src="js/map.js"></script>
 <script src="js/cinematic.js"></script>
 <script src="js/touch.js"></script>
 <script src="js/main.js"></script>

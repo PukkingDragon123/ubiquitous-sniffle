@@ -49,6 +49,13 @@ CZ.Game = class Game {
     $('btn-quit').onclick = () => { this.setPaused(false); this.showMenu(); };
     $('btn-next').onclick = () => this.nextLevel();
     $('btn-ending-title').onclick = () => this.showMenu();
+    // during the door QTE, a tap anywhere on the overlay counts as the press
+    $('qte').addEventListener('pointerdown', e => {
+      if (this.state !== 'qte') return;
+      e.preventDefault();
+      const k = CZ.clamp(1 - this.qteT / this.qteLen, 0, 1);
+      if (k < 0.42 && k > 0.14) this.doorSmashed(); else this.doorMissed();
+    });
   }
   // The world picker doubles as the main menu now that the title screen is gone.
   showMenu() {
@@ -172,6 +179,13 @@ CZ.Game = class Game {
   completeLevel() {
     const U = CZ.UI, data = this.level.data; this.state = 'complete'; CZ.Touch.setVisible(false); CZ.Audio.sfx.exit();
     this.save.level = Math.max(this.save.level, this.levelIndex + 1); this.save.time += this.levelTime; CZ.writeSave(this.save);
+    // between stages: the kitchen map, and you rolling on to the next stop
+    if (this.levelIndex + 1 < CZ.LEVELS.length) {
+      const next = this.levelIndex + 1;
+      CZ.Comic.show(false);
+      CZ.MapScreen.show(this.levelIndex, next, () => this.startLevel(next, false));
+      return;
+    }
     U.complete(this.levelIndex === CZ.LEVELS.length - 1 ? 'OUT.' : 'LEVEL CLEARED',
       `<div class="stat"><span>${data.name}</span></div>`
       + U.stat('clock', CZ.fmtTime(this.levelTime))
@@ -179,6 +193,49 @@ CZ.Game = class Game {
       + U.stat('cheese', `KIT ${Object.keys(this.abilities).length}/${CZ.ABILITY_ORDER.length}`));
     U.$('btn-next').textContent = this.levelIndex === CZ.LEVELS.length - 1 ? 'GET OUT' : 'NEXT';
   }
+  // ---------- the door ----------
+  // Slow speed just dents it. Enough momentum and everything stops for one
+  // press: hit the window and you go through it.
+  hitDoor(momentum) {
+    const L = this.level;
+    if (!L || !L.exit || L.exit.broken || this.state !== 'playing') return;
+    if (this.boss) return;
+    if (momentum < CZ.P.SMASH_DOOR) { L.dentDoor(); return; }
+    this.state = 'qte'; this.qteT = 0; this.qteLen = 1.5; this.qteDone = false;
+    CZ.Audio.sfx.warn(); CZ.Effects.shake(0.8);
+    CZ.UI.qte(true, 1, CZ.Touch.enabled() ? 'TAP' : 'SPACE');
+    CZ.Comic.speedLines(false);
+  }
+  updateQte(dt) {
+    const I = CZ.Input, U = CZ.UI;
+    this.qteT += dt;
+    const k = CZ.clamp(1 - this.qteT / this.qteLen, 0, 1);
+    U.qte(true, k);
+    // the ring has to be inside the marked band when you press
+    const inBand = k < 0.42 && k > 0.14;
+    if (I.pressed('jump') || I.pressed('confirm') || I.pressed('dash')) {
+      if (inBand) this.doorSmashed(); else this.doorMissed();
+      return;
+    }
+    if (this.qteT >= this.qteLen) this.doorMissed();
+  }
+  doorSmashed() {
+    CZ.UI.qte(false);
+    this.level.breakDoor();
+    this.state = 'playing';
+    const p = this.player;
+    p.vx = p.facing * 26; p.vy = 5; p.iframes = 1.2;
+    this.flash('rgba(255,255,255,.65)');
+  }
+  doorMissed() {
+    CZ.UI.qte(false);
+    this.level.dentDoor();
+    this.state = 'playing';
+    const p = this.player;
+    p.vx = -p.facing * 11; p.vy = 6; p.squash = 1.3;
+    CZ.Comic.pow('OOF', [p.cx(), p.cy() + 1.6, 0], { kind: 'hit', life: 0.6 });
+  }
+
   nextLevel() {
     if (this.levelIndex + 1 < CZ.LEVELS.length) this.startLevel(this.levelIndex + 1, false);
     else this.showEnding();
@@ -240,6 +297,7 @@ CZ.Game = class Game {
     if (I.pressed('pause')) { if (this.state === 'playing') this.setPaused(true); else if (this.state === 'paused') this.setPaused(false); }
     if (this.state === 'paused') return;
     if (this.state === 'unlock') { if (I.pressed('confirm') || I.pressed('jump')) { U.show('unlock', false); this.state = 'playing'; } this.ambient(dt); CZ.Comic.update(dt); return; }
+    if (this.state === 'qte') { this.updateQte(dt); this.ambient(dt * 0.25); CZ.Comic.update(dt); this.updateCamera(dt * 0.4); return; }
     if (this.state === 'complete') { this.ambient(dt); return; }
     this.levelTime += dt;
     if (this.state === 'dead') { this.deadT += dt; this.ambient(dt); if (this.deadT > 1.1) this.respawnAll(); this.updateCamera(dt); return; }
@@ -311,7 +369,7 @@ CZ.Game = class Game {
     // boss
     if (L.boss && !this.bossStarted && p.cx() > L.boss.x + 3) this.startBoss();
     // exit
-    if (L.exit && !this.boss && CZ.overlap(box, { x: L.exit.x - 1, y: L.exit.y, w: 2, h: 3.2 })) { this.completeLevel(); return; }
+    if (L.exit && L.exit.broken && CZ.overlap(box, { x: L.exit.x - 1.4, y: L.exit.y, w: 2.8, h: 4 })) { this.completeLevel(); return; }
     // enemies
     // the toothpick reaches past the wheel, so check it before contact damage
     if (poke) for (const e of this.enemies) if (!e.dead && CZ.overlap(poke, e.aabb())) { e.kill('dash'); CZ.Effects.shake(0.25); CZ.Comic.pow('POK', [e.cx(), e.cy() + 1, 0], { kind: 'slash', life: 0.4 }); }

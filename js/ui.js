@@ -30,6 +30,19 @@ CZ.UI = (() => {
     CZ.Spr.paint(el);
   }
 
+  // The door QTE: a ring shrinking toward a target band, and one key to press.
+  let qteRing = null, qteKey = null;
+  function qte(on, frac = 1, label) {
+    const el = $('qte'); if (!el) return;
+    show('qte', on);
+    if (!on) return;
+    qteRing = qteRing || el.querySelector('.ring');
+    qteKey = qteKey || el.querySelector('.key');
+    if (label) qteKey.textContent = label;
+    qteRing.style.transform = `scale(${Math.max(0.18, frac)})`;
+    el.classList.toggle('hit', frac < 0.42 && frac > 0.14);
+  }
+
   function noclipMeter(on, frac) { show('noclip-meter', on); if (on) $('noclip-fill').style.width = `${Math.round(frac * 100)}%`; }
   function bossBar(boss) { show('boss-bar', !!boss); if (boss) { $('boss-name').textContent = boss.name; $('boss-fill').style.width = `${Math.max(0, boss.hp / boss.maxHp) * 100}%`; } }
   function sign() {}
@@ -68,6 +81,6 @@ CZ.UI = (() => {
     });
   }
 
-  return { $, show, wheel, parts, timer, levelName, noclipMeter, bossBar, sign, toast, flash,
+  return { $, show, wheel, parts, timer, levelName, qte, noclipMeter, bossBar, sign, toast, flash,
     unlock, complete, ending, levelList, stat, cineCaption, cineFx, cineShow };
 })();

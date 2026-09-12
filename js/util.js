@@ -36,9 +36,22 @@ CZ.P = {
   RUN_ACCEL: 70,
   ROLL_ACCEL: 46,          // a wheel takes a moment to get going
   ROLL_FRICTION: 9,        // ...and keeps rolling once it does
+  // Charge spin: hold to wind up on the spot, release to launch.
+  CHARGE_TIME: 0.95,          // seconds to a full wind-up
+  CHARGE_GRIP: 26,            // how hard it holds position while winding up
+  PERFECT_FROM: 0.8,          // release inside this band for the big one
+  PERFECT_TO: 0.96,
+  OVERCHARGE: 0.55,           // hold past full this long and it fizzles
+  LAUNCH_MIN: 13,             // release speed at no charge
+  LAUNCH_MAX: 31,             // ...and at full charge
+  LAUNCH_PERFECT: 37,
   SPIN_TIME: 0.26,
   SPIN_SPEED: 17,
-  SPIN_COOLDOWN: 0.25,
+  SPIN_COOLDOWN: 0.18,
+  // What your momentum is worth. Speed alone opens doors in this game.
+  SMASH_CRATE: 7,
+  SMASH_HEAVY: 15,
+  SMASH_DOOR: 23,
   AIR_ACCEL: 46,
   GROUND_FRICTION: 60,
   AIR_FRICTION: 6,

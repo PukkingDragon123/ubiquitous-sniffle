@@ -25,6 +25,8 @@ CZ.LEVELS = (() => {
   const bug = (x, y) => ({ t: 'bug', x, y });
   const ability = (x, y, id) => ({ t: 'ability', x, y, id });
   const exit = (x, y = 0) => ({ t: 'exit', x, y });
+  // The way out is a heavy door. You do not open it, you go through it.
+  const door = (x, y = 0) => ({ t: 'door', x, y });
   const sign = (x, y, text) => ({ t: 'sign', x, y, text });
   const boss = (kind, x, w, h, o = {}) => ({ t: 'boss', kind, x, w, h, ...o });
   const lever = (x, y, opens) => ({ t: 'lever', x, y, opens });
@@ -54,31 +56,32 @@ CZ.LEVELS = (() => {
       floor(0, 166, 0, 4), floor(171, 186, 0, 4),
       solid(-2, 0, 2, 15), solid(186, 0, 2, 15),
 
-      // ── roll and jump ──
+      // ── learn the wheel: a ramp to roll down and a crate to break ──
       deco('lamp', 10, 12.4), deco('rack', 7, 0), deco('web', 1.5, 13.6),
-      ramp(18, 0, 6, 3, 1), solid(24, 0, 6, 3),
-      ramp(30, 0, 6, 3, -1),
-      deco('crate', 34, 0), deco('cheesewheel', 38, 0),
+      ramp(14, 0, 7, 4, 1), solid(21, 0, 6, 4), ramp(27, 0, 7, 4, -1),
+      deco('crate', 23, 4), deco('cheesewheel', 38, 0),
+      wood(34, 0, 2, 2, { crate: true }),
 
-      // ── smash a crate stack ──
+      // ── a crate wall: roll into it with anything ──
       wood(50, 0, 2, 2, { crate: true }), wood(52, 0, 2, 2, { crate: true }), wood(54, 0, 2, 2, { crate: true }),
-      wood(50, 2, 2, 2, { crate: true }), wood(52, 2, 2, 2, { crate: true }),
+      wood(50, 2, 2, 2, { crate: true }), wood(52, 2, 2, 2, { crate: true }), wood(54, 2, 2, 2, { crate: true }),
       deco('crate', 58, 0, { stack: 2 }),
 
-      // ── barrels, a boost pad and a long jump ──
-      boost(64, 0, 6, 20),
-      wood(76, 0, 5, 2.4, { skin: 'barrel' }),
-      ramp(84, 0, 7, 4, 1), solid(91, 0, 3, 4),
+      // ── the speed lane: boost, then a barrel wall that only heavy speed breaks
+      boost(62, 0, 8, 22),
+      wood(76, 0, 3, 3, { crate: true, hard: 15, skin: 'barrel' }),
+      wood(76, 3, 3, 3, { crate: true, hard: 15, skin: 'barrel' }),
+      deco('rack', 84, 0), deco('lamp', 90, 12.4),
       enemy('spider', 88, 10.5, { drop: 5, speed: 1.4 }),
-      enemy('bugcrawl', 100, 0, { min: 96, max: 110 }),
-      deco('rack', 98, 0), deco('lamp', 90, 12.4), deco('web', 104, 13.2),
 
-      // ── the gate ──
+      // ── up and over, then a lever gate ──
+      ramp(92, 0, 7, 4, 1), solid(99, 0, 5, 4), ramp(104, 0, 6, 4, -1),
+      enemy('bugcrawl', 108, 0, { min: 104, max: 114 }),
       lever(116, 0, 'g1'),
       gate(122, 0, 2, 7, 'g1'),
       deco('web', 124, 6.6),
 
-      // ── the press: your first part ──
+      // ── the press: your first upgrade ──
       deco('press', 136, 0), deco('vat', 148, 0),
       ramp(128, 0, 6, 3, 1), solid(134, 0, 5, 3),
       ability(137, 3, 'doubleJump'),
@@ -86,11 +89,12 @@ CZ.LEVELS = (() => {
 
       // ── the drain: get a run at it ──
       ramp(158, 0, 8, 4, 1),
-      solid(166, -6.5, 5, 2, { skin: 'drain' }), hazard(166, -4.5, 5, 1, 'goo'),
+      solid(166, -3.4, 5, 2, { skin: 'drain' }), hazard(166, -1.4, 5, 1, 'goo'),
       deco('web', 168, 12.8), deco('lamp', 176, 12.4), deco('rack', 178, 0),
-      enemy('bugcrawl', 180, 0, { min: 174, max: 184 }),
-      deco('door', 182, 0),
-      exit(182),
+
+      // ── the way out: a boost strip, then a door you have to break ──
+      boost(172, 0, 7, 27),
+      door(183),
     ] },
 
   // ───────────────────────────── 2. THE GRATER LINE ─────────────────────────────
@@ -131,7 +135,7 @@ CZ.LEVELS = (() => {
       glitch(238, -3, 5, 3), solid(238, -10, 5, 1), bounce(238.5, -9, 1.6),
       solid(233, -9, 5, 6), solid(243, -9, 5, 6),
       enemy('spore', 254, 3, { amp: 2, speed: 2.5 }),
-      exit(262),
+      door(262),
     ] },
 
   // ───────────────────────────── 3. MELTING VATS ─────────────────────────────
@@ -170,7 +174,7 @@ CZ.LEVELS = (() => {
       solid(204, 0, 2, 8), solid(210, 0, 2, 12), solid(216, 0, 2, 8), solid(222, 0, 2, 12),
       enemy('spore', 213, 6, { amp: 3, speed: 1.6 }),
       solid(226, 0, 24, 8),   // exit deck top y=8
-      exit(245, 8),
+      door(245, 8),
     ] },
 
   // ───────────────────────────── 4. PACKAGING PLANT ─────────────────────────────
@@ -212,7 +216,7 @@ CZ.LEVELS = (() => {
       floor(232, 300),
       solid(298, 0, 2, 20),
       boss('ratking', 240, 58, 14),
-      exit(292),
+      door(292),
     ] },
 
   // ───────────────────────────── 5. VENTILATION ─────────────────────────────
@@ -248,7 +252,7 @@ CZ.LEVELS = (() => {
       laser(228, 6, 0.6, 8, 2.4, 1.0, 0),
       glitch(230, 6, 3, 6), solid(230, 0, 30, 6),
       hook(266, 11), goo(260, 272, -1), solid(260, -5, 12, 3),
-      floor(272, 280), exit(276),
+      floor(272, 280), door(276),
     ] },
 
   // ───────────────────────────── 6. THE FIREWALL ─────────────────────────────
@@ -287,7 +291,7 @@ CZ.LEVELS = (() => {
       solid(328, 0, 2, 22),
       plat(280, 4, 4), plat(312, 4, 4), hook(299, 10),
       boss('anticheat', 270, 58, 16),
-      exit(322),
+      door(322),
     ] },
 
   // ───────────────────────────── 7. THE LOADING DOCK ─────────────────────────────
@@ -325,7 +329,7 @@ CZ.LEVELS = (() => {
       plat(280, 7, 4), plat(290, 11, 4), plat(318, 9, 4), plat(328, 4, 4),
       hook(300, 16), hook(312, 14), hook(322, 17),
       boss('god', 264, 74, 22),
-      exit(332),
+      door(332),
     ] },
   ];
 })();

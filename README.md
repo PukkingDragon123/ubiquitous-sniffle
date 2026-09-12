@@ -17,6 +17,25 @@ Four short beats, about ten seconds, skippable with the SKIP button in the corne
 
 Every line is a pixel-art cloud balloon. There is no title screen and no dialogue box anywhere in this game.
 
+## What the game is about
+
+**Speed is the weapon.** Rolling builds momentum, and momentum is what opens the level up: at a jog you bounce off a
+crate wall, at a full roll you go straight through it, and heavy things - stacked barrels, the door at the end -
+need real speed behind them. Everything you break costs you a little of it, so a run is a chain: build, spend,
+rebuild.
+
+**The wind-up is the skill.** Hold SPIN and the wheel plants itself and starts spinning on the spot, with a ring
+filling around it. Let go and you launch. Let go inside the bright band near the top of the ring and you get a
+**PERFECT** - a much harder launch and a moment of invulnerability. Hold past the top for too long and it flops,
+leaving you dizzy and slow.
+
+**The way out is a door.** Every stage ends at a heavy one. Hit it slowly and it just cracks and shrugs you off.
+Hit it with enough speed and the game stops for a single button press: a ring shrinks toward a target band, and if
+you press inside the band the door blows apart in planks and iron. Miss, and you bounce off and go get more speed.
+
+Between stages, the kitchen map: the room you are escaping through, your route across it, and your wheel rolling on
+to the next stop.
+
 ## What you do
 
 You are a wheel. Four things, no tech trees:
@@ -25,7 +44,7 @@ You are a wheel. Four things, no tech trees:
 | --- | --- | --- |
 | Roll | LEFT / RIGHT | Builds speed and keeps it, like a wheel should |
 | Jump | SPACE | Hold for height |
-| Spin | SHIFT | Spin attack: smashes crates, kills what it touches |
+| Spin | SHIFT (hold) | Wind up on the spot, release to launch - time the release |
 | Poke | C | A toothpick pops out to flip levers and prod enemies |
 
 Damage is literal: every hit **cuts a wedge out of the wheel**. There is no health bar in the HUD, because you are
@@ -57,7 +76,7 @@ Three.js is loaded from cdnjs, so an internet connection is needed the first tim
 | --- | --- |
 | Roll | ← → / A D |
 | Jump (hold for higher) | SPACE / Z / W / ↑ |
-| Spin | SHIFT / X |
+| Spin (hold to wind up) | SHIFT / X |
 | Poke | C / E |
 | Bounce rind (double jump) | Jump again in the air, once you have it |
 | Sticky crust (wall cling) | Hold toward a wall to slide, Jump to kick off |
@@ -91,7 +110,8 @@ claws, hammer fist, winch arm, phase core.
 ## Worlds
 
 1. **The Cheese Cellar** — one authored room: wine racks, barrels, a giant cheese press, cobwebs and spiders.
-   Learn to roll, spin through crates, poke a lever, and feed yourself into the first machine.
+   Learn to roll, wind up a spin, smash a crate wall, break through stacked barrels at speed, poke a lever, feed
+   yourself into the first machine, and take the cellar door off its hinges.
 2. **The Grater Line** — conveyors, graters, moving platforms. Unlock: wax skate.
 3. **The Melting Vats** — molten cheese and shafts. Unlock: sticky crust.
 4. **The Packaging Plant** — presses and cracked floors. Unlock: dead weight. **Boss: RAT KING** (stomp the crown).
@@ -119,12 +139,13 @@ every icon, portrait and glyph is hand-authored pixel art.
   meter and a row of installed parts; the upgrade card is an icon, a name and a key.
 - **Cardboard UI.** Panels and buttons are corrugated cardboard with hard pixel borders and a drop step instead of
   soft shadows, tilted slightly like taped-up signs.
-- **One pixel typeface.** Everything - headings, balloons, buttons, impact words - is set in Pixelify Sans, heavy
-  weight for display sizes. No second face anywhere. The boss name shudders and prompts blink; all motion respects
-  `prefers-reduced-motion`.
-- **Googly eyes.** The cheese has two of them, deliberately mismatched in size and height, each pupil a weight on its
-  own loose spring that overshoots, rattles off the rim and takes its time settling - and spins in circles when you
-  spin.
+- **Two bitmap faces.** Silkscreen for display type - titles, upgrade names, impact words - and Jersey 25 for
+  everything else. Both are real pixel fonts, so nothing is anti-aliased into mush at size. The boss name shudders
+  and prompts blink; all motion respects `prefers-reduced-motion`.
+- **Toy googly eyes.** Two of them, mismatched in size and height, each a black plastic case with a white backing, a
+  loose disc inside and a domed lens with a highlight over the top. The disc has no centring spring, because a real
+  googly eye does not: it is a weight that falls to the bottom, gets thrown around when the case accelerates, and
+  slides along the rim it collides with. Wind up a spin and both of them whirl.
 - **Cheese everywhere.** Drips ooze off every panel and off ledges in the world, where they stretch, break and
   fall, and the wheel throws a trail of crumbs whenever it is rolling fast or spinning.
 - **Lit like a room.** Key, fill and a cool rim light pick every silhouette off the background; cellar lamps throw
@@ -152,6 +173,7 @@ js/enemies.js   rat, spore, blob, turret, projectiles
 js/bosses.js    Rat King, Anti-Cheat.exe, God of Games
 js/ui.js        DOM helpers
 js/cinematic.js the opening: a shelf, the mould, the fall, the door
+js/map.js       the kitchen map you cross between stages
 js/comic.js     speech balloons, impact words, speed lines, halftone
 js/touch.js     on-screen thumbstick + buttons for touch devices
 js/main.js      game loop, camera, state machine, interactions, progress
