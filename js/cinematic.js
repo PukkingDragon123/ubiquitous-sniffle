@@ -117,7 +117,15 @@ CZ.Cinematic = class Cinematic {
       }
     }
     if (eyes) {
-      // The same face the game gives you: one smile, and nothing else.
+      // The same face the game gives you: two dots and a smile.
+      this.eyes = [];
+      for (const ex of [-r * 0.34, r * 0.34]) {
+        const dot = new THREE.Mesh(new THREE.CircleGeometry(r * 0.13, 14),
+          new THREE.MeshBasicMaterial({ color: 0x22131a }));
+        dot.position.set(ex, r * 0.44, r * 0.55);
+        g.add(dot); this.eyes.push(dot);
+      }
+      this.blinkT = 1.6;
       const mouth = new THREE.Group(); mouth.position.set(0, -r * 0.04, r * 0.54); g.add(mouth);
       const maw = new THREE.Mesh(new THREE.CircleGeometry(1, 16, Math.PI, Math.PI),
         new THREE.MeshBasicMaterial({ color: 0x5c1220 }));
@@ -128,7 +136,7 @@ CZ.Cinematic = class Cinematic {
           new THREE.MeshBasicMaterial({ color: 0x22131a }));
         mouth.add(m); lip.push(m);
       }
-      this.smile = { mouth, maw, lip, halfW: r * 0.56, curve: 0.16, open: 0.06 };
+      this.smile = { mouth, maw, lip, halfW: r * 0.56, curve: 0.16, open: 0.06, r };
       this.setSmile(0.16, 0.06);
     }
     return g;
@@ -187,11 +195,20 @@ CZ.Cinematic = class Cinematic {
   faceBeat(dt) {
     if (!this.smile) return;
     const S = this.smile;
-    let curve = 0.14, open = 0.1, wob = 0;
-    if (this.phase === 'shelf') { curve = 0.13; open = 0.1 + Math.sin(this.t * 1.4) * 0.04; }
-    else if (this.phase === 'mould') { curve = -0.44; open = 0.9; wob = 0.05; }
-    else if (this.phase === 'fall') { curve = -0.24; open = 1; wob = 0.03; }
-    else if (this.phase === 'out') { curve = 0.52; open = 0.85; }
+    let curve = 0.14, open = 0.1, wob = 0, eOpen = 1, eSize = 1;
+    if (this.phase === 'shelf') { curve = 0.13; open = 0.1 + Math.sin(this.t * 1.4) * 0.04; eOpen = 0.7; }
+    else if (this.phase === 'mould') { curve = -0.4; open = 0.85; wob = 0.05; eSize = 1.35; }
+    else if (this.phase === 'fall') { curve = -0.22; open = 1; wob = 0.03; eSize = 1.3; }
+    else if (this.phase === 'out') { curve = 0.52; open = 0.85; eOpen = 0.4; eSize = 1.1; }
+    // the dots blink and squint along with it
+    if (this.eyes) {
+      this.blinkT -= dt;
+      if (this.blinkT < 0) this.blinkT = 2 + Math.random() * 3;
+      if (this.blinkT < 0.11 && eOpen > 0.5) eOpen = 0.08;
+      S.eo = CZ.damp(S.eo === undefined ? eOpen : S.eo, eOpen, 26, dt);
+      S.es = CZ.damp(S.es === undefined ? eSize : S.es, eSize, 12, dt);
+      for (const d of this.eyes) d.scale.set(S.es, S.es * S.eo, 1);
+    }
     S.tc = CZ.damp(S.tc === undefined ? curve : S.tc, curve, 7, dt);
     S.to = CZ.damp(S.to === undefined ? open : S.to, open, 7, dt);
     S.tw = CZ.damp(S.tw === undefined ? wob : S.tw, wob, 7, dt);

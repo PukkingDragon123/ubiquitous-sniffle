@@ -50,9 +50,19 @@ CZ.Player = class Player {
 
     // face rides on the front and stays upright while the wheel turns
     this.face = new THREE.Group(); this.face.position.z = 0.56; this.body.add(this.face);
-    // The whole face is one smile. No eyes: a wheel of cheese has no business
-    // having eyes, and a mouth that can bend from a grin to a grimace to a
-    // wobbling line carries every expression this thing needs.
+    // Two dots and a smile. The dots are just dots - no whites, no glint, no
+    // rattling disc - so all they do is squint, widen, blink and look where you
+    // are going; the mouth still does the acting.
+    this.eyes = [];
+    for (const ex of [-0.21, 0.21]) {
+      const dot = new THREE.Mesh(new THREE.CircleGeometry(0.082, 14), flat(0x22131a));
+      dot.position.set(ex, 0.24, 0.01);
+      this.face.add(dot);
+      this.eyes.push(dot);
+    }
+    this.blinkT = 2.4;
+    this.ey = { open: 1, size: 1, lift: 0 };
+
     this.mouth = new THREE.Group(); this.mouth.position.set(0, 0.06, 0); this.face.add(this.mouth);
     // the dark inside, a half-disc that opens under the smile line
     this.maw = new THREE.Mesh(new THREE.CircleGeometry(1, 18, Math.PI, Math.PI), flat(0x5c1220));
@@ -297,6 +307,34 @@ CZ.Player = class Player {
     S.open = CZ.damp(S.open, open, 18, dt);
     S.wob = CZ.damp(S.wob, wob, 18, dt);
     S.wide = CZ.damp(S.wide, wide, 16, dt);
+
+    // ── the dots ──
+    // open: how far the lids are down. size: how big the eye goes. lift: where
+    // it sits, so a grin pushes the eyes up into it the way a real one does.
+    let eOpen = 1, eSize = 1, eLift = 0;
+    if (mood === 'happy') { eOpen = 0.45; eSize = 1.05; eLift = 0.03; }
+    else if (mood === 'determined') { eOpen = 0.5; eSize = 1.1; eLift = -0.01; }
+    else if (mood === 'squish') { eOpen = 0.35; eSize = 1.3; eLift = -0.05; }
+    else if (mood === 'scared') { eOpen = 1; eSize = 1.45; eLift = 0.02; }
+    else if (mood === 'hurt') { eOpen = 0.2; eSize = 1.15; eLift = 0; }
+    else if (mood === 'melting') { eOpen = 0.55; eSize = 1; eLift = -0.03; }
+    else if (mood === 'strain') { eOpen = 0.6; eSize = 1.05; eLift = 0; }
+    if (this.charge > 0.05) { eOpen = 0.42 - this.charge * 0.12; eSize = 1.15; }
+    if (this.dizzy > 0) { eOpen = 0.32; eSize = 1.25; }
+    // a blink, but never in the middle of a wince
+    this.blinkT -= dt;
+    if (this.blinkT < 0) this.blinkT = 2.2 + Math.random() * 3.6;
+    if (this.blinkT < 0.1 && eOpen > 0.5) eOpen = 0.08;
+    const E = this.ey;
+    E.open = CZ.damp(E.open, eOpen, 30, dt);
+    E.size = CZ.damp(E.size, eSize, 16, dt);
+    E.lift = CZ.damp(E.lift, eLift, 14, dt);
+    // they drift the way you are travelling, so the face leads the roll
+    const look = CZ.clamp(this.vx * 0.006, -0.05, 0.05);
+    this.eyes.forEach((dot, i) => {
+      dot.position.set((i ? 0.21 : -0.21) * (0.9 + S.wide * 0.1) + look, 0.24 + E.lift, 0.01);
+      dot.scale.set(E.size, E.size * E.open, 1);
+    });
 
     const bow = S.curve, halfW = 0.4 * S.wide, N = this.lip.length;
     for (let i = 0; i < N; i++) {

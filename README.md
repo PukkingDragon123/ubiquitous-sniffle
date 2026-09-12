@@ -182,12 +182,14 @@ every icon, portrait and glyph is hand-authored pixel art.
   mush at size, and neither carries a fat outline: a thick stroke fills in a bitmap face's counters, so the depth
   comes from hard offset shadows instead. The boss name shudders and prompts blink; all motion respects
   `prefers-reduced-motion`.
-- **A face that is just a smile.** No eyes. One mouth, and it has to do all the acting: how far the smile bends,
-  how far it opens, and how badly it wobbles. A grin spreads; a wince snaps on. Roll fast and it opens into a
-  delighted gawp, wind up a spin and it sets, take a hit and it flips into a shaking grimace, go flat and it stretches
-  right across the wheel, and at enough speed a tongue lolls out of it. The dark inside is sized so the lip always
-  lands exactly on the rim of the hole instead of cutting across it, and a grimace opens upward rather than down.
-  The opening cutscene plays the same mouth through its four beats.
+- **Two dots and a smile.** The eyes are just dots - no whites, no glint, nothing rattling around inside - so all
+  they do is squint, widen, blink and drift the way you are travelling. The mouth does the acting: how far the smile
+  bends, how far it opens, and how badly it wobbles. A grin spreads; a wince snaps on. Roll fast and the mouth opens
+  into a delighted gawp while the eyes squeeze into two happy dashes; wind up a spin and both narrow; take a hit and
+  the mouth flips into a shaking grimace; go flat and the whole face stretches across the wheel; and at enough speed
+  a tongue lolls out of it. The dark inside is sized so the lip always lands exactly on the rim of the hole instead
+  of cutting across it, and a grimace opens upward rather than down. The opening cutscene plays the same face through
+  its four beats.
 - **Destruction with weight.** A broken object throws big slabs and small shards from the same hit, sprayed away
   from where it was struck and carrying the speed of whatever hit it. Shards have less mass, so the same blow throws
   them further and the air stops them sooner. Each piece asks the level what is actually underneath it, so a heap
