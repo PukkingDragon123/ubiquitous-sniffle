@@ -43,6 +43,18 @@ CZ.UI = (() => {
     el.classList.toggle('hit', frac < 0.42 && frac > 0.14);
   }
 
+  // The wreck counter: the only number the HUD keeps, because breaking things
+  // is the point. It jumps every time it goes up and then sits still.
+  let wreckN = -1;
+  function wrecked(n) {
+    const el = $('wrecked'); if (!el) return;
+    if (n === wreckN) return;
+    wreckN = n;
+    show('wrecked', n > 0);
+    $('wrecked-n').textContent = n;
+    el.classList.remove('bump'); void el.offsetWidth; el.classList.add('bump');
+  }
+
   function noclipMeter(on, frac) { show('noclip-meter', on); if (on) $('noclip-fill').style.width = `${Math.round(frac * 100)}%`; }
   function bossBar(boss) { show('boss-bar', !!boss); if (boss) { $('boss-name').textContent = boss.name; $('boss-fill').style.width = `${Math.max(0, boss.hp / boss.maxHp) * 100}%`; } }
   function sign() {}
@@ -81,6 +93,6 @@ CZ.UI = (() => {
     });
   }
 
-  return { $, show, wheel, parts, timer, levelName, qte, noclipMeter, bossBar, sign, toast, flash,
+  return { $, show, wheel, parts, timer, levelName, qte, wrecked, noclipMeter, bossBar, sign, toast, flash,
     unlock, complete, ending, levelList, stat, cineCaption, cineFx, cineShow };
 })();

@@ -1,6 +1,6 @@
-// The player is a wheel of cheese. It rolls, spins, jumps and pokes, it melts
-// near heat, and every hit cuts a wedge out of it. Mech parts bolt on as you
-// find machines to feed yourself into.
+// The player is a wheel of cheese. It rolls, winds up, launches, squashes flat
+// to fit through gaps, and melts near heat. Every hit cuts a wedge out of it.
+// Mech parts bolt on as you find machines to feed yourself into.
 CZ.Player = class Player {
   constructor(game) {
     const P = CZ.P;
@@ -22,7 +22,7 @@ CZ.Player = class Player {
     this.spin = 0; this.spinT = 0; this.spinCd = 0;          // charge spin
     this.charge = 0; this.chargeOver = 0; this.spinSpeed = 0; this.spinLen = 0.4;
     this.perfect = false; this.dizzy = 0;
-    this.pokeT = 0; this.pokeCd = 0;                          // toothpick poke
+    this.squish = 0; this.squishHeld = false;                 // flattened into a slab
     this.roll = 0;                                            // wheel angle
     this.heat = 0; this.melting = 0;                          // how soft the cheese is
     this.buildMesh();
@@ -35,11 +35,7 @@ CZ.Player = class Player {
   flags() { return { dashing: this.dashing, noclip: this.noclip, inGlitch: this.inGlitch, inCorrupt: this.inCorrupt }; }
   spinning() { return this.spinT > 0 || this.dashing; }
   charging() { return this.charge > 0; }
-  // Reach of the poke, in world space, while the toothpick is out.
-  pokeBox() {
-    if (this.pokeT <= 0) return null;
-    return { x: this.facing > 0 ? this.x + this.w * 0.6 : this.x - 0.8, y: this.y + 0.15, w: 1.1, h: 0.7 };
-  }
+  flat() { return this.squish > 0.4; }
 
   // ---------- visuals ----------
   buildMesh() {
@@ -57,9 +53,11 @@ CZ.Player = class Player {
     // Two toy googly eyes, deliberately mismatched: a black plastic case, a
     // white backing, a loose black disc inside, and a clear domed lens over it.
     this.eyes = [];
+    // Deliberately, aggressively mismatched: one big one, one small one, stuck
+    // on crooked by somebody who was not paying attention.
     const EYE = [
-      { x: -0.25, y: 0.12, r: 0.3, pr: 0.14, tilt: 0.16 },
-      { x: 0.24, y: 0.0, r: 0.235, pr: 0.125, tilt: -0.1 },
+      { x: -0.27, y: 0.16, r: 0.35, pr: 0.15, tilt: 0.26 },
+      { x: 0.26, y: -0.04, r: 0.21, pr: 0.12, tilt: -0.19 },
     ];
     for (const cfg of EYE) {
       const socket = new THREE.Group(); socket.position.set(cfg.x, cfg.y, 0); socket.rotation.z = cfg.tilt;
@@ -79,16 +77,13 @@ CZ.Player = class Player {
       const gleam2 = new THREE.Mesh(new THREE.CircleGeometry(cfg.r * 0.1, 8), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.7 }));
       gleam2.position.set(-cfg.r * 0.12, cfg.r * 0.56, 0.06); socket.add(gleam2);
       this.face.add(socket);
-      this.eyes.push({ socket, pupil, px: 0, py: -0.05, vx: 0, vy: 0, tilt: cfg.tilt,
+      this.eyes.push({ socket, pupil, px: 0, py: -0.05, vx: 0, vy: 0, tilt: cfg.tilt, baseY: cfg.y,
         R: cfg.r - cfg.pr - 0.03, wob: CZ.rand(0.9, 1.2), phase: CZ.rand(0, 6.3) });
     }
-    // the toothpick it pokes with
-    this.poker = new THREE.Group(); this.poker.position.set(0, -0.05, 0.15); this.body.add(this.poker);
-    const stick = new THREE.Mesh(new THREE.BoxGeometry(0.62, 0.09, 0.09), flat(0xe0c48a));
-    stick.position.x = 0.31; this.poker.add(stick);
-    const tip = new THREE.Mesh(new THREE.ConeGeometry(0.075, 0.2, 4), flat(0xd8dde6));
-    tip.position.x = 0.7; tip.rotation.z = -Math.PI / 2; this.poker.add(tip);
-    this.poker.visible = false;
+    // A stupid little tongue that flops out whenever this is going badly or
+    // extremely well, which is most of the time.
+    this.tongue = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.34, 0.06), flat(0xff7a9a));
+    this.tongue.position.set(0.06, -0.42, 0.05); this.tongue.visible = false; this.face.add(this.tongue);
 
     // mech parts, revealed as they are installed
     this.parts = {};
@@ -194,7 +189,7 @@ CZ.Player = class Player {
     if (this.iframes > 0) return 'hurt';
     if (this.heat > 0.45) return 'melting';
     if (this.spinning()) return 'determined';
-    if (this.pokeT > 0) return 'poke';
+    if (this.squish > 0.4) return 'squish';
     if (this.wallSliding) return 'strain';
     if (!this.grounded && this.vy < -16) return 'scared';
     if (Math.abs(this.vx) > CZ.P.RUN_SPEED * 0.6) return 'happy';
@@ -249,7 +244,8 @@ CZ.Player = class Player {
     const melt = this.heat;
     let sx = 1 + melt * 0.22, sy = 1 - melt * 0.3;
     if (this.spinning()) { sx *= 1.06; sy *= 1.06; }
-    if (!this.grounded && !this.spinning()) { const f = CZ.clamp(this.vy / 18, -1, 1); sy *= 1 + f * 0.14; sx *= 1 - f * 0.1; }
+    if (!this.grounded && !this.spinning()) { const f = CZ.clamp(this.vy / 18, -1, 1); sy *= 1 + f * 0.22; sx *= 1 - f * 0.16; }
+    if (this.squish > 0) { sy *= CZ.lerp(1, CZ.P.SQUISH_H, this.squish); sx *= CZ.lerp(1, CZ.P.SQUISH_W, this.squish); }
     sy *= this.squash; sx *= (2 - this.squash);
     b.scale.x = CZ.damp(b.scale.x, sx, 22, dt); b.scale.y = CZ.damp(b.scale.y, sy, 22, dt);
     b.position.y = CZ.damp(b.position.y, -melt * 0.12, 10, dt);
@@ -259,15 +255,22 @@ CZ.Player = class Player {
     this.cheeseMat.opacity = this.noclip || this.inCorrupt ? 0.5 : 1;
     this.rindMat.color.setHex(melt > 0.4 ? 0xff7a1f : 0xe8892a);
 
-    this.face.position.y = -melt * 0.1;
+    this.face.position.y = -melt * 0.1 + this.squish * 0.1;
     this.face.rotation.z = CZ.damp(this.face.rotation.z, this.spinning() ? 0 : -this.vx * 0.012, 12, dt);
-    this.face.scale.setScalar(this.spinning() ? 0.9 : 1);
+    // The face rides on the body but refuses to be squashed with it: it is
+    // counter-scaled, so flat cheese still has two properly round eyes on it.
+    const fs = this.spinning() ? 0.9 : 1;
+    this.face.scale.set(fs / Math.max(0.2, b.scale.x), fs / Math.max(0.2, b.scale.y), 1);
     this.updateFace(dt);
 
-    // poke
-    this.poker.visible = this.pokeT > 0;
-    this.poker.scale.x = this.pokeT > 0 ? CZ.clamp(1 - Math.abs(this.pokeT / CZ.P.STAB_TIME - 0.5) * 1.2, 0.25, 1) : 0.1;
-    this.poker.rotation.z = this.facing > 0 ? 0 : Math.PI;
+    // the tongue: out at speed, out while flat, out while dizzy. Always stupid.
+    const lolling = this.dizzy > 0 || this.squish > 0.4 || mo > 20 || this.heat > 0.5;
+    this.tongue.visible = lolling;
+    if (lolling) {
+      this.tongue.scale.y = 1 + Math.sin(this.time * 17) * 0.35;
+      this.tongue.rotation.z = Math.sin(this.time * 11) * 0.5 - this.vx * 0.02;
+      this.tongue.position.x = 0.06 + Math.sin(this.time * 9) * 0.05;
+    }
 
     // parts
     for (const id in this.parts) {
@@ -320,16 +323,18 @@ CZ.Player = class Player {
       } else if (this.spinning()) {
         const a = this.time * 24 * e.wob + e.phase;
         e.px = Math.cos(a) * R; e.py = Math.sin(a) * R; e.vx = e.vy = 0;
-      } else if (mood === 'poke') {
-        e.px = CZ.damp(e.px, this.facing * R * 0.8, 18, dt); e.py = CZ.damp(e.py, 0, 18, dt); e.vx = e.vy = 0;
+      } else if (mood === 'squish') {   // squashed flat: the discs slide to the sides
+        e.px = CZ.damp(e.px, (e === this.eyes[0] ? -1 : 1) * R, 16, dt); e.py = CZ.damp(e.py, 0, 16, dt); e.vy *= 0.5;
       }
       e.pupil.position.set(e.px, e.py, 0.026);
-      e.pupil.scale.setScalar(mood === 'scared' ? 0.62 : mood === 'melting' ? 1.3 : mood === 'hurt' ? 1.2 : 1);
-      e.socket.rotation.z = e.tilt + Math.sin(this.time * 3.2 + e.phase) * 0.06;
+      e.pupil.scale.setScalar(mood === 'scared' ? 0.55 : mood === 'melting' ? 1.35 : mood === 'hurt' ? 1.25 : 1);
+      // the whole eye wobbles on its glue, harder the faster you are going
+      e.socket.rotation.z = e.tilt + Math.sin(this.time * 3.2 + e.phase) * (0.06 + Math.abs(this.vx) * 0.012);
+      e.socket.position.y = e.baseY + Math.sin(this.time * 9 + e.phase) * Math.min(0.05, Math.abs(this.vx) * 0.004);
     }
     this.blinkT -= dt; if (this.blinkT < 0) this.blinkT = 1.6 + Math.random() * 3.4;
-    const open = this.blinkT < 0.11 ? 0.08 : mood === 'determined' || mood === 'poke' ? 0.58
-      : mood === 'melting' ? 0.45 : mood === 'scared' ? 1.2 : 1;
+    const open = this.blinkT < 0.11 ? 0.08 : mood === 'determined' ? 0.58
+      : mood === 'squish' ? 0.35 : mood === 'melting' ? 0.45 : mood === 'scared' ? 1.25 : 1;
     for (const e of this.eyes) e.socket.scale.y = CZ.damp(e.socket.scale.y, open, 34, dt);
   }
 
@@ -407,6 +412,39 @@ CZ.Player = class Player {
   // How much damage your speed is worth right now.
   momentum() { return Math.abs(this.vx) + (this.spinT > 0 ? 6 : 0); }
 
+  // ---------- the squish ----------
+  // Hold DOWN on the ground and the wheel spreads into a slab less than half as
+  // tall. Gaps you could never roll through you can now slide under. Let go
+  // under a low roof and you stay flat until there is room to pop back up.
+  updateSquish(dt) {
+    const P = CZ.P, I = CZ.Input;
+    const want = I.held('down') && this.grounded && !this.dashing && !this.pounding
+      && this.spinT <= 0 && this.charge <= 0 && !this.grappling;
+    const was = this.squish;
+    let target = want ? 1 : 0;
+    if (!want && was > 0.02 && this.roofClose()) target = was;   // the roof is holding you down
+    this.squish = CZ.damp(this.squish, target, P.SQUISH_RATE, dt);
+    if (this.squish < 0.012) this.squish = 0;
+    // Only the height is real: the extra width is all show, so squashing can
+    // never wedge you into a wall you were standing beside.
+    this.h = P.PLAYER_H * CZ.lerp(1, P.SQUISH_H, this.squish);
+    if (was < 0.4 && this.squish >= 0.4) {
+      CZ.Audio.sfx.land(); this.squashV = -6;
+      CZ.Effects.burst(this.cx(), this.y, 0xfff0b0, 7, { spread: 5, up: 1.4, life: 0.4, size: 0.7, gravity: 30 });
+      CZ.Comic.pow(CZ.pick(['SPLAT', 'PANCAKE', 'FLOOMP']), [this.cx(), this.y + 1.3, 0], { kind: 'hit', life: 0.45 });
+    }
+    if (was >= 0.4 && this.squish < 0.4) { this.squash = 1.3; CZ.Audio.sfx.jump(); }
+  }
+  // Is there something directly over our head, in the space we would pop back into?
+  roofClose() {
+    const L = this.game.level, P = CZ.P;
+    const gap = P.PLAYER_H - this.h;
+    if (gap <= 0.02) return false;
+    const probe = { x: this.x + 0.1, y: this.y + this.h, w: this.w - 0.2, h: gap + 0.04 };
+    for (const s of L.blocking(this.flags())) if (!s.broken && CZ.overlap(probe, s)) return true;
+    return false;
+  }
+
   // ---------- damage ----------
   respawn(x, y) {
     const P = CZ.P;
@@ -415,7 +453,7 @@ CZ.Player = class Player {
     this.dead = false; this.iframes = 0.5; this.dashing = false; this.pounding = false; this.grappling = false; this.hanging = false; this.hook = null;
     this.noclip = false; this.noclipMeter = P.NOCLIP_MAX; this.inCorrupt = false; this.inGlitch = false; this.jumpsUsed = 0; this.canDash = true;
     this.spinT = 0; this.spinCd = 0; this.charge = 0; this.chargeOver = 0; this.dizzy = 0;
-    this.pokeT = 0; this.pokeCd = 0; this.heat = 0;
+    this.squish = 0; this.w = P.PLAYER_W; this.h = P.PLAYER_H; this.heat = 0;
     this.lastSafe = { x: this.x, y: this.y }; this.facing = 1;
     this.mesh.visible = true;
   }
@@ -455,7 +493,6 @@ CZ.Player = class Player {
     if (this.iframes > 0) this.iframes -= dt;
     if (this.dashCd > 0) this.dashCd -= dt;
     if (this.spinCd > 0) this.spinCd -= dt;
-    if (this.pokeCd > 0) this.pokeCd -= dt;
     if (this.wallStick > 0) this.wallStick -= dt;
 
     // heat: standing near molten cheese softens you, and soft cheese is slow
@@ -490,21 +527,16 @@ CZ.Player = class Player {
       if (this.grounded && !this.inCorrupt) this.noclipMeter = Math.min(P.NOCLIP_MAX, this.noclipMeter + P.NOCLIP_REGEN * dt);
     }
 
-    // ---- poke / winch ----
-    if (I.pressed('grapple') && !this.dashing) {
-      if (this.has('grapple')) {
-        if (this.hanging) { this.releaseGrapple(); this.vy = 2; }
-        else {
-          let best = null, bd = P.GRAPPLE_RANGE;
-          for (const h of L.hooks) { const d = Math.hypot(h.x - this.cx(), h.y - this.cy()); if (d < bd && h !== this.hook) { bd = d; best = h; } }
-          if (best) { this.hook = best; this.grappling = true; this.hanging = false; this.pounding = false; CZ.Audio.sfx.grapple(); this.jumpsUsed = 0; this.canDash = true; }
-        }
-      } else if (this.pokeCd <= 0) {
-        this.pokeT = P.STAB_TIME; this.pokeCd = P.STAB_COOLDOWN + P.STAB_TIME;
-        CZ.Audio.sfx.shoot();
+    // ---- winch ----
+    if (I.pressed('grapple') && !this.dashing && this.has('grapple')) {
+      if (this.hanging) { this.releaseGrapple(); this.vy = 2; }
+      else {
+        let best = null, bd = P.GRAPPLE_RANGE;
+        for (const h of L.hooks) { const d = Math.hypot(h.x - this.cx(), h.y - this.cy()); if (d < bd && h !== this.hook) { bd = d; best = h; } }
+        if (best) { this.hook = best; this.grappling = true; this.hanging = false; this.pounding = false; CZ.Audio.sfx.grapple(); this.jumpsUsed = 0; this.canDash = true; }
       }
     }
-    if (this.pokeT > 0) this.pokeT -= dt;
+    this.updateSquish(dt);
 
     if (this.grappling) {
       const hx = this.hook.x, hy = this.hook.y - 0.9;
@@ -565,7 +597,8 @@ CZ.Player = class Player {
         if (!excess || CZ.sign(this.vx) !== axis) this.vx = CZ.clamp(this.vx + axis * accel * dt, -top, top);
         else this.vx -= CZ.sign(this.vx) * (this.grounded ? 8 : P.AIR_FRICTION) * dt;
       } else {
-        const fr = (this.grounded ? P.ROLL_FRICTION : P.AIR_FRICTION) * (1 + this.heat * 3);
+        const base = this.grounded ? CZ.lerp(P.ROLL_FRICTION, P.SQUISH_FRICTION, this.squish) : P.AIR_FRICTION;
+        const fr = base * (1 + this.heat * 3);
         const s = CZ.sign(this.vx); this.vx -= s * fr * dt; if (CZ.sign(this.vx) !== s) this.vx = 0;
       }
     }

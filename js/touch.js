@@ -126,18 +126,20 @@ CZ.Touch = (() => {
     if (!on) { holdTimers.forEach(clearTimeout); holdTimers.clear(); CZ.Input.clearTouch(); stickPointer = null; btnPointers.clear(); root.querySelectorAll('.pressed').forEach(b => b.classList.remove('pressed')); }
     checkRotate();
   }
-  // Spin and poke are always available - the wheel can do both from the start -
-  // so only the phase core is gated. Labels follow whatever part is installed.
+  // Wind-up and squish are always available - the wheel can do both from the
+  // very first screen - so only the bolt-on parts are gated.
   let lastAb = {};
   function syncAbilities(ab) {
     if (!enabled) return;
     lastAb = ab || {};
     if (mode === 'fight') return;
     $('tc-dash').hidden = false;
-    $('tc-grapple').hidden = false;
+    $('tc-squish').hidden = false;
+    $('tc-grapple').hidden = !lastAb.grapple;
     $('tc-noclip').hidden = !lastAb.noclip;
-    label('tc-dash', lastAb.dash ? 'THRUST' : 'SPIN');
-    label('tc-grapple', lastAb.grapple ? 'WINCH' : 'POKE');
+    label('tc-dash', lastAb.dash ? 'THRUST' : 'WIND UP');
+    label('tc-squish', lastAb.pound ? 'SQUISH / DIVE' : 'SQUISH');
+    label('tc-grapple', 'WINCH');
     label('tc-noclip', 'PHASE');
   }
   const label = (id, text) => { const el = $(id); if (el) el.querySelector('.lbl').textContent = text; };
@@ -150,7 +152,7 @@ CZ.Touch = (() => {
     const fight = m === 'fight';
     $('tc-pause').hidden = fight;
     if (fight) {
-      $('tc-dash').hidden = false; $('tc-grapple').hidden = true; $('tc-noclip').hidden = true;
+      $('tc-dash').hidden = false; $('tc-grapple').hidden = true; $('tc-noclip').hidden = true; $('tc-squish').hidden = true;
       label('tc-dash', 'SWING');
       $('tc-stick').querySelector('.tc-hint').textContent = 'WALK';
     } else {

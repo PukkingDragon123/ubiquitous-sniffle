@@ -19,6 +19,7 @@
     <div id="parts"></div>
   </div>
   <div id="hud-center"></div>
+  <div id="wrecked" class="hidden"><span id="wrecked-n">0</span><span class="w-lbl">WRECKED</span></div>
   <div id="noclip-meter" class="hidden"><div id="noclip-fill"></div></div>
   <div id="boss-bar" class="hidden"><div id="boss-name"></div><div class="bar"><div id="boss-fill"></div></div></div>
 </div>
@@ -50,16 +51,16 @@
   <table>
     <tr><td>ROLL</td><td>LEFT / RIGHT / A / D</td></tr>
     <tr><td>JUMP</td><td>SPACE / Z / W / UP (hold = higher)</td></tr>
-    <tr><td>SPIN</td><td>SHIFT / X - spin attack, smashes things</td></tr>
-    <tr><td>POKE</td><td>C / E - poke levers, valves and enemies</td></tr>
+    <tr><td>WIND UP</td><td>HOLD SHIFT / X to spin on the spot, RELEASE to launch</td></tr>
+    <tr><td>SQUISH</td><td>HOLD DOWN / S on the ground - go flat, fit through gaps</td></tr>
     <tr><td>SPRING LEGS</td><td>JUMP again in the air (upgrade)</td></tr>
     <tr><td>HAMMER FIST</td><td>DOWN / S in the air (upgrade)</td></tr>
     <tr><td>WINCH ARM</td><td>C / E near a blue node (upgrade)</td></tr>
     <tr><td>PHASE CORE</td><td>Hold V / Q (upgrade)</td></tr>
     <tr><td>PAUSE / MUTE / RETRY</td><td>ESC or P / M / R</td></tr>
   </table>
-  <p class="tip mobile-only">ON A PHONE: drag the left stick to move, flick it down in the air to CRASH DIVE, and tap the buttons on the right. Buttons appear as you unlock each tech.</p>
-  <p class="tip">You are a wheel. Rolling builds speed and keeps it. Spin into crates and barrels. Poke anything that looks like it moves. Every hit cuts a wedge out of you.</p>
+  <p class="tip mobile-only">ON A PHONE: drag the left stick to move, hold SQUISH to go flat (tap it in mid-air to CRASH DIVE), and tap the buttons on the right.</p>
+  <p class="tip">You are a wheel. Rolling builds speed and keeps it, and speed is the only weapon you have. Break everything in the room - it is all breakable. Go flat to fit where a wheel cannot. Every hit cuts a wedge out of you.</p>
   <button class="back" data-back>BACK</button>
 </div>
 
@@ -95,7 +96,8 @@
   </div>
   <div id="tc-buttons">
     <button class="tc-btn tc-sm" id="tc-noclip" data-act="noclip"><i class="spr" data-spr="tech-ghost"></i><span class="lbl">NOCLIP</span></button>
-    <button class="tc-btn tc-sm" id="tc-grapple" data-act="grapple"><i class="spr" data-spr="tech-hook"></i><span class="lbl">HOOK</span></button>
+    <button class="tc-btn tc-sm" id="tc-grapple" data-act="grapple" hidden><i class="spr" data-spr="tech-hook"></i><span class="lbl">HOOK</span></button>
+    <button class="tc-btn tc-sm" id="tc-squish" data-act="down"><i class="spr" data-spr="tech-pound"></i><span class="lbl">SQUISH</span></button>
     <button class="tc-btn tc-sm" id="tc-dash" data-act="dash"><i class="spr" data-spr="tech-dash"></i><span class="lbl">DASH</span></button>
     <button class="tc-btn tc-lg" id="tc-jump" data-act="jump"><i class="spr" data-spr="arrow-up"></i><span class="lbl">JUMP</span></button>
   </div>

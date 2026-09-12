@@ -43,58 +43,69 @@ CZ.LEVELS = (() => {
 
   return [
   // ───────────────────────── 1. THE CHEESE CELLAR ─────────────────────────
-  // Built for a wheel: ramps to build speed on, crates to smash through, a
-  // lever to poke, and a press that bolts your first part on.
+  // A room, not a corridor. Every stick of furniture in it can be destroyed, and
+  // most obstacles have two answers: go over it fast, or go flat and go under.
   { id: 'cellar', name: 'THE CHEESE CELLAR', sub: 'World 1', song: 'factory',
-    width: 186, deathY: -7, room: { top: 15, back: true },
-    theme: { tile: ['brick', 'stone'], prop: ['wood', 'timber'],
-      sky: ['#20120c', '#4a2a16'], fog: '#2a1810', block: '#7a4f28', blockAlt: '#5c3a1c',
-      plat: '#c08a4e', accent: '#ffcc33', bg: 'cellar' },
+    width: 190, deathY: -7, room: { top: 16, back: true },
+    theme: { tile: ['brick', 'cellar'], prop: ['wood', 'timber'],
+      sky: ['#170e1d', '#3a2038'], fog: '#221429', block: '#6b4f6a', blockAlt: '#3a2844',
+      plat: '#d99b52', accent: '#ffcc33', bg: 'cellar' },
     spawn: [4, 0],
     intro: ['Out. Before the mould gets here.'],
     items: [
-      floor(0, 166, 0, 4), floor(171, 186, 0, 4),
-      solid(-2, 0, 2, 15), solid(186, 0, 2, 15),
+      floor(0, 170, 0, 2.4), floor(175, 190, 0, 2.4),
+      solid(-2, 0, 2, 16), solid(190, 0, 2, 16),
 
-      // ── learn the wheel: a ramp to roll down and a crate to break ──
-      deco('lamp', 10, 12.4), deco('rack', 7, 0), deco('web', 1.5, 13.6),
-      ramp(14, 0, 7, 4, 1), solid(21, 0, 6, 4), ramp(27, 0, 7, 4, -1),
-      deco('crate', 23, 4), deco('cheesewheel', 38, 0),
-      wood(34, 0, 2, 2, { crate: true }),
+      // ── the junk room: nothing here is load-bearing, so wreck all of it ──
+      deco('lamp', 10, 13.4), deco('rack', 7, 0), deco('web', 1.5, 14.2),
+      deco('bottle', 12.4, 0), deco('bottle', 13.2, 0), deco('knifeblock', 17, 0),
+      ramp(20, 0, 7, 4, 1), solid(27, 0, 6, 4), ramp(33, 0, 7, 4, -1),
+      deco('crate', 29, 4), deco('cheesewheel', 43, 0), deco('bottle', 45.6, 0),
+      wood(39, 0, 2, 2, { crate: true }),
 
-      // ── a crate wall: roll into it with anything ──
-      wood(50, 0, 2, 2, { crate: true }), wood(52, 0, 2, 2, { crate: true }), wood(54, 0, 2, 2, { crate: true }),
-      wood(50, 2, 2, 2, { crate: true }), wood(52, 2, 2, 2, { crate: true }), wood(54, 2, 2, 2, { crate: true }),
-      deco('crate', 58, 0, { stack: 2 }),
+      // ── two ways past the crate wall: smash it, or squish under the shelf ──
+      wood(55, 0, 2, 2, { crate: true }), wood(57, 0, 2, 2, { crate: true }), wood(59, 0, 2, 2, { crate: true }),
+      wood(55, 2, 2, 2, { crate: true }), wood(57, 2, 2, 2, { crate: true }), wood(59, 2, 2, 2, { crate: true }),
+      wood(55, 4, 2, 2, { crate: true }), wood(57, 4, 2, 2, { crate: true }), wood(59, 4, 2, 2, { crate: true }),
+      deco('crate', 63, 0, { stack: 2 }), deco('shelf', 50, 0),
+      // ── the slot: a wall to the ceiling with a hand's width under it ──
+      sign(64, 2, 'Hold DOWN. Cheese has no bones.'),
+      solid(66, 0.8, 2.4, 15.2, { slot: true }),
 
-      // ── the speed lane: boost, then a barrel wall that only heavy speed breaks
-      boost(62, 0, 8, 22),
-      wood(76, 0, 3, 3, { crate: true, hard: 15, skin: 'barrel' }),
-      wood(76, 3, 3, 3, { crate: true, hard: 15, skin: 'barrel' }),
-      deco('rack', 84, 0), deco('lamp', 90, 12.4),
-      enemy('spider', 88, 10.5, { drop: 5, speed: 1.4 }),
+      // ── the speed lane: a boost, then barrels only real speed goes through ──
+      boost(68, 0, 8, 22),
+      wood(82, 0, 3, 3, { crate: true, hard: 15, skin: 'barrel' }),
+      wood(82, 3, 3, 3, { crate: true, hard: 15, skin: 'barrel' }),
+      deco('rack', 90, 0), deco('lamp', 96, 13.4), deco('knifeblock', 87.5, 0),
+      enemy('spider', 94, 11.5, { drop: 5, speed: 1.4 }),
 
-      // ── up and over, then a lever gate ──
-      ramp(92, 0, 7, 4, 1), solid(99, 0, 5, 4), ramp(104, 0, 6, 4, -1),
-      enemy('bugcrawl', 108, 0, { min: 104, max: 114 }),
-      lever(116, 0, 'g1'),
-      gate(122, 0, 2, 7, 'g1'),
-      deco('web', 124, 6.6),
+      // ── the lever gate, and the vent that skips it entirely ──
+      ramp(98, 0, 7, 4, 1), solid(105, 0, 5, 4), ramp(110, 0, 6, 4, -1),
+      enemy('bugcrawl', 114, 0, { min: 110, max: 120 }),
+      lever(122, 0, 'g1'),
+      gate(128, 0, 2, 9, 'g1'),
+      // ...or climb the crates and crawl the duct clean over the top of it
+      plat(117, 3, 4), plat(121, 5.8, 3),
+      plat(124, 8.5, 16),                             // duct floor, top y=9.1
+      solid(124, 9.7, 16, 1.4, { skin: 'wood' }),     // duct roof: 0.6 of clearance
+      deco('web', 130, 7.4), deco('bottle', 133, 9.2), deco('bottle', 136, 9.2),
 
-      // ── the press: your first upgrade ──
-      deco('press', 136, 0), deco('vat', 148, 0),
-      ramp(128, 0, 6, 3, 1), solid(134, 0, 5, 3),
-      ability(137, 3, 'doubleJump'),
-      enemy('spider', 145, 12.6, { drop: 3.6, speed: 1.8 }),
+      // ── the press: your first upgrade, and a vat worth ruining ──
+      deco('press', 142, 0), deco('vat', 154, 0),
+      ramp(134, 0, 6, 3, 1), solid(140, 0, 5, 3),
+      ability(143, 3, 'doubleJump'),
+      deco('cheesewheel', 150, 0), deco('cheesewheel', 152.4, 0),
+      enemy('spider', 151, 13.6, { drop: 3.6, speed: 1.8 }),
 
       // ── the drain: get a run at it ──
-      ramp(158, 0, 8, 4, 1),
-      solid(166, -3.4, 5, 2, { skin: 'drain' }), hazard(166, -1.4, 5, 1, 'goo'),
-      deco('web', 168, 12.8), deco('lamp', 176, 12.4), deco('rack', 178, 0),
+      ramp(162, 0, 8, 4, 1),
+      solid(170, -3.4, 5, 2, { skin: 'drain' }), hazard(170, -1.4, 5, 1, 'goo'),
+      deco('web', 172, 13.8), deco('lamp', 180, 13.4), deco('rack', 182, 0),
+      deco('shelf', 177, 0),
 
       // ── the way out: a boost strip, then a door you have to break ──
-      boost(172, 0, 7, 27),
-      door(183),
+      boost(176, 0, 7, 27),
+      door(187),
     ] },
 
   // ───────────────────────────── 2. THE GRATER LINE ─────────────────────────────
@@ -103,12 +114,14 @@ CZ.LEVELS = (() => {
     spawn: [3, 0],
     items: [
       floor(0, 30),
+      // the line is still somebody's workplace, and all of it comes apart
+      deco('crate', 6, 0, { stack: 2 }), deco('bottle', 10, 0), deco('knifeblock', 11.4, 0),
       ramp(14, 0, 6, 3, 1), solid(20, 0, 4, 3), ramp(24, 0, 6, 3, -1),
       conveyor(30, 50, 0, 6),
       solid(30, -3, 20, 2),
       // gap 50..55 (belt flings you)
       floor(55, 72),
-      enemy('rat', 62, 0, { min: 56, max: 70 }),
+      enemy('rat', 62, 0, { min: 56, max: 70 }), deco('rack', 58, 0),
       bounce(64, 0),      plat(66, 6.5, 4), // lift to upper deck
       mplat(73, 0.5, 4, 0, 4, 3.2),
       solid(80, 0, 22, 4), // deck top y=4
@@ -118,12 +131,13 @@ CZ.LEVELS = (() => {
       grater(112, 4),
       solid(120, 0, 22, 4), check(122, 4), 
       // drop to y=0 and moving platforms over goo
-      floor(142, 152),
+      floor(142, 152), deco('shelf', 146, 0),
       goo(152, 172, -2), solid(152, -6, 20, 3),
       mplat(153, 1, 3, 0, 3, 2.6),
       mplat(160, 2, 3, 4, 0, 3, 1.5),
       floor(172, 194),
       enemy('rat', 178, 0, { min: 173, max: 192 }),
+      deco('crate', 190, 0, { stack: 3 }), deco('cheesewheel', 176, 0),
       ability(184, 1, 'dash'),
       glitch(194, 0, 3, 6), floor(194, 206),
       // gap 206..217 (dash + double jump)
@@ -135,6 +149,7 @@ CZ.LEVELS = (() => {
       glitch(238, -3, 5, 3), solid(238, -10, 5, 1), bounce(238.5, -9, 1.6),
       solid(233, -9, 5, 6), solid(243, -9, 5, 6),
       enemy('spore', 254, 3, { amp: 2, speed: 2.5 }),
+      deco('bottle', 245, 0), deco('crate', 250, 0, { stack: 2 }), deco('knifeblock', 258, 0),
       door(262),
     ] },
 
@@ -144,13 +159,14 @@ CZ.LEVELS = (() => {
     spawn: [3, 0],
     items: [
       floor(0, 25),
+      deco('crate', 6, 0, { stack: 2 }), deco('bottle', 11, 0), deco('cheesewheel', 13, 0),
       ramp(17, 0, 8, 3, 1),
       goo(25, 40, -1), solid(25, -5, 15, 3),
       solid(29, -3, 2, 3), solid(34.5, -3, 2, 3),
       floor(40, 60),
       enemy('blob', 46, 0, { min: 41, max: 58 }), enemy('blob', 54, 0, { min: 41, max: 58 }),
       plat(50, 3.5, 3), goo(60, 70, -1), solid(60, -5, 10, 3),
-      floor(70, 92),
+      floor(70, 92), deco('knifeblock', 75, 0), deco('crate', 78, 0),
       check(72),
       enemy('turret', 86, 0, { dir: -1, rate: 2.2 }),
       ability(80, 1, 'wallJump'),
@@ -165,7 +181,7 @@ CZ.LEVELS = (() => {
       solid(138, 0, 2, 13), solid(144, 0, 2, 13),   // wall-jump between 140..144
       plat(150, 10, 4),
       plat(157, 7, 3),
-      floor(162, 200),
+      floor(162, 200), deco('crate', 167, 0, { stack: 3 }), deco('rack', 196, 0),
       check(164),
       enemy('blob', 172, 0, { min: 164, max: 184 }),
       enemy('turret', 190, 0, { dir: -1, rate: 1.8 }),
@@ -174,6 +190,7 @@ CZ.LEVELS = (() => {
       solid(204, 0, 2, 8), solid(210, 0, 2, 12), solid(216, 0, 2, 8), solid(222, 0, 2, 12),
       enemy('spore', 213, 6, { amp: 3, speed: 1.6 }),
       solid(226, 0, 24, 8),   // exit deck top y=8
+      deco('shelf', 232, 8), deco('cheesewheel', 238, 8), deco('bottle', 240.4, 8),
       door(245, 8),
     ] },
 
@@ -183,13 +200,14 @@ CZ.LEVELS = (() => {
     spawn: [3, 0],
     items: [
       floor(0, 60),
+      deco('crate', 3, 0, { stack: 2 }), deco('cheesewheel', 56, 0), deco('bottle', 58, 0),
       ramp(6, 0, 6, 3, 1), ramp(12, 0, 5, 3, -1),
       press(18, 1, 3, 3, 4.5, 2.2, 0), press(30, 1, 3, 3, 4.5, 2.2, 1.1), press(42, 1, 3, 3, 4.5, 2.2, 0.5),
       enemy('rat', 50, 0, { min: 46, max: 58 }),
       plat(24, 6.5, 3), // belts + knives
       conveyor(60, 80, 0, 8), solid(60, -3, 20, 2),
       knives(80, 0, 4), solid(80, -3, 4, 3),
-      floor(84, 110),
+      floor(84, 110), deco('rack', 88, 0), deco('shelf', 96, 0), deco('knifeblock', 108, 0),
       enemy('turret', 104, 0, { dir: -1, rate: 2 }),
       enemy('rat', 92, 0, { min: 85, max: 100 }),
       check(86),
@@ -207,7 +225,7 @@ CZ.LEVELS = (() => {
       cracked(170, -8, 3, 3), // crack a block guarding a bug? (bug sits on top)
       solid(180, -8, 3, 2), cracked(186, -8, 4, 5), bounce(195, -8, 2.5),
       solid(198, -11, 4, 11),       // wall right of lower floor up to y=0
-      floor(202, 232),
+      floor(202, 232), deco('crate', 218, 0, { stack: 2 }), deco('bottle', 202.6, 0),
       check(204), boost(206, 0, 5, 22),
       enemy('turret', 220, 0, { dir: -1, rate: 1.6 }),
       cracked(212, 0, 3, 2), enemy('rat', 226, 0, { min: 216, max: 230 }),
@@ -225,20 +243,21 @@ CZ.LEVELS = (() => {
     spawn: [3, 0],
     items: [
       floor(0, 26),
+      deco('crate', 7, 0, { stack: 2 }), deco('bottle', 20, 0), deco('knifeblock', 22, 0),
       wind(26, -8, 6, 24, 70), solid(26, -9, 6, 1),
       solid(32, 3, 20, 3),                // ledge top y=6
       enemy('spore', 40, 9, { amp: 1.2, speed: 2 }),
       wind(52, -8, 5, 26, 70), solid(52, -9, 5, 1),
       solid(57, 7, 18, 3),                // ledge top y=10
       enemy('rat', 64, 10, { min: 58, max: 74 }),
-      plat(78, 6, 4), plat(85, 3, 4), floor(90, 120),
+      plat(78, 6, 4), plat(85, 3, 4), floor(90, 120), deco('rack', 104, 0), deco('shelf', 115, 0),
       ramp(90, 0, 6, 3, 1), ramp(96, 0, 4, 3, -1),
       check(92),
       enemy('turret', 110, 0, { dir: -1, rate: 2 }),
       ability(100, 1, 'grapple'),
       hook(124, 7), hook(133, 9), hook(142, 7),
       goo(120, 150, -1), solid(120, -5, 30, 3),
-      floor(150, 172),
+      floor(150, 172), deco('crate', 155, 0, { stack: 2 }), deco('cheesewheel', 167, 0),
       enemy('blob', 160, 0, { min: 151, max: 170 }),
       // fan + hook combos
       wind(172, -8, 5, 30, 70), solid(172, -9, 5, 1),
@@ -300,6 +319,7 @@ CZ.LEVELS = (() => {
     spawn: [3, 0],
     items: [
       floor(0, 24),
+      deco('crate', 4, 0, { stack: 2 }), deco('cheesewheel', 7, 0), deco('bottle', 8.8, 0),
       ramp(10, 0, 7, 3, 1), solid(17, 0, 4, 3), ramp(21, 0, 3, 3, 1),
       mplat(26, 0.5, 3, 0, 4, 3), mplat(33, 2, 3, 3, 0, 2.5, 1),
       plat(42, 4, 4), enemy('spore', 47, 7, { amp: 2, speed: 2.5 }),

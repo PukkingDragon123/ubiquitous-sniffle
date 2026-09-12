@@ -30,9 +30,12 @@ CZ.P = {
   RAPID_WINDOW: 0.42,     // mash this many presses inside this window to trip the jump queue
   RAPID_PRESSES: 4,
   RAPID_TIME: 3.0,        // how long the queue stays broken
-  STAB_TIME: 0.18,
-  STAB_SPEED: 14,
-  STAB_COOLDOWN: 0.3,
+  // Squish: hold DOWN on the ground and the wheel flattens into a slab you can
+  // slide through gaps with. Cheese does not have bones.
+  SQUISH_RATE: 9,              // how fast it flattens / springs back
+  SQUISH_H: 0.5,             // fraction of your height when fully flat
+  SQUISH_W: 1.5,              // ...and how much wider you get
+  SQUISH_FRICTION: 3.4,       // a flat wheel slides a long way
   RUN_ACCEL: 70,
   ROLL_ACCEL: 46,          // a wheel takes a moment to get going
   ROLL_FRICTION: 9,        // ...and keeps rolling once it does
@@ -52,6 +55,7 @@ CZ.P = {
   SMASH_CRATE: 7,
   SMASH_HEAVY: 15,
   SMASH_DOOR: 23,
+  SMASH_JUNK: 3,              // scenery gives up at almost any speed
   AIR_ACCEL: 46,
   GROUND_FRICTION: 60,
   AIR_FRICTION: 6,

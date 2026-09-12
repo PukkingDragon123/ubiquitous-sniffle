@@ -123,7 +123,7 @@ CZ.Game = class Game {
     this.unloadLevel();
     const U = CZ.UI, data = CZ.LEVELS[i];
     this.levelIndex = i; this.levelTime = 0; this.levelDeaths = 0;
-    this.level = new CZ.Level(data, this.scene);
+    this.level = new CZ.Level(data, this.scene, this);
     this.scene.fog = new THREE.Fog(data.theme.fog, 28, 95);
     this.scene.background = new THREE.Color(data.theme.sky[1]);
     this.hemi.groundColor.set(data.theme.sky[1]); this.hemi.color.set(data.theme.sky[0]).lerp(new THREE.Color(0xffffff), 0.7);
@@ -134,7 +134,7 @@ CZ.Game = class Game {
     this.spawnEnemies();
     this.camX = this.player.cx(); this.camY = this.player.cy() + 2; this.camZ = 19;
     U.show('levelselect', false); U.show('complete', false); U.show('hud', true); U.levelName(data.name, data.sub); U.bossBar(null); U.sign(null);
-    U.parts(this.abilities);
+    U.parts(this.abilities); U.wrecked(0);
     CZ.Spr.paint();
     CZ.Audio.playMusic(data.song);
     CZ.Touch.setVisible(true); CZ.Touch.syncAbilities(this.abilities);
@@ -276,11 +276,17 @@ CZ.Game = class Game {
   }
   flash(c) { CZ.UI.flash(c); }
   toast(t) { CZ.UI.toast(t); }
+  // Freeze the world for a few frames on impact. Nothing else sells a hit
+  // half as well as the game briefly refusing to continue.
+  hitstop(sec) { this.stopT = Math.max(this.stopT || 0, sec); }
+  // Something in the room just stopped existing. Put it on the board.
+  scored(n) { CZ.UI.wrecked(n); }
 
   // ---------- main loop ----------
   loop(now) {
     requestAnimationFrame(t => this.loop(t));
     let dt = Math.min(0.05, (now - this.last) / 1000); this.last = now;
+    if (this.stopT > 0) { this.stopT -= dt; dt *= 0.07; }   // impact freeze
     CZ.Input.update();
     this.update(dt);
     this.render();
@@ -341,13 +347,10 @@ CZ.Game = class Game {
       CZ.Touch.syncAbilities(this.abilities);
       p.vx = 0; p.vy = Math.max(p.vy, 0);
     }
-    // levers: a poke opens whatever gate they are wired to
-    const poke = p.pokeBox();
+    // levers: roll into one and it flips. No tool, no button, just contact.
     for (const lv of L.levers) {
       if (lv.on) continue;
-      const hit = (poke && CZ.overlap(poke, { x: lv.x - 0.7, y: lv.y, w: 1.4, h: 1.8 }))
-        || (p.spinning() && CZ.overlap(box, { x: lv.x - 0.8, y: lv.y, w: 1.6, h: 1.8 }));
-      if (!hit) continue;
+      if (!CZ.overlapPad(box, { x: lv.x - 0.8, y: lv.y, w: 1.6, h: 1.8 }, 0.3)) continue;
       lv.on = true; lv.handle.rotation.z = -0.9;
       CZ.Audio.sfx.checkpoint(); CZ.Effects.shake(0.4);
       CZ.Comic.pow('CLUNK', [lv.x, lv.y + 2.2, 0], { kind: 'hit', life: 0.6 });
@@ -370,9 +373,15 @@ CZ.Game = class Game {
     if (L.boss && !this.bossStarted && p.cx() > L.boss.x + 3) this.startBoss();
     // exit
     if (L.exit && L.exit.broken && CZ.overlap(box, { x: L.exit.x - 1.4, y: L.exit.y, w: 2.8, h: 4 })) { this.completeLevel(); return; }
+    // scenery: everything in the room is furniture until you hit it fast enough
+    const mo = p.momentum(), reach = { x: box.x - 0.3, y: box.y - 0.3, w: box.w + 0.6, h: box.h + 0.6 };
+    for (const it of L.props) {
+      if (it.broken || !CZ.overlap(reach, it.box)) continue;
+      const tough = it.junk.tough;
+      if (tough > 0 && mo < Math.max(CZ.P.SMASH_JUNK, tough) && !p.pounding && !p.dashing) continue;
+      p.vx *= 1 - L.smashProp(it);
+    }
     // enemies
-    // the toothpick reaches past the wheel, so check it before contact damage
-    if (poke) for (const e of this.enemies) if (!e.dead && CZ.overlap(poke, e.aabb())) { e.kill('dash'); CZ.Effects.shake(0.25); CZ.Comic.pow('POK', [e.cx(), e.cy() + 1, 0], { kind: 'slash', life: 0.4 }); }
     for (const e of this.enemies) {
       if (e.dead || !CZ.overlap(box, e.aabb())) continue;
       if (p.dashing && e.dashKill) { e.kill('dash'); CZ.Effects.shake(0.3); continue; }
@@ -404,11 +413,11 @@ CZ.Game = class Game {
       const A = this.boss ? this.boss.arena : { x: L.boss.x, w: L.boss.w, h: L.boss.h };
       tz = Math.max((A.w / 2 + 2) / (tanH * aspect), (A.h / 2 + 3) / tanH); tx = A.x + A.w / 2; ty = A.h / 2 - 1.5;
     } else {
-      tz = L.data.room ? 16.5 : 15.5; tx = p.cx() + p.facing * 1.5 + p.vx * 0.12; ty = p.cy() + 2.0;
+      tz = L.data.room ? 14 : 14.5; tx = p.cx() + p.facing * 1.5 + p.vx * 0.12; ty = p.cy() + 1.6;
       const hw = tz * tanH * aspect;
       if (L.data.width > hw * 2) tx = CZ.clamp(tx, hw - 2, L.data.width - hw + 2);
       ty = Math.max(ty, -1);
-      if (L.data.room) ty = CZ.clamp(ty, 3.6, L.data.room.top - 5);
+      if (L.data.room) ty = CZ.clamp(ty, 2.4, L.data.room.top - 4);
     }
     const ky = p.vy < -16 ? 9 : 4.5;
     this.camX = CZ.damp(this.camX, tx, 6, dt); this.camY = CZ.damp(this.camY, ty, ky, dt); this.camZ = CZ.damp(this.camZ, tz, 3, dt);

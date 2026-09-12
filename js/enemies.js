@@ -27,7 +27,13 @@ CZ.Enemy = class Enemy {
     if (this.dead) return; this.dead = true;
     CZ.Effects.burst(this.cx(), this.cy(), this.color, 16, { spread: 9, up: 6, life: 0.8, size: 1.3 });
     CZ.Effects.burst(this.cx(), this.cy(), 0xffffff, 6, { spread: 5, up: 4, life: 0.4 });
+    // they come apart into pieces too, so the floor keeps a record of the trip
+    CZ.Effects.smash({ x: this.x, y: this.y, w: this.w, h: this.h, d: 1.1 }, {
+      count: this.small ? 5 : 9, power: 1.15, floor: Math.min(this.y, 0.2),
+      colors: [this.color, 0xffffff, 0xff7a9a],
+    });
     CZ.Audio.sfx[how === 'stomp' ? 'stomp' : 'kill']();
+    if (this.game.hitstop) this.game.hitstop(0.035);
     CZ.Effects.disposeTree(this.mesh);
     this.game.addScore && this.game.addScore(1);
   }

@@ -174,13 +174,16 @@ CZ.Tex = (() => {
 
   const PAL = {
     stone: { base: '#8a5a2b', alt: '#7a4d24', dark: '#4a2c12', light: '#a87040', mortar: '#3a2210' },
+    // The cellar's own stone: cool and purple, so the warm wood, the orange
+    // rind and the yellow cheese all read against it instead of into it.
+    cellar: { base: '#5c4663', alt: '#4a3752', dark: '#2a1d31', light: '#82688c', mortar: '#211729' },
     steel: { base: '#6d7f95', alt: '#5b6c80', dark: '#3b4855', light: '#93a6ba' },
     cardboard: { base: '#b8865a', alt: '#a5754b', dark: '#7d5230', light: '#d3a274' },
     magma: { base: '#4a3a3a', alt: '#5a3028', dark: '#2a1a1a', light: '#ff7a1f' },
     data: { base: '#241f4d', alt: '#39ff88', dark: '#151130', light: '#3ba36b' },
     vent: { base: '#8fa8c0', alt: '#6e88a2', dark: '#4d607a', light: '#b6cbdd' },
     marble: { base: '#efeaff', alt: '#dcd4f5', dark: '#b9aee0', light: '#ffffff' },
-    timber: { base: '#7a4a22', alt: '#8f5a2c', dark: '#4a2a10', light: '#9a6636' },
+    timber: { base: '#a5682e', alt: '#bd7d3a', dark: '#6a3f18', light: '#d29a52' },
     mechBlue: { base: '#3f74c8', alt: '#345fa4', dark: '#1b3568', light: '#8fc0f5' },
     mechRed: { base: '#c8384a', alt: '#a32b3c', dark: '#651320', light: '#ff9aa6' },
     mechGrey: { base: '#8d95a3', alt: '#767e8c', dark: '#41474f', light: '#c8d0dc' },

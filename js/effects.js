@@ -5,6 +5,9 @@ CZ.Effects = (() => {
   const particles = [];
   let shakeAmt = 0, shakeX = 0, shakeY = 0;
   let particleGeo = null, pool = [];
+  // Chunky debris: real lumps that fly, tumble, bounce and settle in a heap.
+  const chunks = [];
+  let chunkGeo = null, chunkPool = [];
 
   function init(s) {
     scene = s;
@@ -13,7 +16,10 @@ CZ.Effects = (() => {
     gradientMap.minFilter = THREE.NearestFilter; gradientMap.magFilter = THREE.NearestFilter;
     gradientMap.needsUpdate = true;
     particleGeo = new THREE.BoxGeometry(0.22, 0.22, 0.22);
+    chunkGeo = new THREE.BoxGeometry(1, 1, 1);
     particles.length = 0; pool = [];
+    for (const c of chunks) scene.remove(c);
+    chunks.length = 0; chunkPool = [];
   }
 
   function toon(color, opts = {}) {
@@ -77,8 +83,65 @@ CZ.Effects = (() => {
       scene.add(p); particles.push(p);
     }
   }
+  // ---- debris ----
+  // Blow an object apart into lumps. They keep their colour, tumble, bounce off
+  // the given floor height and pile up there before fading out.
+  function smash(box, opts = {}) {
+    if (!scene) return;
+    const n = opts.count ?? 10;
+    const colors = opts.colors || [0x8f5a2c];
+    const floor = opts.floor ?? box.y;
+    const cx = box.x + box.w / 2, cy = box.y + box.h / 2;
+    const power = opts.power ?? 1;
+    for (let i = 0; i < n; i++) {
+      let m = chunkPool.pop();
+      if (!m) m = new THREE.Mesh(chunkGeo, new THREE.MeshToonMaterial({ color: 0xffffff }));
+      m.material.color.set(colors[(Math.random() * colors.length) | 0]);
+      m.material.opacity = 1; m.material.transparent = false;
+      // Lumps, not slabs: capped so a big object gives many chunks, not four
+      // pieces the size of the player.
+      const sx = CZ.clamp(box.w / 3.4, 0.16, 0.6) * (0.55 + Math.random() * 0.9);
+      const sy = CZ.clamp(box.h / 3.4, 0.16, 0.6) * (0.55 + Math.random() * 0.9);
+      m.scale.set(sx, sy, CZ.clamp((box.d ?? 1.6) * (0.35 + Math.random() * 0.4), 0.2, 1.1));
+      m.position.set(box.x + Math.random() * box.w, box.y + Math.random() * box.h, (Math.random() - 0.5) * 1.6);
+      m.rotation.set(Math.random() * 3, Math.random() * 3, Math.random() * 3);
+      m.castShadow = true; m.visible = true;
+      const dx = m.position.x - cx, dy = m.position.y - cy;
+      m.userData = {
+        vx: dx * 2.4 * power + (opts.vx || 0) + CZ.rand(-4, 4) * power,
+        vy: Math.abs(dy) * 2.2 * power + CZ.rand(3, 11) * power + (opts.vy || 0),
+        vz: CZ.rand(-2.5, 2.5),
+        rx: CZ.rand(-9, 9), ry: CZ.rand(-9, 9), rz: CZ.rand(-9, 9),
+        life: CZ.rand(2.6, 4.4), floor: floor + sy / 2, rest: false,
+      };
+      scene.add(m); chunks.push(m);
+    }
+  }
+  function stepChunks(dt) {
+    for (let i = chunks.length - 1; i >= 0; i--) {
+      const m = chunks[i], u = m.userData;
+      u.life -= dt;
+      if (u.life <= 0) { scene.remove(m); chunks.splice(i, 1); chunkPool.push(m); continue; }
+      if (u.life < 0.6) { m.material.transparent = true; m.material.opacity = u.life / 0.6; }
+      if (u.rest) continue;
+      u.vy -= 42 * dt;
+      m.position.x += u.vx * dt; m.position.y += u.vy * dt; m.position.z += u.vz * dt;
+      m.rotation.x += u.rx * dt; m.rotation.y += u.ry * dt; m.rotation.z += u.rz * dt;
+      if (m.position.y <= u.floor) {
+        m.position.y = u.floor;
+        u.vy *= -0.32; u.vx *= 0.62; u.vz *= 0.5;
+        u.rx *= 0.4; u.ry *= 0.4; u.rz *= 0.4;
+        if (Math.abs(u.vy) < 2.2) {           // settled: drop it flat and leave it
+          u.rest = true; u.vy = 0;
+          m.rotation.set(0, m.rotation.y, Math.round(m.rotation.z / (Math.PI / 2)) * (Math.PI / 2));
+        }
+      }
+    }
+  }
+
   function shake(a) { shakeAmt = Math.max(shakeAmt, a); }
   function update(dt) {
+    stepChunks(dt);
     for (let i = particles.length - 1; i >= 0; i--) {
       const p = particles[i], u = p.userData;
       u.life -= dt;
@@ -95,7 +158,10 @@ CZ.Effects = (() => {
       shakeAmt *= Math.exp(-dt * 9);
     } else { shakeX = shakeY = 0; shakeAmt = 0; }
   }
-  function clear() { for (const p of particles) scene.remove(p); particles.length = 0; }
+  function clear() {
+    for (const p of particles) scene.remove(p); particles.length = 0;
+    for (const c of chunks) scene.remove(c); chunks.length = 0;
+  }
   // Release the GPU geometry under an object tree. Materials and textures are
   // shared through the caches above, so they are deliberately left alone.
   function disposeTree(obj) {
@@ -105,5 +171,5 @@ CZ.Effects = (() => {
   }
   const getShake = () => ({ x: shakeX, y: shakeY });
 
-  return { init, toon, basic, outline, edges, box, burst, shake, update, clear, disposeTree, getShake };
+  return { init, toon, basic, outline, edges, box, burst, smash, shake, update, clear, disposeTree, getShake };
 })();

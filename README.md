@@ -29,6 +29,16 @@ filling around it. Let go and you launch. Let go inside the bright band near the
 **PERFECT** - a much harder launch and a moment of invulnerability. Hold past the top for too long and it flops,
 leaving you dizzy and slow.
 
+**Everything in the room is breakable.** Wine racks, shelves of cheese, crates, bottles, knife blocks, the lamps
+overhead, whole vats - none of it is scenery, all of it comes apart into chunks that fly, tumble, bounce and pile up
+on the floor and stay there. A counter in the corner keeps the tally. Smash a lamp and that corner of the cellar
+genuinely goes dark.
+
+**You have no bones.** Hold DOWN on the ground and the wheel spreads into a flat slab less than half as tall, and a
+flat slab slides a very long way. Walls that run to the ceiling have a hand's width of daylight under them; ducts run
+over the top of locked gates with the same clearance. Let go under a low roof and you stay flat until there is room
+to pop back up. Most obstacles have two answers: hit it hard enough, or change shape and go round.
+
 **The way out is a door.** Every stage ends at a heavy one. Hit it slowly and it just cracks and shrugs you off.
 Hit it with enough speed and the game stops for a single button press: a ring shrinks toward a target band, and if
 you press inside the band the door blows apart in planks and iron. Miss, and you bounce off and go get more speed.
@@ -44,8 +54,10 @@ You are a wheel. Four things, no tech trees:
 | --- | --- | --- |
 | Roll | LEFT / RIGHT | Builds speed and keeps it, like a wheel should |
 | Jump | SPACE | Hold for height |
-| Spin | SHIFT (hold) | Wind up on the spot, release to launch - time the release |
-| Poke | C | A toothpick pops out to flip levers and prod enemies |
+| Wind up | SHIFT (hold) | Spin on the spot, release to launch - time the release |
+| Squish | DOWN (hold) | Go flat, slide under things a wheel cannot pass |
+
+Levers are not a button either: roll into one and it flips.
 
 Damage is literal: every hit **cuts a wedge out of the wheel**. There is no health bar in the HUD, because you are
 the health bar - look at how much cheese is left.
@@ -76,8 +88,8 @@ Three.js is loaded from cdnjs, so an internet connection is needed the first tim
 | --- | --- |
 | Roll | ← → / A D |
 | Jump (hold for higher) | SPACE / Z / W / ↑ |
-| Spin (hold to wind up) | SHIFT / X |
-| Poke | C / E |
+| Wind up / launch (hold, then release) | SHIFT / X |
+| Squish flat (on the ground) | ↓ / S |
 | Bounce rind (double jump) | Jump again in the air, once you have it |
 | Sticky crust (wall cling) | Hold toward a wall to slide, Jump to kick off |
 | Dead weight (ground pound) | ↓ / S in the air |
@@ -85,16 +97,16 @@ Three.js is loaded from cdnjs, so an internet connection is needed the first tim
 | Hole slip (noclip) | Hold V / Q (meter refills on the ground) |
 | Pause / Mute / Restart at checkpoint | ESC or P / M / R |
 
-Gamepads work too (A jump, B/RB dash, X grapple, Y noclip, D-pad/stick move).
+Gamepads work too (A jump, B/RB wind up, X winch, Y noclip, D-pad/stick move; hold the stick down to squish).
 
 ### Touch (phones and tablets)
 
 On-screen controls appear automatically on touch devices, and the HUD shrinks to fit a phone screen.
 
-- **Floating thumbstick** — press anywhere in the left half of the screen and the stick snaps to your thumb. Flick it
-  down in mid-air to ground pound; hold it up or down while spinning to aim the spin.
-- **Action buttons** on the right: a large JUMP, plus SPIN, POKE and PHASE. Spin and poke are always there - the
-  wheel can do both from the start - and PHASE appears once you have the holes for it.
+- **Floating thumbstick** — press anywhere in the left half of the screen and the stick snaps to your thumb.
+- **Action buttons** on the right: a large JUMP, plus WIND UP and SQUISH. Both are there from the first screen - the
+  wheel can do both without any upgrade. Hold SQUISH on the ground to go flat; tap it in mid-air, once you have the
+  weight for it, to crash dive. WINCH and PHASE appear once you have the parts for them.
 - **Pause** sits in the top-left corner. SKIP in the corner ends the opening.
 - Portrait mode shows a "turn sideways" nudge, but the game is fully playable either way if you dismiss it.
 
@@ -102,16 +114,19 @@ Add the page to your home screen for a fullscreen, browser-chrome-free run.
 
 ## Rolling
 
-Stages are built for a wheel. Ramps carry your speed uphill and fling you off the lip, boost strips fire you down a
-lane, crates exist to be smashed at speed, and levers exist to be poked. Nothing is hidden behind a tech hunt - the
-upgrades sit in machines on the critical path, and rolling into one bolts the part on: spring legs, thruster, grip
-claws, hammer fist, winch arm, phase core.
+Stages are built for a wheel, and built to be wrecked. Ramps carry your speed uphill and fling you off the lip,
+boost strips fire you down a lane, crates exist to be smashed at speed, levers flip when you roll into them, and the
+furniture is there to be gone through rather than around. Nothing is hidden behind a tech hunt - the upgrades sit in
+machines on the critical path, and rolling into one bolts the part on: spring legs, thruster, grip claws, hammer
+fist, winch arm, phase core.
 
 ## Worlds
 
-1. **The Cheese Cellar** — one authored room: wine racks, barrels, a giant cheese press, cobwebs and spiders.
-   Learn to roll, wind up a spin, smash a crate wall, break through stacked barrels at speed, poke a lever, feed
-   yourself into the first machine, and take the cellar door off its hinges.
+1. **The Cheese Cellar** — one authored room, and every stick of furniture in it is destructible: wine racks,
+   barrels, shelves of cheese, bottles, a giant cheese press, cobwebs and spiders. Learn to roll, wind up a spin,
+   smash a nine-crate wall, squish flat and slide under a wall that runs to the ceiling, break through stacked
+   barrels at speed, flip a lever (or skip it entirely by crawling the duct over the gate), feed yourself into the
+   first machine, and take the cellar door off its hinges.
 2. **The Grater Line** — conveyors, graters, moving platforms. Unlock: wax skate.
 3. **The Melting Vats** — molten cheese and shafts. Unlock: sticky crust.
 4. **The Packaging Plant** — presses and cracked floors. Unlock: dead weight. **Boss: RAT KING** (stomp the crown).

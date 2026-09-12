@@ -2,14 +2,15 @@
 // dynamic pieces, and answers collision queries. Three parallax depths plus a
 // foreground layer give every world a background / midground / foreground.
 CZ.Level = class Level {
-  constructor(data, scene) {
-    this.data = data; this.scene = scene;
+  constructor(data, scene, game) {
+    this.data = data; this.scene = scene; this.game = game || null;
     this.theme = data.theme;
     this.group = new THREE.Group(); scene.add(this.group);
     this.solids = []; this.hazards = []; this.bounces = []; this.winds = []; this.hooks = [];
     this.checks = []; this.bugs = []; this.abilities = []; this.signs = []; this.dialogs = [];
     this.enemySpawns = []; this.exit = null; this.boss = null; this.levers = []; this.ramps = []; this.boosts = [];
     this.time = 0; this.windStreaks = []; this.drips = []; this.spinners = []; this.decos = [];
+    this.props = []; this.wrecked = 0;          // scenery you are allowed to ruin
     this.build();
     this.buildScenery();
   }
@@ -80,6 +81,14 @@ CZ.Level = class Level {
     } else if (s.crate) {
       mesh = new THREE.Mesh(new THREE.BoxGeometry(s.w, s.h, 2.6), new THREE.MeshToonMaterial({ map: CZ.Tex.tiled('wood', 'timber', s.w, s.h) }));
       mesh.castShadow = true; E.edges(mesh);
+      // a bright frame and a diagonal brace: a crate should never be mistaken
+      // for a chunk of wall, because you are supposed to want to hit it
+      for (const [w2, h2, y2] of [[s.w + 0.05, 0.22, s.h / 2 - 0.11], [s.w + 0.05, 0.22, -s.h / 2 + 0.11]]) {
+        const band = new THREE.Mesh(new THREE.BoxGeometry(w2, h2, 2.66), this.flat(0xe8c08a));
+        band.position.y = y2; band.castShadow = false; mesh.add(band);
+      }
+      const brace = new THREE.Mesh(new THREE.BoxGeometry(Math.hypot(s.w, s.h) * 0.94, 0.18, 2.68), this.flat(0xe8c08a));
+      brace.rotation.z = Math.atan2(s.h, s.w); brace.castShadow = false; mesh.add(brace);
       s.breakable = true;
     } else if (s.skin === 'drain') {
       mesh = new THREE.Mesh(new THREE.BoxGeometry(s.w, s.h, 4), this.flat(0x2b2229));
@@ -93,13 +102,43 @@ CZ.Level = class Level {
         const und = new THREE.Mesh(new THREE.BoxGeometry(s.w * 0.7, 0.35, 2.2), this.flat(0x2a2a2e));
         und.position.y = -s.h / 2 - 0.15; mesh.add(und);
       } else if (s.h >= 1 && s.w >= 1) {
-        // bright capping strip so the standable surface reads instantly
-        const top = new THREE.Mesh(new THREE.BoxGeometry(s.w + 0.05, 0.3, 4.05), this.flat(th.plat));
+        // Bright capping strip so the standable surface reads instantly. It is
+        // the same stone, tinted up — a flat band of colour across the bottom of
+        // the screen is the fastest way to make a room look like a sticker.
+        const capMat = new THREE.MeshToonMaterial({ map: CZ.Tex.tiled(pal[0], pal[1], s.w, 1), color: th.plat });
+        const top = new THREE.Mesh(new THREE.BoxGeometry(s.w + 0.05, 0.3, 4.05), capMat);
         top.position.y = s.h / 2 - 0.15; top.castShadow = false; mesh.add(top);
         const lipDark = new THREE.Mesh(new THREE.BoxGeometry(s.w + 0.05, 0.12, 4.06), this.flat(th.blockAlt));
         lipDark.position.y = s.h / 2 - 0.36; lipDark.castShadow = false; mesh.add(lipDark);
+        // A long slab of one texture reads as a flat band across the screen, so
+        // the bottom of one gets a shadow line and a skirting board.
+        if (s.w >= 8 && s.h >= 1.6) {
+          const skirt = new THREE.Mesh(new THREE.BoxGeometry(s.w + 0.06, 0.42, 4.08), this.flat(th.blockAlt));
+          skirt.position.y = -s.h / 2 + 0.9; skirt.castShadow = false; mesh.add(skirt);
+          const shade = new THREE.Mesh(new THREE.BoxGeometry(s.w + 0.07, 0.85, 4.09),
+            new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.3 }));
+          shade.position.y = -s.h / 2 + 0.42; mesh.add(shade);
+        }
         if (s.w >= 5 && s.y > 1.5) this.addDrips(mesh, s);
       }
+    }
+    // A wall with a hand's width of daylight under it. Drawn thin, so you can
+    // actually see the gap, and painted with chevrons pointing at it.
+    if (s.slot) {
+      const thin = new THREE.Mesh(new THREE.BoxGeometry(s.w, s.h, 1.3),
+        new THREE.MeshToonMaterial({ map: CZ.Tex.tiled(th.tile[0], th.tile[1], s.w, s.h) }));
+      thin.castShadow = true; thin.receiveShadow = true; E.edges(thin);
+      mesh = thin;
+      const lip = new THREE.Mesh(new THREE.BoxGeometry(s.w + 0.1, 0.34, 1.4), this.flat(0xffd23f));
+      lip.position.y = -s.h / 2 + 0.17; mesh.add(lip);
+      for (let i = 0; i < 2; i++) {
+        const chev = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.22, 1.42), this.flat(0xffd23f));
+        chev.position.set(-0.45 + i * 0.9, -s.h / 2 + 1.0 + i * 0.0, 0);
+        chev.rotation.z = (i ? -1 : 1) * 0.7; mesh.add(chev);
+      }
+      // a dark recess behind the opening so the hole reads as a hole
+      const hole = new THREE.Mesh(new THREE.BoxGeometry(s.w + 0.4, s.y, 0.3), this.flat(0x120a16));
+      hole.position.set(0, -s.h / 2 - s.y / 2, -0.9); mesh.add(hole);
     }
     // anything marked as a crate is breakable, whatever skin it wears
     if (s.crate) s.breakable = true;
@@ -324,10 +363,12 @@ CZ.Level = class Level {
         const bulb = new THREE.Mesh(new THREE.SphereGeometry(0.3, 8, 6), new THREE.MeshBasicMaterial({ color: 0xffe6a8 }));
         bulb.position.y = -0.8; g.add(bulb);
         const light = new THREE.PointLight(0xffc266, 5.2, 30); light.position.y = -1.4; g.add(light);
-        // a soft cone of light under the shade, so the lamp reads at a distance
-        const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.9, 4.6, 11, 10, 1, true),
-          new THREE.MeshBasicMaterial({ color: 0xffd9a0, transparent: true, opacity: 0.055, side: THREE.DoubleSide, depthWrite: false }));
-        shaft.position.y = -6.4; g.add(shaft);
+        // a warm halo right at the bulb - the PointLight does the rest, and a
+        // painted-on cone of "light" only ever looks like a painted-on cone
+        const halo = new THREE.Mesh(new THREE.SphereGeometry(0.85, 10, 8),
+          new THREE.MeshBasicMaterial({ color: 0xffc266, transparent: true, opacity: 0.16,
+            depthWrite: false, blending: THREE.AdditiveBlending }));
+        halo.position.y = -0.8; g.add(halo);
         it.bulb = bulb; it.lamp = light;
         break;
       }
@@ -436,6 +477,60 @@ CZ.Level = class Level {
     g.position.set(it.x, g.position.y + it.y, it.z !== undefined ? it.z : (DEPTH[it.kind] ?? -2));
     it.mesh = g; this.group.add(g);
     this.decos.push(it);
+    this.registerProp(it);
+  }
+
+  // ---------- things you are allowed to ruin ----------
+  // Almost every piece of dressing in the room is destructible. `tough` is the
+  // momentum it takes; `box` is where it stands relative to the prop's anchor.
+  static get JUNK() {
+    return {
+      bottle:      { tough: 0, box: [-0.5, 0, 1.0, 2.0],  n: 9,  d: 0.8, word: ['TINK', 'SHNK', 'GLASS!'],
+        colors: [0x2f5a34, 0x4a7a50, 0xe8dcc0, 0x9fd4b0] },
+      web:         { tough: 0, box: [-1.6, -1.6, 3.2, 3.2], n: 7, d: 0.4, word: ['PFFT', 'EW'],
+        colors: [0xe8e2d8, 0xc8c2b8, 0x1a1016] },
+      cheesewheel: { tough: 3, box: [-1.3, 0, 2.6, 1.6],  n: 14, d: 1.2, word: ['SPLORT', 'CANNIBAL!', 'GLORP'],
+        colors: [0xffcc33, 0xe8892a, 0xffe98a, 0xd98a2a] },
+      knifeblock:  { tough: 4, box: [-0.8, 0, 1.6, 2.6],  n: 12, d: 1.0, word: ['CLATTER', 'YIKES'],
+        colors: [0x8a5a2b, 0x6a4522, 0xc8d0dc, 0x2b2229] },
+      lamp:        { tough: 4, box: [-1.1, -1.6, 2.2, 2.6], n: 10, d: 1.0, word: ['POP!', 'DARK NOW', 'TINKLE'],
+        colors: [0x4a3a2a, 0xffe6a8, 0xf6f6f8, 0x3b3038] },
+      crate:       { tough: 4, box: [-1.2, 0, 2.4, 0],    n: 15, d: 1.6, word: ['KRAK', 'SPLINTERS', 'BONK'],
+        colors: [0xd9a066, 0xb8834a, 0x8f5a2c, 0xe8c08a] },
+      rack:        { tough: 7, box: [-2.4, 0, 4.8, 5.8],  n: 22, d: 1.6, word: ['CRUNCH', 'WHUMP', 'VINTAGE'],
+        colors: [0x8a5a2b, 0x6a4522, 0x6b2436, 0x3f5a2a, 0xd9a066] },
+      shelf:       { tough: 7, box: [-2.3, 0, 4.6, 5.8],  n: 24, d: 1.6, word: ['CRASH', 'AVALANCHE', 'OOPS'],
+        colors: [0x8a5a2b, 0x6a4522, 0xffcc33, 0xe8892a] },
+      vat:         { tough: 14, box: [-3.2, 0, 6.4, 6.2], n: 30, d: 2.6, word: ['KABOOM', 'MILK EVERYWHERE'],
+        colors: [0xa06a3a, 0xc98a4a, 0xfff3d0, 0x7a5a34] },
+    };
+  }
+  registerProp(it) {
+    const j = CZ.Level.JUNK[it.kind];
+    if (!j || it.solidProp) return;
+    const [dx, dy, w, h] = j.box;
+    it.junk = j; it.broken = false;
+    it.box = { x: it.x + dx, y: it.y + dy, w, h: h || (2.2 * (it.stack || 1)) };
+    this.props.push(it);
+  }
+  // Blow one piece of scenery apart. Returns how much speed it should cost you.
+  smashProp(it) {
+    if (it.broken) return 0;
+    const j = it.junk;
+    it.broken = true; it.mesh.visible = false;
+    if (it.lamp) it.lamp.intensity = 0;          // the room genuinely gets darker
+    this.wrecked++;
+    CZ.Effects.smash({ x: it.box.x, y: it.box.y, w: it.box.w, h: it.box.h, d: j.d }, {
+      count: j.n, colors: j.colors, power: 0.9 + j.tough * 0.03,
+      floor: Math.min(it.y, it.box.y), vx: this.game && this.game.player ? this.game.player.vx * 0.3 : 0,
+    });
+    CZ.Effects.burst(it.box.x + it.box.w / 2, it.box.y + it.box.h / 2, j.colors[0], 8,
+      { spread: 7, up: 5, life: 0.5, size: 0.9 });
+    CZ.Audio.sfx.crack();
+    CZ.Effects.shake(0.3 + j.tough * 0.045);
+    if (this.game) { this.game.hitstop(0.025 + j.tough * 0.004); this.game.scored(this.wrecked); }
+    CZ.Comic.pow(CZ.pick(j.word), [it.box.x + it.box.w / 2, it.box.y + it.box.h + 0.7, 0], { kind: 'hit', life: 0.5 });
+    return j.tough * 0.01;
   }
 
   // A wedge you roll up or down. Rolling downhill builds real speed.
@@ -450,13 +545,15 @@ CZ.Level = class Level {
     geo.translate(0, 0, -1.8);
     // group 0 is the flat faces we look at, group 1 is the surface you roll on
     const face = new THREE.MeshToonMaterial({ map: CZ.Tex.tiled(this.theme.tile[0], this.theme.tile[1], it.w, it.h) });
-    const surface = new THREE.MeshToonMaterial({ color: this.theme.plat });
+    const surface = new THREE.MeshToonMaterial({
+      map: CZ.Tex.tiled(this.theme.tile[0], this.theme.tile[1], Math.hypot(it.w, it.h), 1), color: this.theme.plat });
     const mesh = new THREE.Mesh(geo, [face, surface]);
     mesh.castShadow = true; mesh.receiveShadow = true; CZ.Effects.edges(mesh);
     mesh.position.set(it.x, it.y + 0.02, 0);
-    // a bright lip along the slope, sitting just proud of the surface
-    const lip = new THREE.Mesh(new THREE.BoxGeometry(Math.hypot(it.w, it.h), 0.18, 3.68), this.flat(this.theme.accent));
-    lip.position.set(it.x + it.w / 2, it.y + it.h / 2 + 0.02, 0);
+    // A bright nosing along the front edge of the slope. Kept shallow: a lip as
+    // deep as the ramp reads as a slab of paint over the whole thing.
+    const lip = new THREE.Mesh(new THREE.BoxGeometry(Math.hypot(it.w, it.h), 0.2, 0.6), this.flat(this.theme.accent));
+    lip.position.set(it.x + it.w / 2, it.y + it.h / 2 + 0.04, 1.55);
     lip.rotation.z = Math.atan2(it.h * it.dir, it.w);
     this.group.add(mesh, lip);
     it.mesh = mesh; this.ramps.push(it);
@@ -464,19 +561,21 @@ CZ.Level = class Level {
   // A pad that flings a wheel along the ground.
   addBoost(it) {
     const g = new THREE.Group();
-    const pad = new THREE.Mesh(new THREE.BoxGeometry(it.w, 0.4, 3.2), this.flat(0x39ff88));
-    pad.position.y = 0.2; g.add(pad); CZ.Effects.edges(pad);
+    // Set back behind the play plane: a pad as deep as the floor swallows the
+    // bottom half of a flattened wheel rolling over it.
+    const pad = new THREE.Mesh(new THREE.BoxGeometry(it.w, 0.4, 2.2), this.flat(0x39ff88));
+    pad.position.set(0, 0.2, -1.1); g.add(pad); CZ.Effects.edges(pad);
     it.arrows = [];
     for (let i = 0; i < Math.max(2, Math.floor(it.w / 1.6)); i++) {
       const a = new THREE.Mesh(new THREE.ConeGeometry(0.32, 0.7, 3), this.flat(0x0f3d22));
-      a.rotation.z = -Math.PI / 2 * Math.sign(it.speed); a.position.set(-it.w / 2 + 0.9 + i * 1.6, 0.45, 1.2);
+      a.rotation.z = -Math.PI / 2 * Math.sign(it.speed); a.position.set(-it.w / 2 + 0.9 + i * 1.6, 0.45, -0.4);
       g.add(a); it.arrows.push(a);
     }
     g.position.set(it.x + it.w / 2, it.y, 0);
     it.mesh = g; this.group.add(g); this.boosts.push(it);
   }
 
-  // A wall lever: poke it (or spin into it) to open the gate it is wired to.
+  // A wall lever: roll into it to open the gate it is wired to.
   addLever(it) {
     const g = new THREE.Group();
     const plate = new THREE.Mesh(new THREE.BoxGeometry(0.9, 1.4, 0.4), new THREE.MeshToonMaterial({ map: CZ.Tex.tiled('mech', 'mechGrey', 1, 1.4, 1) }));
@@ -508,7 +607,7 @@ CZ.Level = class Level {
     const th = this.theme, W = this.data.width, top = this.data.room.top;
     this.buildMotes(W, top);
     const back = new THREE.Mesh(new THREE.PlaneGeometry(W + 40, top + 26),
-      new THREE.MeshToonMaterial({ map: CZ.Tex.tiled(th.tile[0], th.tile[1], (W + 40) / 2, (top + 26) / 2, 4), color: 0x6f5c46 }));
+      new THREE.MeshToonMaterial({ map: CZ.Tex.tiled(th.tile[0], th.tile[1], (W + 40) / 2, (top + 26) / 2, 4), color: 0xa08ca8 }));
     back.position.set(W / 2, top / 2 - 4, -7); back.receiveShadow = true; this.bgGroup.add(back);
     // ceiling with beams
     const ceil = new THREE.Mesh(new THREE.BoxGeometry(W + 40, 2.4, 14), new THREE.MeshToonMaterial({ map: CZ.Tex.tiled('wood', 'timber', (W + 40) / 2, 1), color: 0x8a7a66 }));
@@ -566,7 +665,10 @@ CZ.Level = class Level {
 
     // Far wall so worlds feel enclosed rather than floating in void.
     if (th.bg !== 'heaven') {
-      const wall = new THREE.Mesh(new THREE.PlaneGeometry(W + 120, 100), new THREE.MeshToonMaterial({ map: CZ.Tex.tiled(th.tile[0], th.tile[1], W + 120, 100, 6), color: 0x8a8a8a }));
+      // Tinted toward the world's own sky and pulled well down in value, so the
+      // things you can actually stand on are the brightest thing on screen.
+      const far = new THREE.Color(th.sky[0]).lerp(new THREE.Color(0xffffff), 0.42);
+      const wall = new THREE.Mesh(new THREE.PlaneGeometry(W + 120, 100), new THREE.MeshToonMaterial({ map: CZ.Tex.tiled(th.tile[0], th.tile[1], W + 120, 100, 6), color: far }));
       wall.position.set(W / 2, 22, -34); this.bgGroup.add(wall);
     }
     if (th.bg === 'digital') {
@@ -576,8 +678,8 @@ CZ.Level = class Level {
 
     // Midground / background props at two depths, plus a near foreground layer.
     for (let layer = 0; layer < 3; layer++) {
-      const z = [-9, -17, -28][layer], step = [24, 16, 12][layer], sc = [0.85, 1.3, 2.0][layer];
-      const shade = [0.82, 0.6, 0.42][layer];
+      const z = [-13, -21, -30][layer], step = [24, 16, 12][layer], sc = [0.72, 1.15, 1.85][layer];
+      const shade = [0.62, 0.42, 0.26][layer];
       for (let x = -12; x < W + 12; x += step * rnd(0.7, 1.3)) {
         const p = this.sceneryProp(shade);
         p.scale.setScalar(sc);
@@ -586,7 +688,9 @@ CZ.Level = class Level {
         this.bgGroup.add(p);
       }
     }
-    for (let x = rnd(14, 46); x < W; x += rnd(38, 62)) {
+    // Sparse: a framing column every so often reads as depth, one every screen
+    // reads as a fence you are playing behind.
+    for (let x = rnd(20, 60); x < W; x += rnd(62, 105)) {
       const p = this.foregroundProp();
       p.position.set(x, rnd(-3, 4), 4.0);
       p.traverse(o => { if (o.isMesh) { o.castShadow = false; o.receiveShadow = false; } });
@@ -594,10 +698,13 @@ CZ.Level = class Level {
     }
   }
 
-  // A silhouette-ish prop for the parallax layers; `shade` darkens it with depth.
+  // A silhouette-ish prop for the parallax layers. `shade` is how present it is:
+  // darkened, and faded toward the world's fog, so distance actually reads as
+  // distance instead of as a pale shape floating behind the level.
   sceneryProp(shade) {
     const th = this.theme, rnd = CZ.rand;
-    const tint = c => new THREE.Color(c).multiplyScalar(shade).getHex();
+    const haze = new THREE.Color(th.fog).multiplyScalar(0.72);
+    const tint = c => new THREE.Color(c).multiplyScalar(shade).lerp(haze, 1 - shade).getHex();
     const mat = (pattern, pal, w, h, c) => new THREE.MeshToonMaterial({ map: CZ.Tex.tiled(pattern, pal, w, h), color: tint(c || 0xffffff) });
     const g = new THREE.Group();
     switch (th.bg) {
@@ -661,8 +768,8 @@ CZ.Level = class Level {
   // Near-camera silhouettes that sweep past to sell the depth.
   foregroundProp() {
     const th = this.theme, rnd = CZ.rand, g = new THREE.Group();
-    const dark = c => new THREE.Color(c).multiplyScalar(0.35).getHex();
-    const h = rnd(14, 26), w = rnd(1.1, 1.9);
+    const dark = c => new THREE.Color(c).multiplyScalar(0.42).getHex();
+    const h = rnd(14, 26), w = rnd(0.9, 1.4);
     if (th.bg === 'heaven') {
       for (let i = 0; i < 4; i++) { const c = new THREE.Mesh(new THREE.BoxGeometry(rnd(3, 5), rnd(1.6, 2.6), 2), new THREE.MeshToonMaterial({ map: CZ.Tex.get('cloud', 'marble'), color: dark(0xffffff), transparent: true, opacity: 0.9 })); c.position.set(rnd(-3, 3), rnd(-4, 4), rnd(-1, 1)); g.add(c); }
       return g;
@@ -756,6 +863,7 @@ CZ.Level = class Level {
       if (d.m.position.y > d.top) d.m.position.y = -2;
     }
     for (const d of this.decos) {
+      if (d.broken) continue;
       if (d.bulb) { const f = 0.9 + Math.sin(t * 7 + d.x) * 0.06 + (Math.random() < 0.02 ? -0.3 : 0); d.lamp.intensity = 3.4 * f; d.bulb.scale.setScalar(f); d.mesh.rotation.z = Math.sin(t * 0.7 + d.x) * 0.03; }
       if (d.spider) { d.spider.position.y = -1.0 + Math.sin(t * 1.4 + d.x) * 0.35; }
       if (d.wheel) { d.wheel.rotation.z += dt * 0.7; for (const sp of d.spokes) sp.rotation.z += dt * 0.7; }
@@ -789,18 +897,29 @@ CZ.Level = class Level {
       if (o === s || o.broken || !o.breakable) continue;
       if (o.x < s.x + s.w && o.x + o.w > s.x && Math.abs(o.y - (s.y + s.h)) < 0.35) this.breakCrate(o);
     }
-    CZ.Effects.burst(s.x + s.w / 2, s.y + s.h / 2, 0x8f5a2c, 20, { spread: 9, up: 6, life: 0.9, size: 1.3 });
-    CZ.Audio.sfx.crack(); CZ.Effects.shake(0.4);
-    CZ.Comic.pow('CRUNCH', [s.x + s.w / 2, s.y + s.h + 0.8, 0], { kind: 'hit', life: 0.5 });
+    const heavy = !!s.hard;
+    CZ.Effects.smash({ x: s.x, y: s.y, w: s.w, h: s.h, d: 2.4 }, {
+      count: heavy ? 16 : 11, power: heavy ? 1.25 : 1,
+      colors: heavy ? [0x7a4a22, 0x8f5a2c, 0x5a3a18, 0x6a6f7a] : [0xd9a066, 0xb8834a, 0x8f5a2c, 0xe8c08a],
+      floor: Math.min(s.y, 0.2), vx: (this.game && this.game.player ? this.game.player.vx * 0.25 : 0),
+    });
+    CZ.Effects.burst(s.x + s.w / 2, s.y + s.h / 2, 0xe8c08a, 10, { spread: 8, up: 5, life: 0.5, size: 0.8 });
+    CZ.Audio.sfx.crack(); CZ.Effects.shake(heavy ? 0.9 : 0.5);
+    if (this.game) this.game.hitstop(heavy ? 0.07 : 0.04);
+    CZ.Comic.pow(CZ.pick(heavy ? ['KABOOM', 'WHUMP', 'SPLINTERS'] : ['CRUNCH', 'BONK', 'KRAK', 'SMASH']),
+      [s.x + s.w / 2, s.y + s.h + 0.8, 0], { kind: 'hit', life: 0.5 });
   }
   // The door comes apart in planks and iron.
   breakDoor() {
     const d = this.exit; if (!d || d.broken) return;
     d.broken = true; if (d.bar) d.bar.broken = true;
     d.mesh.visible = false;
-    CZ.Effects.burst(d.x, 3.6, 0x8f5a2c, 44, { spread: 16, up: 11, life: 1.3, size: 1.9 });
-    CZ.Effects.burst(d.x, 3.6, 0xc8d0dc, 16, { spread: 13, up: 9, life: 1.1, size: 1.1 });
+    CZ.Effects.smash({ x: d.x - 2, y: d.y, w: 4, h: 7.4, d: 1.2 }, {
+      count: 26, power: 1.5, colors: [0xb08a5a, 0x8a5a2b, 0x6a4522, 0x6a6f7a, 0xc8d0dc], floor: d.y,
+    });
+    CZ.Effects.burst(d.x, 3.6, 0xffe6a8, 26, { spread: 15, up: 10, life: 1.1, size: 1.4 });
     CZ.Audio.sfx.bossDie(); CZ.Effects.shake(1.8);
+    if (this.game) this.game.hitstop(0.12);
     CZ.Comic.pow('BOOM', [d.x, 4.4, 0], { kind: 'hit', life: 0.9 });
   }
   // A hit that was not fast enough: it shudders and cracks.
@@ -813,8 +932,11 @@ CZ.Level = class Level {
   }
   breakCracked(s) {
     if (s.broken) return; s.broken = true; s.mesh.visible = false;
-    CZ.Effects.burst(s.x + s.w / 2, s.y + s.h / 2, 0x7a5f3a, 22, { spread: 9, up: 6, life: 1, size: 1.6 });
-    CZ.Audio.sfx.crack(); CZ.Effects.shake(0.5);
+    CZ.Effects.smash({ x: s.x, y: s.y, w: s.w, h: s.h, d: 3 }, {
+      count: 14, colors: [0x7a5f3a, 0x5f4828, 0x8d7048], floor: s.y - 0.4,
+    });
+    CZ.Audio.sfx.crack(); CZ.Effects.shake(0.7);
+    if (this.game) this.game.hitstop(0.05);
   }
 
   setSky(camX, camY) {
