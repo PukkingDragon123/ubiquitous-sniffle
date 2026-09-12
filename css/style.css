@@ -176,11 +176,10 @@ button:disabled{filter:grayscale(.8) brightness(.65) drop-shadow(0 3px 0 rgba(0,
 /* ── the main menu ───────────────────────────────────────────────────
    Not a panel: the title owns the whole screen, over a dark cellar wall, with
    the game's own frames doing the furniture. */
+/* Transparent: the cellar behind it is a real rendered scene, so the menu only
+   darkens it toward the edges to keep the type readable. */
 #title{position:fixed;inset:0;z-index:50;display:grid;place-items:center;padding:16px;
-  background-color:#150d12;image-rendering:pixelated;
-  background-image:
-    repeating-linear-gradient(0deg, rgba(0,0,0,.34) 0 2px, transparent 2px 6px),
-    radial-gradient(ellipse at 50% 34%, #43284a 0%, #2a1a2e 38%, #140c12 78%)}
+  background-image:radial-gradient(ellipse at 50% 44%, rgba(10,6,10,.14) 0%, rgba(10,6,10,.42) 56%, rgba(8,4,8,.74) 100%)}
 #title-inner{display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center;
   max-height:100%;overflow:auto}
 #title-wheel{width:clamp(56px,9vw,104px);height:clamp(56px,9vw,104px);
@@ -250,6 +249,9 @@ button:disabled{filter:grayscale(.8) brightness(.65) drop-shadow(0 3px 0 rgba(0,
   background:
     repeating-linear-gradient(0deg, rgba(0,0,0,.16) 0 1px, transparent 1px 3px),
     radial-gradient(ellipse at 50% 48%, transparent 46%, rgba(10,6,4,.55) 100%)}
+/* the cheese wipe: a sheet of molten cheese poured over the whole screen */
+#wipe{position:fixed;inset:0;z-index:58;pointer-events:none}
+#wipe canvas{width:100%;height:100%;display:block;image-rendering:pixelated}
 #flash{position:fixed;inset:0;pointer-events:none;background:#fff;opacity:0;transition:opacity .3s;z-index:59}
 /* the toast hangs off the top of the screen as an iron-capped plank */
 #toast{position:fixed;top:0;bottom:auto;left:50%;transform:translateX(-50%);z-index:55;
@@ -465,17 +467,6 @@ html.touch .mobile-only{display:block}
 .bubble.shout{font-size:clamp(29px,3.4vw,48px)}
 .bubble.small{font-size:clamp(26px,2.97vw,43px);text-transform:lowercase}
 
-/* Impact words are the one place the arcade face gets to shout. A fat outline
-   would fill in a bitmap font's counters, so the weight comes from three hard
-   offset copies underneath it instead. */
-.pow{position:absolute;transform:translate(-50%,-50%);font-weight:400;
-  font-family:var(--graffiti);font-size:clamp(15px,1.85vw,26px);line-height:1.5;color:var(--cheese);
-  text-shadow:3px 0 0 var(--ink), -3px 0 0 var(--ink), 0 3px 0 var(--ink), 0 -3px 0 var(--ink),
-    6px 6px 0 var(--wine);white-space:nowrap}
-.pow.slash{color:#fff;text-shadow:3px 0 0 var(--ink), -3px 0 0 var(--ink), 0 3px 0 var(--ink), 0 -3px 0 var(--ink), 7px 7px 0 #2b6fd8}
-.pow.glitch{color:var(--glitch);text-shadow:3px 0 0 var(--ink), -3px 0 0 var(--ink), 0 3px 0 var(--ink), 0 -3px 0 var(--ink), 7px 7px 0 var(--ink);animation:powGlitch .1s steps(2) infinite}
-@keyframes powGlitch{0%{transform:translate(-50%,-50%) translateX(-4px)}100%{transform:translate(-50%,-50%) translateX(5px)}}
-
 #comic.speed::before{content:'';position:absolute;inset:-10%;pointer-events:none;
   background:repeating-conic-gradient(from 0deg at 50% 50%, rgba(20,13,7,.5) 0deg 1.1deg, transparent 1.1deg 4deg);
   -webkit-mask-image:radial-gradient(circle at 50% 50%, transparent 26%, #000 62%);
@@ -496,5 +487,4 @@ html.touch .mobile-only{display:block}
 @media (max-width:900px), (max-height:620px){
   .bubble{font-size:21px;max-width:46vw}
   .bubble.shout{font-size:23px}
-  .pow{font-size:clamp(13px,3.2vw,21px)}
 }

@@ -288,7 +288,7 @@ CZ.Cinematic = class Cinematic {
         this.once('land', () => {
           this.shake = 0.5; this.flashT = 0.12; CZ.Audio.sfx.poundLand();
           this.puff(h.position.x, -5.4, 0, 0xffd23f, 18, 6, 5);
-          CZ.Comic.pow('THUD', [h.position.x, -2.6, 0], { kind: 'hit', life: 0.7 });
+          this.puff(h.position.x, -2.6, 0, 0xe8d5b0, 16, 7, 5);
         });
         this.vy = 0;
         h.rotation.z -= 3 * dt;

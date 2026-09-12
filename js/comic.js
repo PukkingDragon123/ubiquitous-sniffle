@@ -1,8 +1,12 @@
-// Comic layer: speech balloons that track a point in the 3D world, impact
-// bursts, speed lines and halftone. This replaces the old dialogue box entirely.
+// Comic layer: speech balloons that track a point in the 3D world, speed lines
+// and halftone. This replaces the old dialogue box entirely.
+//
+// There are no impact words any more. POW / CRUNCH / SMASH read as a comic
+// panel pasted over the game rather than as part of it; every one of them is
+// now a ring, a shower of stars or a gout of cheese in the world itself.
 CZ.Comic = (() => {
   const $ = id => document.getElementById(id);
-  let layer = null, bubbles = [], bursts = [], camera = null;
+  let layer = null, bubbles = [], camera = null;
   const v = { x: 0, y: 0, z: 0 };
 
   function init() { layer = $('comic'); }
@@ -163,25 +167,6 @@ CZ.Comic = (() => {
   }
   function clearBubbles() { for (const b of bubbles) b.el.remove(); bubbles = []; }
 
-  // A big comic impact word at a world point.
-  function pow(text, anchor, opts = {}) {
-    if (!layer) init();
-    const el = document.createElement('div');
-    el.className = `pow ${opts.kind || 'hit'}`;
-    el.textContent = text;
-    layer.appendChild(el);
-    // never more than two impact words at once, and never stacked exactly
-    while (bursts.length >= 2) { const old = bursts.shift(); old.el.remove(); }
-    // push each word well clear of the last one, so two hits never stack
-    const side = bursts.length ? -Math.sign(bursts[bursts.length - 1].off[0] || 1) : (Math.random() < 0.5 ? -1 : 1);
-    const jitter = [side * (70 + Math.random() * 90), (Math.random() - 0.5) * 120];
-    const off = opts.off || [0, 0];
-    const b = { el, anchor, life: opts.life ?? 0.75, t: 0, off: [off[0] + jitter[0], off[1] + jitter[1]], spin: (Math.random() - 0.5) * 16 };
-    bursts.push(b);
-    place(b);
-    return b;
-  }
-
   function project(anchor) {
     const a = typeof anchor === 'function' ? anchor() : anchor;
     if (a.length === 2) return { x: a[0] * innerWidth, y: a[1] * innerHeight, ok: true };
@@ -221,20 +206,13 @@ CZ.Comic = (() => {
     layer.appendChild(el);
     setTimeout(() => el.remove(), 320);
   }
-  function show(on) { if (!layer) init(); layer.classList.toggle('hidden', !on); if (!on) { clearBubbles(); for (const b of bursts) b.el.remove(); bursts = []; } }
+  function show(on) { if (!layer) init(); layer.classList.toggle('hidden', !on); if (!on) clearBubbles(); }
 
   function update(dt) {
     for (let i = bubbles.length - 1; i >= 0; i--) {
       const b = bubbles[i]; b.t += dt; place(b);
       if (b.t > b.life) { b.el.classList.add('gone'); if (b.t > b.life + 0.25) { b.el.remove(); bubbles.splice(i, 1); } }
     }
-    for (let i = bursts.length - 1; i >= 0; i--) {
-      const b = bursts[i]; b.t += dt; place(b);
-      const k = b.t / b.life;
-      b.el.style.transform = `translate(-50%,-50%) scale(${1 + k * 0.5}) rotate(${b.spin * (1 - k)}deg)`;
-      b.el.style.opacity = k > 0.7 ? String(1 - (k - 0.7) / 0.3) : '1';
-      if (b.t > b.life) { b.el.remove(); bursts.splice(i, 1); }
-    }
   }
-  return { init, setCamera, bubble, pow, clearBubbles, speedLines, halftone, shakeFrame, flash, show, update };
+  return { init, setCamera, bubble, clearBubbles, speedLines, halftone, shakeFrame, flash, show, update };
 })();

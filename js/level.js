@@ -544,7 +544,12 @@ CZ.Level = class Level {
     CZ.Audio.sfx.crack();
     CZ.Effects.shake(0.3 + j.tough * 0.045);
     if (this.game) { this.game.hitstop(0.025 + j.tough * 0.004); this.game.scored(this.wrecked); }
-    CZ.Comic.pow(CZ.pick(j.word), [it.box.x + it.box.w / 2, it.box.y + it.box.h + 0.7, 0], { kind: 'hit', life: 0.5 });
+    const px0 = it.box.x + it.box.w / 2, py0 = it.box.y + it.box.h / 2;
+    CZ.Effects.pop(px0, py0, { color: j.colors[0], to: 1.6 + j.tough * 0.1, life: 0.3 });
+    CZ.Effects.stars(px0, py0, 3 + Math.round(j.tough / 3), { colors: [j.colors[0], 0xfff3c0], spread: 6 });
+    if (it.kind === 'cheesewheel' || it.kind === 'shelf') {
+      CZ.Effects.splat(px0, py0, 10, { spread: 8, up: 5, size: 0.28 });   // it was cheese all along
+    }
     return j.tough * 0.01;
   }
 
@@ -935,8 +940,10 @@ CZ.Level = class Level {
     CZ.Effects.burst(s.x + s.w / 2, s.y + s.h / 2, 0xe8c08a, 10, { spread: 8, up: 5, life: 0.5, size: 0.8 });
     CZ.Audio.sfx.crack(); CZ.Effects.shake(heavy ? 0.9 : 0.5);
     if (this.game) this.game.hitstop(heavy ? 0.07 : 0.04);
-    CZ.Comic.pow(CZ.pick(heavy ? ['KABOOM', 'WHUMP', 'SPLINTERS'] : ['CRUNCH', 'BONK', 'KRAK', 'SMASH']),
-      [s.x + s.w / 2, s.y + s.h + 0.8, 0], { kind: 'hit', life: 0.5 });
+    const cx0 = s.x + s.w / 2, cy0 = s.y + s.h / 2;
+    CZ.Effects.pop(cx0, cy0, { color: 0xfff3c0, to: heavy ? 3.4 : 2.4, life: heavy ? 0.4 : 0.3, rings: heavy ? 2 : 1 });
+    CZ.Effects.stars(cx0, cy0, heavy ? 8 : 5, { spread: heavy ? 10 : 7 });
+    CZ.Effects.splat(cx0, cy0, heavy ? 7 : 4, { spread: heavy ? 9 : 6, up: 4, size: 0.22 });
   }
   // The door comes apart in planks and iron.
   breakDoor() {
@@ -952,7 +959,8 @@ CZ.Level = class Level {
     CZ.Effects.burst(d.x, 3.6, 0xffe6a8, 26, { spread: 15, up: 10, life: 1.1, size: 1.4 });
     CZ.Audio.sfx.bossDie(); CZ.Effects.shake(1.8);
     if (this.game) this.game.hitstop(0.12);
-    CZ.Comic.pow('BOOM', [d.x, 4.4, 0], { kind: 'hit', life: 0.9 });
+    CZ.Effects.pop(d.x, 3.6, { color: 0xffffff, to: 7, life: 0.55, rings: 3 });
+    CZ.Effects.stars(d.x, 3.6, 14, { spread: 15, up: 4, size: 0.7, life: 1 });
   }
   // A hit that was not fast enough: it shudders and cracks.
   dentDoor() {

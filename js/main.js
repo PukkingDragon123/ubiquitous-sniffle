@@ -85,7 +85,7 @@ CZ.Game = class Game {
     $('btn-play').onclick = () => {
       // straight back into the furthest world you have reached
       const i = CZ.clamp(this.save.level | 0, 0, CZ.LEVELS.length - 1);
-      U.show('title', false); this.startLevel(i, false);
+      this.wipeTo(() => { U.show('title', false); this.startLevel(i, false); });
     };
     $('btn-worlds').onclick = () => { U.show('title', false); this.showWorlds(); };
     $('btn-controls').onclick = () => { U.show('title', false); U.show('controls', true); };
@@ -110,10 +110,10 @@ CZ.Game = class Game {
       else this.showMenu();
     });
     $('btn-resume').onclick = () => this.setPaused(false);
-    $('btn-restart').onclick = () => { this.setPaused(false); this.startLevel(this.levelIndex, false); };
-    $('btn-quit').onclick = () => { this.setPaused(false); this.showMenu(); };
-    $('btn-next').onclick = () => this.nextLevel();
-    $('btn-ending-title').onclick = () => this.showMenu();
+    $('btn-restart').onclick = () => { this.setPaused(false); this.wipeTo(() => this.startLevel(this.levelIndex, false)); };
+    $('btn-quit').onclick = () => { this.setPaused(false); this.wipeTo(() => this.showMenu()); };
+    $('btn-next').onclick = () => this.wipeTo(() => this.nextLevel());
+    $('btn-ending-title').onclick = () => this.wipeTo(() => this.showMenu());
     // during the door QTE, a tap anywhere on the overlay counts as the press
     $('qte').addEventListener('pointerdown', e => {
       if (this.state !== 'qte') return;
@@ -163,13 +163,16 @@ CZ.Game = class Game {
     U.sign(null); CZ.Touch.setMode('play'); CZ.Touch.setVisible(false);
     U.$('btn-play').textContent = this.save.level > 0 ? 'CONTINUE' : 'PLAY';
     U.show('title', true);
+    // the menu is a place, not a colour: a shelf in the cellar with you on it
+    if (!this.menuScene) this.menuScene = new CZ.MenuScene();
+    this.menuScene.camera.aspect = this.camera.aspect; this.menuScene.camera.updateProjectionMatrix();
     this.state = 'menu';
     CZ.Audio.playMusic('factory');
   }
   // The world picker, one step in from the menu.
   showWorlds() {
     const U = CZ.UI;
-    U.levelList(CZ.LEVELS, this.save, i => { U.show('levelselect', false); this.startLevel(i, false); });
+    U.levelList(CZ.LEVELS, this.save, i => this.wipeTo(() => { U.show('levelselect', false); this.startLevel(i, false); }));
     U.show('levelselect', true);
   }
 
@@ -196,11 +199,15 @@ CZ.Game = class Game {
   endIntro() {
     const U = CZ.UI;
     if (this._skipTap && this._skipBtn) { this._skipBtn.removeEventListener('pointerdown', this._skipTap); this._skipTap = null; }
-    U.cineShow(false); U.cineFx(0, 0);
-    if (this.cine) { this.cine.dispose(); this.cine = null; }
-    CZ.Touch.setMode('play');
-    this.save.sawIntro = true; CZ.writeSave(this.save);
-    this.startLevel(0, true);
+    // The cutscene keeps playing under the cheese and is only torn down once
+    // the screen is covered, so nothing is ever seen half-swapped.
+    this.wipeTo(() => {
+      U.cineShow(false); U.cineFx(0, 0);
+      if (this.cine) { this.cine.dispose(); this.cine = null; }
+      CZ.Touch.setMode('play');
+      this.save.sawIntro = true; CZ.writeSave(this.save);
+      this.startLevel(0, true);
+    });
   }
 
   setPaused(on) {
@@ -286,7 +293,8 @@ CZ.Game = class Game {
     if (this.levelIndex + 1 < CZ.LEVELS.length) {
       const next = this.levelIndex + 1;
       CZ.Comic.show(false);
-      CZ.MapScreen.show(this.levelIndex, next, () => this.startLevel(next, false));
+      this.wipeTo(() => CZ.MapScreen.show(this.levelIndex, next,
+        () => this.wipeTo(() => this.startLevel(next, false))));
       return;
     }
     U.complete(this.levelIndex === CZ.LEVELS.length - 1 ? 'OUT.' : 'LEVEL CLEARED',
@@ -336,7 +344,8 @@ CZ.Game = class Game {
     this.state = 'playing';
     const p = this.player;
     p.vx = -p.facing * 11; p.vy = 6; p.squash = 1.3;
-    CZ.Comic.pow('OOF', [p.cx(), p.cy() + 1.6, 0], { kind: 'hit', life: 0.6 });
+    CZ.Effects.pop(p.cx(), p.cy(), { color: 0xff7a9a, to: 2, life: 0.3 });
+    CZ.Effects.stars(p.cx(), p.cy() + 0.6, 5, { colors: [0xff7a9a, 0xffffff], spread: 5 });
   }
 
   nextLevel() {
@@ -365,7 +374,8 @@ CZ.Game = class Game {
   bossDefeated(boss) {
     this.boss = null; CZ.UI.bossBar(null); CZ.Effects.shake(1.5); this.flash('rgba(255,255,255,.8)');
     CZ.Audio.playMusic(this.level.data.song);
-    CZ.Comic.pow('DOWN!', [this.player.cx(), this.player.cy() + 3, 0], { kind: 'hit', life: 1 });
+    CZ.Effects.pop(this.player.cx(), this.player.cy() + 1, { color: 0xffffff, to: 8, life: 0.7, rings: 3 });
+    CZ.Effects.stars(this.player.cx(), this.player.cy() + 1, 16, { spread: 13, size: 0.8, life: 1.2 });
     const lines = {
       ratking: ['Tell no one a cheese did this.'],
       anticheat: ['Ungraded. Unstoppable.'],
@@ -376,6 +386,12 @@ CZ.Game = class Game {
   shockwave(x, y, r) {
     for (const e of this.enemies) if (!e.dead && Math.abs(e.cx() - x) < r && Math.abs(e.y - y) < 1.6) e.kill('stomp');
     for (const p of this.projectiles) if (!p.dead && Math.abs(p.x - x) < r && Math.abs(p.y - y) < 2) p.kill(true);
+  }
+  // Every change of scene goes through a sheet of molten cheese. `fn` runs at
+  // the moment the screen is completely covered, so the swap is never seen.
+  wipeTo(fn) {
+    CZ.Audio.sfx.bounce();
+    CZ.Wipe.play(fn, null);
   }
   flash(c) { if (CZ.FLASH_ON !== false) CZ.UI.flash(c); }
   toast(t) { CZ.UI.toast(t); }
@@ -398,11 +414,13 @@ CZ.Game = class Game {
     const I = CZ.Input, U = CZ.UI;
     if (I.pressed('mute')) U.toast(CZ.Audio.toggleMute() ? 'SOUND OFF' : 'SOUND ON');
     if (this.state === 'intro') {
+      if (!this.cine) return;                 // torn down mid-wipe
       if (I.pressed('pause')) this.cine.skip();
       else this.cine.update(dt);
       return;
     }
-    if (this.state === 'menu' || this.state === 'ending') return;
+    if (this.state === 'menu') { if (this.menuScene) this.menuScene.update(dt); return; }
+    if (this.state === 'ending') return;
     if (I.pressed('pause')) { if (this.state === 'playing') this.setPaused(true); else if (this.state === 'paused') this.setPaused(false); }
     if (this.state === 'paused') return;
     if (this.state === 'unlock') { if (I.pressed('confirm') || I.pressed('jump')) { U.show('unlock', false); this.state = 'playing'; } this.ambient(dt); CZ.Comic.update(dt); return; }
@@ -445,7 +463,8 @@ CZ.Game = class Game {
       CZ.Audio.sfx.unlock();
       CZ.Effects.burst(a.x, a.y + 0.8, 0x9fd4ff, 34, { spread: 10, up: 6, life: 1.2, size: 1.4 });
       CZ.Effects.shake(0.6);
-      CZ.Comic.pow('BOLT ON!', [a.x, a.y + 2.4, 0], { kind: 'glitch', life: 0.9 });
+      CZ.Effects.pop(a.x, a.y + 1, { color: 0x9fd4ff, to: 5, life: 0.5, rings: 2 });
+      CZ.Effects.stars(a.x, a.y + 1, 12, { colors: [0x9fd4ff, 0xffffff, 0x39ff88], spread: 9, life: 1 });
       this.state = 'unlock'; U.unlock(a.id); U.parts(this.abilities);
       CZ.Touch.syncAbilities(this.abilities);
       p.vx = 0; p.vy = Math.max(p.vy, 0);
@@ -456,7 +475,8 @@ CZ.Game = class Game {
       if (!CZ.overlapPad(box, { x: lv.x - 0.8, y: lv.y, w: 1.6, h: 1.8 }, 0.3)) continue;
       lv.on = true; lv.handle.rotation.z = -0.9;
       CZ.Audio.sfx.checkpoint(); CZ.Effects.shake(0.4);
-      CZ.Comic.pow('CLUNK', [lv.x, lv.y + 2.2, 0], { kind: 'hit', life: 0.6 });
+      CZ.Effects.pop(lv.x, lv.y + 1.2, { color: 0x39ff88, to: 2.4, life: 0.32 });
+      CZ.Effects.stars(lv.x, lv.y + 1.2, 5, { colors: [0x39ff88, 0xffffff], spread: 5 });
       for (const g of L.solids) if (g.gate && g.gate === lv.opens) {
         g.broken = true; g.mesh.visible = false;
         CZ.Effects.burst(g.x + g.w / 2, g.y + g.h / 2, 0x8d95a3, 18, { spread: 7, up: 5 });
@@ -488,7 +508,7 @@ CZ.Game = class Game {
     for (const e of this.enemies) {
       if (e.dead || !CZ.overlap(box, e.aabb())) continue;
       if (p.dashing && e.dashKill) { e.kill('dash'); CZ.Effects.shake(0.3); continue; }
-      if (p.spinning()) { e.kill('dash'); CZ.Comic.pow('SMASH', [e.cx(), e.cy() + 1, 0], { kind: 'hit', life: 0.45 }); continue; }
+      if (p.spinning()) { e.kill('dash'); CZ.Effects.pop(e.cx(), e.cy(), { to: 2.6, life: 0.3 }); CZ.Effects.stars(e.cx(), e.cy(), 6, { spread: 8 }); continue; }
       if (p.pounding) { e.kill('stomp'); p.vy = CZ.P.POUND_BOUNCE; p.pounding = false; p.jumpsUsed = 1; p.canDash = true; p.squash = 1.4; continue; }
       if (p.vy < 0 && p.y > e.y + e.h * 0.45 && e.stompable) { e.kill('stomp'); p.vy = 12.5; p.jumpsUsed = 1; p.canDash = true; p.squash = 1.35; CZ.Effects.shake(0.2); continue; }
       if (e.hurts && p.iframes <= 0) p.damage(e.cx());
@@ -546,13 +566,18 @@ CZ.Game = class Game {
     this.rt.setSize(pw, ph);
     if (this.screenMat) this.screenMat.uniforms.res.value.set(pw, ph);
     if (this.cine) { this.cine.camera.aspect = w / h; this.cine.camera.updateProjectionMatrix(); }
+    if (this.menuScene) { this.menuScene.camera.aspect = w / h; this.menuScene.camera.updateProjectionMatrix(); }
   }
   render() {
-    if (this.state === 'menu' || this.state === 'ending') { this.renderer.setRenderTarget(null); this.renderer.setClearColor(0x140d1c); this.renderer.clear(); return; }
-    const cine = this.state === 'intro' && this.cine;
+    if (this.state === 'ending') { this.renderer.setRenderTarget(null); this.renderer.setClearColor(0x140d1c); this.renderer.clear(); return; }
+    // the menu, the cutscene and the game all go through the same pixel pipe,
+    // so the title screen is made of the same pixels as everything else
+    let scene = this.scene, cam = this.camera;
+    if (this.state === 'menu' && this.menuScene) { scene = this.menuScene.scene; cam = this.menuScene.camera; }
+    else if (this.state === 'intro' && this.cine) { scene = this.cine.scene; cam = this.cine.camera; }
     this.renderer.setRenderTarget(this.rt);
     this.renderer.clear();
-    this.renderer.render(cine ? this.cine.scene : this.scene, cine ? this.cine.camera : this.camera);
+    this.renderer.render(scene, cam);
     this.renderer.setRenderTarget(null);
     this.renderer.render(this.screenScene, this.screenCam);
   }

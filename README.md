@@ -158,6 +158,21 @@ every icon, portrait and glyph is hand-authored pixel art.
   brick, riveted plate, corrugated cardboard, cracked magma, circuit board, ducting, cloud marble, cheese, belts.
 - **Three depths per world.** A dithered sky, two parallax background layers of themed props, the play plane, and a
   foreground layer of pipes, girders and chains that sweeps past in front of the camera.
+- **A menu that is a place.** The title screen is not a colour behind some
+  buttons: it is a rendered shelf in the wine cellar, drawn through the same pixel pipeline as the game. You are
+  sitting on it with a face on, and four other wheels are up there with you - the further from the lamp, the greener
+  and further gone they are. Wine racks, bottles, a lamp on a chain that swings and flickers, dust going up through
+  it, and a camera that drifts and never quite settles.
+- **The cheese wipe.** Every change of scene - menu to world, world to kitchen map, map to world, death to retry,
+  the cutscene to the first room - pours a sheet of molten cheese down over the screen, with runs of different
+  lengths stretching ahead of the leading edge and holes in the sheet, holds while the scene swaps underneath, then
+  drains away. Nothing is ever seen half-swapped, because the swap only happens at the moment the screen is solid
+  cheese.
+- **No words on impacts.** POW / CRUNCH / SMASH read as a comic panel pasted over the game rather than part of it.
+  Every one of them is now something in the world instead: a ring that snaps outward from the point of impact, a
+  shower of four-pointed stars that spin off it and tumble, and a gout of cheese blobs that stretch along their own
+  velocity so they read as thrown rather than scattered. Landing hard rings the floor; a perfect launch, a smashed
+  shelf and a cracked wheel all throw cheese.
 - **Cloud balloons.** Every line of speech is a pixel-art cloud drawn per balloon, sized to the text, tracking a
   point in the 3D world, and never more than one on screen at a time. The lobes around the rim are deliberately
   uneven and the ink is deliberately uneven with them - a balloon whose every lobe is the same radius looks stamped
@@ -244,6 +259,8 @@ js/bosses.js    Rat King, Anti-Cheat.exe, God of Games
 js/ui.js        DOM helpers
 js/cinematic.js the opening: a shelf, the mould, the fall, the door
 js/map.js       the kitchen map you cross between stages
+js/menuscene.js the wine cellar behind the main menu
+js/wipe.js      the cheese wipe that covers every change of scene
 js/comic.js     speech balloons, impact words, speed lines, halftone
 js/touch.js     on-screen thumbstick + buttons for touch devices
 js/main.js      game loop, camera, state machine, interactions, progress

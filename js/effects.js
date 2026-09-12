@@ -11,6 +11,10 @@ CZ.Effects = (() => {
   // Dust: soft billboards that bloom and fade where something came apart.
   const dust = [];
   let dustGeo = null, dustTex = null, dustPool = [];
+  // The cartoon layer: impact rings, spinning stars, thrown cheese.
+  const rings = [], starList = [], blobs = [];
+  let ringGeo = null, starGeo = null, blobGeo = null;
+  let ringPool = [], starPool = [], blobPool = [];
   // Debris asks the level what is underneath it, so a heap lands on the ledge
   // it was knocked off rather than on one imaginary plane.
   let level = null;
@@ -26,6 +30,11 @@ CZ.Effects = (() => {
     chunkGeo = new THREE.BoxGeometry(1, 1, 1);
     dustGeo = new THREE.PlaneGeometry(1, 1);
     dustTex = dustTex || makeDustTex();
+    ringGeo = new THREE.RingGeometry(0.78, 1, 18);
+    starGeo = makeStarGeo();
+    blobGeo = new THREE.SphereGeometry(1, 7, 5);
+    for (const a of [rings, starList, blobs]) { for (const m of a) scene.remove(m); a.length = 0; }
+    ringPool = []; starPool = []; blobPool = [];
     particles.length = 0; pool = [];
     for (const c of chunks) scene.remove(c);
     for (const d of dust) scene.remove(d);
@@ -93,8 +102,133 @@ CZ.Effects = (() => {
       scene.add(p); particles.push(p);
     }
   }
+  // ── the cartoon vocabulary ───────────────────────────────────────────
+  // These are what a hit looks like now that there are no words on the screen:
+  // a ring that snaps outward, stars that spin off it, and a splat of cheese.
+
+  // A flat ring that flashes out from a point and thins as it goes. One of
+  // these reads as an impact faster than any amount of writing.
+  function pop(x, y, opts = {}) {
+    if (!scene) return;
+    const n = opts.rings ?? 1;
+    for (let i = 0; i < n; i++) {
+      let m = ringPool.pop();
+      if (!m) m = new THREE.Mesh(ringGeo, new THREE.MeshBasicMaterial({
+        color: 0xffffff, transparent: true, side: THREE.DoubleSide, depthWrite: false }));
+      m.material.color.set(opts.color ?? 0xfff3c0);
+      m.material.opacity = opts.opacity ?? 0.95;
+      m.position.set(x, y, (opts.z ?? 0.9) + i * 0.05);
+      m.rotation.z = CZ.rand(0, 6.3);
+      const r0 = (opts.from ?? 0.25) * (1 + i * 0.3);
+      m.scale.set(r0, r0 * (opts.squash ?? 1), 1);
+      m.userData = {
+        life: (opts.life ?? 0.34) * (1 + i * 0.25), max: 0,
+        to: (opts.to ?? 2.6) * (1 + i * 0.35), from: r0,
+        squash: opts.squash ?? 1, o0: m.material.opacity, spin: CZ.rand(-3, 3),
+      };
+      m.userData.max = m.userData.life;
+      scene.add(m); rings.push(m);
+    }
+  }
+  function stepRings(dt) {
+    for (let i = rings.length - 1; i >= 0; i--) {
+      const m = rings[i], u = m.userData;
+      u.life -= dt;
+      if (u.life <= 0) { scene.remove(m); rings.splice(i, 1); ringPool.push(m); continue; }
+      const k = 1 - u.life / u.max;             // 0 at the flash, 1 when gone
+      const r = CZ.lerp(u.from, u.to, 1 - Math.pow(1 - k, 2.2));
+      m.scale.set(r, r * u.squash, 1);
+      m.rotation.z += u.spin * dt;
+      m.material.opacity = u.o0 * (1 - k) * (1 - k);
+    }
+  }
+
+  // Four-pointed stars that fly off a hit and tumble. Pure cartoon.
+  function stars(x, y, n = 5, opts = {}) {
+    if (!scene) return;
+    const colors = opts.colors || [0xfff3c0, 0xffd23f, 0xffffff];
+    for (let i = 0; i < n; i++) {
+      let m = starPool.pop();
+      if (!m) m = new THREE.Mesh(starGeo, new THREE.MeshBasicMaterial({
+        color: 0xffffff, transparent: true, depthWrite: false }));
+      m.material.color.set(colors[(Math.random() * colors.length) | 0]);
+      m.material.opacity = 1;
+      m.position.set(x + CZ.rand(-0.3, 0.3), y + CZ.rand(-0.3, 0.3), (opts.z ?? 0.95) + CZ.rand(-0.2, 0.2));
+      const s = (opts.size ?? 0.5) * CZ.rand(0.7, 1.35);
+      m.scale.setScalar(s);
+      const a = CZ.rand(0, 6.3), sp = (opts.spread ?? 7) * CZ.rand(0.4, 1);
+      m.userData = {
+        vx: Math.cos(a) * sp + (opts.vx || 0), vy: Math.sin(a) * sp + (opts.up ?? 2),
+        spin: CZ.rand(-14, 14), s0: s, g: opts.gravity ?? 16,
+        life: (opts.life ?? 0.7) * CZ.rand(0.7, 1.3), max: 0,
+      };
+      m.userData.max = m.userData.life;
+      scene.add(m); starList.push(m);
+    }
+  }
+  function stepStars(dt) {
+    for (let i = starList.length - 1; i >= 0; i--) {
+      const m = starList[i], u = m.userData;
+      u.life -= dt;
+      if (u.life <= 0) { scene.remove(m); starList.splice(i, 1); starPool.push(m); continue; }
+      u.vy -= u.g * dt;
+      m.position.x += u.vx * dt; m.position.y += u.vy * dt;
+      m.rotation.z += u.spin * dt;
+      const k = u.life / u.max;
+      m.scale.setScalar(u.s0 * (0.4 + k * 0.6));
+      m.material.opacity = Math.min(1, k * 2.4);
+    }
+  }
+
+  // A gout of cheese: fat blobs thrown out of a point that stretch along their
+  // own velocity, so they read as thrown rather than scattered.
+  function splat(x, y, n = 8, opts = {}) {
+    if (!scene) return;
+    const colors = opts.colors || [0xffd23f, 0xffe98a, 0xe8892a];
+    for (let i = 0; i < n; i++) {
+      let m = blobPool.pop();
+      if (!m) m = new THREE.Mesh(blobGeo, new THREE.MeshToonMaterial({ color: 0xffd23f }));
+      m.material.color.set(colors[(Math.random() * colors.length) | 0]);
+      m.material.opacity = 1; m.material.transparent = false;
+      m.position.set(x, y, (opts.z ?? 0.4) + CZ.rand(-0.6, 0.6));
+      const a = CZ.rand(0, 6.3), sp = (opts.spread ?? 8) * CZ.rand(0.35, 1);
+      const vx = Math.cos(a) * sp + (opts.vx || 0), vy = Math.sin(a) * sp + (opts.up ?? 4);
+      m.userData = {
+        vx, vy, g: opts.gravity ?? 34, s0: (opts.size ?? 0.34) * CZ.rand(0.6, 1.4),
+        life: (opts.life ?? 0.8) * CZ.rand(0.7, 1.3), max: 0,
+      };
+      m.userData.max = m.userData.life;
+      scene.add(m); blobs.push(m);
+    }
+  }
+  function stepBlobs(dt) {
+    for (let i = blobs.length - 1; i >= 0; i--) {
+      const m = blobs[i], u = m.userData;
+      u.life -= dt;
+      if (u.life <= 0) { scene.remove(m); blobs.splice(i, 1); blobPool.push(m); continue; }
+      u.vy -= u.g * dt;
+      m.position.x += u.vx * dt; m.position.y += u.vy * dt;
+      // stretch along the direction of travel, the way a thrown blob does
+      const sp = Math.hypot(u.vx, u.vy);
+      const st = CZ.clamp(1 + sp * 0.045, 1, 2.2), k = u.life / u.max;
+      m.rotation.z = Math.atan2(u.vy, u.vx);
+      m.scale.set(u.s0 * st * (0.5 + k * 0.5), u.s0 / Math.sqrt(st) * (0.5 + k * 0.5), u.s0);
+      if (k < 0.4) { m.material.transparent = true; m.material.opacity = k / 0.4; }
+    }
+  }
+
   // A soft round blob on a 16x16 grid: big enough to read as a cloud, small
   // enough that it stays a pixel cloud when the frame is blown up.
+  // A fat four-pointed star, built as a triangle fan from eight points.
+  function makeStarGeo() {
+    const pts = [];
+    for (let i = 0; i < 8; i++) {
+      const a = (i / 8) * Math.PI * 2 - Math.PI / 2;
+      const r = i % 2 === 0 ? 1 : 0.36;
+      pts.push(new THREE.Vector2(Math.cos(a) * r, Math.sin(a) * r));
+    }
+    return new THREE.ShapeGeometry(new THREE.Shape(pts));
+  }
   function makeDustTex() {
     const S = 16, c = document.createElement('canvas'); c.width = c.height = S;
     const g = c.getContext('2d');
@@ -268,6 +402,7 @@ CZ.Effects = (() => {
   function update(dt) {
     stepChunks(dt);
     stepDust(dt);
+    stepRings(dt); stepStars(dt); stepBlobs(dt);
     for (let i = particles.length - 1; i >= 0; i--) {
       const p = particles[i], u = p.userData;
       u.life -= dt;
@@ -288,6 +423,7 @@ CZ.Effects = (() => {
     for (const p of particles) scene.remove(p); particles.length = 0;
     for (const c of chunks) scene.remove(c); chunks.length = 0;
     for (const d of dust) scene.remove(d); dust.length = 0;
+    for (const a of [rings, starList, blobs]) { for (const m of a) scene.remove(m); a.length = 0; }
     level = null;
   }
   // Release the GPU geometry under an object tree. Materials and textures are
@@ -299,5 +435,6 @@ CZ.Effects = (() => {
   }
   const getShake = () => ({ x: shakeX, y: shakeY });
 
-  return { init, toon, basic, outline, edges, box, burst, smash, puff, setLevel, shake, update, clear, disposeTree, getShake };
+  return { init, toon, basic, outline, edges, box, burst, smash, puff, pop, stars, splat,
+    setLevel, shake, update, clear, disposeTree, getShake };
 })();
