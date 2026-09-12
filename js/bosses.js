@@ -57,14 +57,119 @@ CZ.RatKing = class RatKing extends CZ.Boss {
     this.w = 3.6; this.h = 2.7; this.x = arena.x + arena.w - 10; this.y = 0.1; this.vx = 0; this.vy = 0; this.facing = -1;
     this.state = 'intro'; this.st = 0; this.next = 'charge'; this.speed = 9; this.color = 0x6a6a78;
     const E = CZ.Effects;
-    const body = new THREE.Mesh(new THREE.SphereGeometry(1.3, 8, 6), E.toon(0x6a6a78)); body.scale.set(1.35, 0.95, 1); body.castShadow = true; E.outline(body, 0.1); this.group.add(body); this.body = body;
-    const head = new THREE.Mesh(new THREE.SphereGeometry(0.85, 7, 5), E.toon(0x7a7a88)); head.position.set(-1.5, 0.5, 0); head.scale.set(1.25, 1, 1); E.outline(head, 0.08); this.group.add(head); this.head = head;
-    const nose = new THREE.Mesh(new THREE.SphereGeometry(0.22, 8, 8), E.basic(0xff7a9a)); nose.position.set(-1.05, -0.1, 0); head.add(nose);
-    [[-0.3, 0.7, 0.35], [-0.3, 0.7, -0.35]].forEach(p => { const ear = new THREE.Mesh(new THREE.SphereGeometry(0.34, 8, 8), E.toon(0xffaabb)); ear.position.set(...p); ear.scale.z = 0.4; head.add(ear); });
-    [[-0.45, 0.2, 0.62], [-0.45, 0.2, -0.62]].forEach(p => { const e = new THREE.Mesh(new THREE.BoxGeometry(0.36, 0.36, 0.12), E.basic(0xff2d2d)); e.position.set(...p); head.add(e); });
-    const crown = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.45, 0.5, 6), new THREE.MeshToonMaterial({ color: 0xffd700 })); crown.position.set(-0.1, 1.05, 0); head.add(crown);
-    for (let i = 0; i < 6; i++) { const sp = new THREE.Mesh(new THREE.ConeGeometry(0.14, 0.35, 4), E.toon(0xffd700)); const a = i / 6 * Math.PI * 2; sp.position.set(Math.cos(a) * 0.5, 0.4, Math.sin(a) * 0.5); crown.add(sp); }
-    const tail = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.16, 2.6, 6), E.toon(0xffaabb)); tail.position.set(2.2, 0.2, 0); tail.rotation.z = Math.PI / 2 + 0.5; this.group.add(tail); this.tail = tail;
+    const box = (w, h, d, c) => { const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), E.toon(c)); m.castShadow = true; return m; };
+    const FUR = 0x6e6e7c, FUR_LT = 0x83838f, PALE = 0xb2b2be, PINK = 0xffaabb, GOLD = 0xffd700;
+
+    // He is the same animal as the rats you have been stomping all game, three
+    // times the size and wearing something he took off somebody. Built side-on:
+    // a long hunched body, a heavy shoulder, a snout out front, a tail that
+    // whips, and a crown that is visibly too small for him.
+    // The rig is drawn at its own comfortable scale and then fitted to the
+    // collision box, so his feet land on the floor and his snout reaches the
+    // front of the box he actually hits you with.
+    this.rig = new THREE.Group(); this.rig.scale.setScalar(0.82); this.group.add(this.rig);
+    this.rigY = 0.16;
+
+    // A heavy back end, a body that tapers toward the shoulders, and a hump
+    // over them: the silhouette of something that is mostly arse and appetite.
+    const haunch = box(2.1, 1.85, 1.6, FUR); haunch.position.set(1.15, 0.0, 0);
+    E.outline(haunch, 0.09); this.rig.add(haunch); this.haunch = haunch;
+    const body = box(2.3, 1.45, 1.42, FUR_LT); body.position.set(-0.3, -0.12, 0);
+    E.outline(body, 0.09); this.rig.add(body); this.body = body;
+    const belly = box(3.6, 0.4, 1.34, PALE); belly.position.set(0.3, -0.78, 0); this.rig.add(belly);
+    // the hump over his shoulders, where all the weight is
+    const hump = box(1.7, 0.72, 1.3, FUR); hump.position.set(-0.55, 0.78, 0);
+    E.outline(hump, 0.07); this.rig.add(hump);
+    // scars: bald patches the colour of old rope, down the near flank
+    for (const [sx, sy, sw] of [[0.3, 0.35, 0.5], [1.2, 0.4, 0.38], [-0.5, -0.3, 0.6]]) {
+      const sc = box(sw, 0.14, 0.06, 0xa2927e); sc.position.set(sx, sy, 0.72); sc.castShadow = false;
+      sc.rotation.z = 0.3; this.rig.add(sc);
+    }
+
+    this.head = new THREE.Group(); this.head.position.set(-1.6, 0.4, 0); this.rig.add(this.head);
+    const skull = box(1.45, 1.3, 1.3, FUR_LT); E.outline(skull, 0.08); this.head.add(skull);
+    const brow = box(1.2, 0.22, 1.32, FUR); brow.position.set(-0.1, 0.5, 0); this.head.add(brow);
+    const snout = box(1.0, 0.6, 0.86, PALE); snout.position.set(-1.05, -0.3, 0); E.outline(snout, 0.05); this.head.add(snout);
+    const nose = box(0.3, 0.28, 0.32, 0xff7a9a); nose.position.set(-1.55, -0.26, 0); this.head.add(nose);
+    // two long yellow incisors under the snout
+    for (const s2 of [-1, 1]) {
+      const tooth = box(0.18, 0.48, 0.16, 0xe8d98a); tooth.position.set(-1.2, -0.76, s2 * 0.18);
+      tooth.rotation.z = s2 * 0.06; this.head.add(tooth);
+    }
+    this.ears = [];
+    for (const s2 of [-1, 1]) {
+      const ear = new THREE.Mesh(new THREE.CylinderGeometry(0.44, 0.44, 0.14, 10), E.toon(PINK));
+      ear.rotation.x = Math.PI / 2; ear.position.set(0.2, 0.86, s2 * 0.48);
+      E.outline(ear, 0.05); this.head.add(ear); this.ears.push(ear);
+      const inner = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.24, 0.16, 10), E.toon(0xd4707f));
+      inner.rotation.x = Math.PI / 2; inner.position.z = s2 * 0.02; ear.add(inner);
+      // a notch bitten out of the left ear, because of course there is
+      if (s2 < 0) { const notch = box(0.2, 0.22, 0.2, FUR_LT); notch.position.set(-0.18, 0.34, 0); ear.add(notch); }
+      // the eye: white, red pupil, glint
+      const white = new THREE.Mesh(new THREE.CircleGeometry(0.3, 12), E.basic(0xfff0f0));
+      white.position.set(-0.42, 0.14, s2 * 0.66); white.rotation.y = s2 > 0 ? 0 : Math.PI; this.head.add(white);
+      const pup = new THREE.Mesh(new THREE.CircleGeometry(0.15, 10), E.basic(0xc21f2e));
+      pup.position.set(-0.05, 0, 0.01); white.add(pup);
+      const slit = new THREE.Mesh(new THREE.CircleGeometry(0.06, 8), E.basic(0x2a0408));
+      slit.position.z = 0.01; pup.add(slit);
+      const glint = new THREE.Mesh(new THREE.CircleGeometry(0.055, 6), E.basic(0xffffff));
+      glint.position.set(-0.07, 0.08, 0.02); white.add(glint);
+      for (const wy of [0.06, -0.16, -0.36]) {
+        const w = box(1.0, 0.055, 0.055, 0xe8e2d8);
+        w.position.set(-1.75, wy - 0.2, s2 * 0.32); w.rotation.z = s2 * 0.08 + (wy - 0.06) * 0.9;
+        this.head.add(w);
+      }
+    }
+    // the crown, jammed on crooked and a size too small
+    const crown = new THREE.Group(); crown.position.set(0.0, 0.82, 0); crown.rotation.z = -0.16; this.head.add(crown);
+    const band = new THREE.Mesh(new THREE.CylinderGeometry(0.56, 0.6, 0.36, 10), E.toon(GOLD));
+    E.outline(band, 0.05); crown.add(band);
+    for (let i = 0; i < 7; i++) {
+      const a = i / 7 * Math.PI * 2;
+      const sp = new THREE.Mesh(new THREE.ConeGeometry(0.14, 0.42 + (i % 3) * 0.12, 4), E.toon(GOLD));
+      sp.position.set(Math.cos(a) * 0.52, 0.34, Math.sin(a) * 0.52);
+      sp.rotation.z = (i % 2 ? 0.12 : -0.08); crown.add(sp);
+      if (i % 2 === 0) {
+        const jewel = new THREE.Mesh(new THREE.OctahedronGeometry(0.1, 0), E.basic(i % 4 ? 0xff2d55 : 0x39ff88));
+        jewel.position.set(Math.cos(a) * 0.6, 0.02, Math.sin(a) * 0.6); crown.add(jewel);
+      }
+    }
+    this.crown = crown;
+    // a rag cloak over the shoulders, hanging in strips that swing
+    // Short and over the shoulders only: a full-length cloak just hides the
+    // animal, and the animal is the point.
+    this.rags = [];
+    for (let i = 0; i < 5; i++) {
+      const piv = new THREE.Group();
+      piv.position.set(-1.05 + i * 0.44, 0.92, 0.78);
+      this.rig.add(piv);
+      const len = 0.62 + (i % 3) * 0.26;
+      const rag = box(0.4, len, 0.1, i % 2 ? 0x71304f : 0x8d3d61);
+      rag.position.y = -len / 2; rag.castShadow = false; piv.add(rag);
+      const tip = box(0.3, 0.22, 0.1, 0x5a2340);
+      tip.position.set(0.07, -len - 0.08, 0); tip.rotation.z = 0.4; tip.castShadow = false; piv.add(tip);
+      this.rags.push({ piv, phase: i * 0.7 });
+    }
+    // the collar it all hangs off, a strip of something he tore up
+    const collar = box(2.2, 0.3, 1.62, 0x8d3d61); collar.position.set(-0.45, 0.95, 0);
+    E.outline(collar, 0.05); this.rig.add(collar);
+    // four legs that scrabble when he runs
+    this.legs = [];
+    for (const [lx, ly, s2] of [[-0.9, -0.9, 1], [-0.9, -0.9, -1], [1.2, -0.9, 1], [1.2, -0.9, -1]]) {
+      const piv = new THREE.Group(); piv.position.set(lx, ly, s2 * 0.5); this.rig.add(piv);
+      const leg = box(0.34, 0.62, 0.34, FUR); leg.position.y = -0.31; piv.add(leg);
+      const foot = box(0.5, 0.2, 0.42, PALE); foot.position.set(-0.08, -0.62, 0); piv.add(foot);
+      this.legs.push({ piv, phase: (lx < 0 ? 0 : Math.PI) + (s2 > 0 ? 0 : Math.PI / 2) });
+    }
+    // tail: five chained segments that whip behind him
+    this.tail = []; let parent = this.rig, off = 2.0;
+    for (let i = 0; i < 5; i++) {
+      const pivot = new THREE.Group(); pivot.position.set(off, i === 0 ? 0.2 : 0, 0); parent.add(pivot);
+      if (i === 0) pivot.rotation.z = 0.5;
+      const seg = box(0.62 - i * 0.07, 0.3 - i * 0.045, 0.3 - i * 0.045, 0xe08a9a);
+      seg.position.x = 0.31 - i * 0.035; pivot.add(seg);
+      this.tail.push(pivot); parent = pivot; off = 0.6 - i * 0.07;
+    }
     this.shockMesh = this.column(0, 0, 1, 0.6, 0xffffff, 0.6); this.shockMesh.visible = false;
   }
   aabb() { return { x: this.x, y: this.y, w: this.w, h: this.h }; }
@@ -107,15 +212,47 @@ CZ.RatKing = class RatKing extends CZ.Boss {
     this.x = CZ.clamp(this.x, this.arena.x + 0.5, this.arena.x + this.arena.w - this.w - 0.5);
     for (const h of this.hazards) { h.life -= dt; if (h.life <= 0) h.active = false; }
     this.hazards = this.hazards.filter(h => h.active); this.shockMesh.visible = this.hazards.length > 0;
-    // visuals
+    // ---- visuals ----
     this.group.position.set(this.cx(), this.y + this.h / 2, 0);
     this.group.scale.x = this.facing < 0 ? 1 : -1;
     const stun = this.state === 'stunned';
-    this.body.scale.y = CZ.damp(this.body.scale.y, stun ? 0.6 : 0.95 + Math.sin(this.t * 12) * 0.04 * (Math.abs(this.vx) > 1 ? 1 : 0), 10, dt);
-    this.head.position.y = CZ.damp(this.head.position.y, stun ? -0.2 : 0.5, 10, dt);
-    this.head.rotation.z = stun ? Math.sin(this.t * 10) * 0.3 : 0;
-    this.tail.rotation.z = Math.PI / 2 + 0.5 + Math.sin(this.t * 6) * 0.4;
-    this.body.material = CZ.Effects.toon(this.invuln > 0 && Math.floor(this.t * 20) % 2 ? 0xffffff : 0x6a6a78);
+    const run = CZ.clamp(Math.abs(this.vx) / this.speed, 0, 1);
+    const gait = this.t * (6 + run * 12);
+    // breathing, and the whole animal dropping into a crouch when he is stunned
+    this.rig.position.y = CZ.damp(this.rig.position.y, this.rigY + (stun ? -0.5 : Math.sin(this.t * 3) * 0.04), 9, dt);
+    this.rig.rotation.z = CZ.damp(this.rig.rotation.z, stun ? 0.14 : -run * 0.1, 8, dt);
+    this.haunch.scale.y = CZ.damp(this.haunch.scale.y, stun ? 0.75 : 1 + Math.sin(this.t * 3) * 0.03, 9, dt);
+    this.body.scale.y = CZ.damp(this.body.scale.y, stun ? 0.72 : 1 + Math.sin(this.t * 3 + 1) * 0.035, 9, dt);
+    // the head leads the charge and hangs when he is seeing stars
+    this.head.position.y = CZ.damp(this.head.position.y, stun ? -0.35 : 0.42 - run * 0.18, 10, dt);
+    this.head.rotation.z = CZ.damp(this.head.rotation.z, stun ? Math.sin(this.t * 9) * 0.28 : -run * 0.12, 12, dt);
+    // ears twitch on their own and pin back at speed
+    this.ears.forEach((ear, i) => {
+      const pin = stun ? -0.5 : -run * 0.8;
+      ear.rotation.z = CZ.damp(ear.rotation.z, pin + Math.sin(this.t * (2.1 + i * 0.4)) * 0.12, 10, dt);
+    });
+    // the crown slips further every time you take a hit off him
+    this.crown.rotation.z = CZ.damp(this.crown.rotation.z, -0.16 - (3 - this.hp) * 0.22 + (stun ? 0.5 : 0), 7, dt);
+    this.crown.position.y = CZ.damp(this.crown.position.y, 1.0 - (3 - this.hp) * 0.06, 7, dt);
+    // legs scrabble in a two-beat gait, and fold under him when stunned
+    for (const l of this.legs) {
+      const swing = stun ? -0.7 : Math.sin(gait + l.phase) * (0.18 + run * 0.7);
+      l.piv.rotation.z = CZ.damp(l.piv.rotation.z, swing, 18, dt);
+      l.piv.position.y = CZ.damp(l.piv.position.y, stun ? -1.15 : -0.9 + Math.max(0, Math.sin(gait + l.phase)) * run * 0.18, 16, dt);
+    }
+    // the rags swing behind him, late, the way cloth does
+    for (const r of this.rags) {
+      r.piv.rotation.z = CZ.damp(r.piv.rotation.z,
+        CZ.clamp(this.vx * 0.02, -0.32, 0.32) + Math.sin(this.t * 4 + r.phase) * 0.09, 6, dt);
+    }
+    // the tail whips, each segment a beat behind the one before it
+    this.tail.forEach((seg, i) => {
+      const base = i === 0 ? 0.5 : 0;
+      seg.rotation.z = base + Math.sin(this.t * (5 + run * 4) - i * 0.8) * (0.18 + run * 0.22) + (stun ? -0.12 : 0);
+    });
+    const flash = this.invuln > 0 && Math.floor(this.t * 20) % 2;
+    this.body.material = CZ.Effects.toon(flash ? 0xffffff : 0x83838f);
+    this.haunch.material = CZ.Effects.toon(flash ? 0xffffff : 0x6e6e7c);
   }
   slam() {
     CZ.Audio.sfx.poundLand(); CZ.Effects.shake(1); CZ.Effects.burst(this.cx(), this.y, 0xcccccc, 20, { spread: 12, up: 4, life: 0.6 });
@@ -148,7 +285,15 @@ CZ.AntiCheat = class AntiCheat extends CZ.Boss {
   aabb() { return { x: this.cx - this.w / 2, y: this.cy - this.h / 2, w: this.w, h: this.h }; }
   weakspots() { return [{ ...this.aabb(), how: ['touch'] }]; }
   hurtboxes() {
-    const hb = super.hurtboxes();
+    // A sweep is one hazard with two boxes - the halves of the beam either side
+    // of the hole - so it contributes those and never its own full-height span,
+    // which would hurt you inside the gap it just told you to stand in.
+    const hb = [];
+    for (const h of this.hazards) {
+      if (!h.active) continue;
+      if (h.kind === 'sweep') { for (const seg of h.segs) hb.push(seg); }
+      else hb.push(h);
+    }
     if (!this.game.player.noclip) for (const p of this.panels) hb.push(p.box);   // shield hurts unless you phase through it
     return hb;
   }
@@ -183,19 +328,62 @@ CZ.AntiCheat = class AntiCheat extends CZ.Boss {
     // update hazards
     for (let i = this.hazards.length - 1; i >= 0; i--) {
       const h = this.hazards[i]; h.life -= dt;
-      if (h.kind === 'sweep') { if (h.life < h.activeAt) { h.active = true; h.x += h.dir * 8 * dt; } h.mesh.position.x = h.x + h.w / 2; h.mesh.material.opacity = h.active ? 0.85 : 0.15 + 0.1 * Math.sin(this.t * 30); h.mesh.scale.x = h.active ? 1 : 0.4; }
+      if (h.kind === 'sweep') {
+        // The beam is two columns with a hole between them. It crawls, so you
+        // have time to read which half of the arena the hole is in and get to
+        // it - and once you are in the hole, staying in it is the whole job.
+        if (h.life < h.activeAt) { h.active = true; h.x += h.dir * h.speed * dt; }
+        const lit = h.active ? 0.85 : 0.18 + 0.12 * Math.sin(this.t * 22);
+        for (const seg of h.segs) {
+          seg.x = h.x; seg.active = h.active;
+          seg.mesh.position.x = h.x + h.w / 2;
+          seg.mesh.material.opacity = lit;
+          seg.mesh.scale.x = h.active ? 1 : 0.35;
+        }
+        // the safe gap gets its own marker, so you can see it coming
+        h.gapMesh.position.x = h.x + h.w / 2;
+        h.gapMesh.material.opacity = h.active ? 0.62 : 0.4 + 0.2 * Math.sin(this.t * 8);
+      }
       if (h.kind === 'hammer') { if (h.life < h.activeAt) { h.active = true; h.y -= 24 * dt; if (h.y <= 0) { h.life = 0; CZ.Effects.burst(h.x + h.w / 2, 0, 0xb455ff, 14, { spread: 8, up: 5 }); CZ.Effects.shake(0.5); CZ.Audio.sfx.poundLand(); } } h.mesh.position.y = h.y + h.h / 2; h.warn.material.opacity = h.active ? 0 : 0.2 + 0.1 * Math.sin(this.t * 25); }
-      if (h.life <= 0) { this.removeMesh(h.mesh); if (h.warn) this.removeMesh(h.warn); this.hazards.splice(i, 1); }
+      if (h.life <= 0) {
+        if (h.mesh) this.removeMesh(h.mesh);
+        if (h.warn) this.removeMesh(h.warn);
+        if (h.segs) for (const seg of h.segs) this.removeMesh(seg.mesh);
+        if (h.gapMesh) this.removeMesh(h.gapMesh);
+        this.hazards.splice(i, 1);
+      }
     }
   }
   attack(n) {
     const A = this.arena, p = this.game.player; CZ.Audio.sfx.warn();
     if (n === 0 || n === 2) {
-      // sweeping laser from the side nearest the player… towards them
-      const dir = p.cx() < this.cx ? 1 : -1; const x0 = dir > 0 ? A.x + 1 : A.x + A.w - 2;
-      const h = { kind: 'sweep', x: x0, y: 0, w: 0.9, h: A.h, dir, life: 1.0 + A.w / 8, activeAt: A.w / 8, active: false };
-      h.mesh = this.column(0, 0, h.w, h.h, 0xff2d55, 0.2); h.mesh.position.set(h.x + h.w / 2, h.h / 2, 0.2);
-      this.game.toast('THE SORTER: "SCANNING."'); this.hazards.push(h); CZ.Audio.sfx.laser();
+      // A scanning beam that crosses the arena with a gap in it: either high,
+      // so you jump through, or along the floor, so you stay down and let it
+      // pass over. It crawls and it telegraphs for a long beat first.
+      const dir = p.cx() < this.cx ? 1 : -1, x0 = dir > 0 ? A.x + 1 : A.x + A.w - 2;
+      // High: a hole one clean jump up. Low: a hole along the floor you simply
+      // stay out of the air for. Both are twice the height of the wheel.
+      const high = Math.random() < 0.5;
+      const gapY = high ? 2.9 : 0, gapH = high ? 3.4 : 2.6;
+      const speed = 6, cross = A.w / speed;
+      const h = { kind: 'sweep', x: x0, y: 0, w: 0.9, h: A.h, dir, speed,
+        life: 1.2 + cross, activeAt: cross, active: false, segs: [] };
+      // the solid halves of the beam, above and below the hole
+      const bands = [];
+      if (gapY > 0.1) bands.push([0, gapY]);
+      if (gapY + gapH < A.h) bands.push([gapY + gapH, A.h - (gapY + gapH)]);
+      for (const [by, bh] of bands) {
+        const seg = { x: x0, y: by, w: h.w, h: bh, active: false };
+        seg.mesh = this.column(0, by, h.w, bh, 0xff2d55, 0.2);
+        seg.mesh.position.set(x0 + h.w / 2, by + bh / 2, 0.2);
+        h.segs.push(seg);
+      }
+      // the hole, marked in the one colour in this game that means 'safe'
+      h.gapMesh = this.column(0, gapY, h.w * 1.7, gapH, 0x39ff88, 0.45);
+      h.gapMesh.position.set(x0 + h.w / 2, gapY + gapH / 2, 0.15);
+      this.hazards.push(h);              // one object owns the whole beam
+      this.game.toast(high ? 'THE SORTER: "SCANNING. MIND THE GAP."' : 'THE SORTER: "SCANNING. HEADS DOWN."');
+      CZ.Audio.sfx.laser();
     } else {
       this.game.toast('THE SORTER: "STAMPING."');
       for (let i = 0; i < 3; i++) {

@@ -129,9 +129,14 @@ fist, winch arm, phase core.
    first machine, and take the cellar door off its hinges.
 2. **The Grater Line** — conveyors, graters, moving platforms. Unlock: wax skate.
 3. **The Melting Vats** — molten cheese and shafts. Unlock: sticky crust.
-4. **The Packaging Plant** — presses and cracked floors. Unlock: dead weight. **Boss: RAT KING** (stomp the crown).
+4. **The Packaging Plant** — presses and cracked floors. Unlock: dead weight. **Boss: RAT KING** — the same animal
+   as the rats you have been stomping all game, three times the size, hunched under a stolen crown that slips further
+   down his head with every hit, in a torn cape, with scars, a bitten ear and four legs that scrabble when he charges
+   (stomp him).
 5. **The Ventilation Ducts** — fans and hook nodes. Unlock: cheese string.
 6. **The Firewall** — lasers and sorting gear. Unlock: hole slip. **Boss: THE SORTER** (slip inside its scanner).
+   Its scanning beam is not a wall any more: it crosses the arena with a hole in it, marked in green, either up at
+   jump height or along the floor, and it crawls slowly enough that you can read which and get there.
 7. **The Loading Dock** — everything at once, and the door out. **Final boss: THE CHEESEMONGER** (he takes the floor away while you climb).
 
 Progress and installed parts save to `localStorage`.
@@ -177,10 +182,12 @@ every icon, portrait and glyph is hand-authored pixel art.
   mush at size, and neither carries a fat outline: a thick stroke fills in a bitmap face's counters, so the depth
   comes from hard offset shadows instead. The boss name shudders and prompts blink; all motion respects
   `prefers-reduced-motion`.
-- **Toy googly eyes.** Two of them, mismatched in size and height, each a black plastic case with a white backing, a
-  loose disc inside and a domed lens with a highlight over the top. The disc has no centring spring, because a real
-  googly eye does not: it is a weight that falls to the bottom, gets thrown around when the case accelerates, and
-  slides along the rim it collides with. Wind up a spin and both of them whirl.
+- **A face that is just a smile.** No eyes. One mouth, and it has to do all the acting: how far the smile bends,
+  how far it opens, and how badly it wobbles. A grin spreads; a wince snaps on. Roll fast and it opens into a
+  delighted gawp, wind up a spin and it sets, take a hit and it flips into a shaking grimace, go flat and it stretches
+  right across the wheel, and at enough speed a tongue lolls out of it. The dark inside is sized so the lip always
+  lands exactly on the rim of the hole instead of cutting across it, and a grimace opens upward rather than down.
+  The opening cutscene plays the same mouth through its four beats.
 - **Destruction with weight.** A broken object throws big slabs and small shards from the same hit, sprayed away
   from where it was struck and carrying the speed of whatever hit it. Shards have less mass, so the same blow throws
   them further and the air stops them sooner. Each piece asks the level what is actually underneath it, so a heap

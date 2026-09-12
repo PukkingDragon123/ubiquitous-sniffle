@@ -50,40 +50,26 @@ CZ.Player = class Player {
 
     // face rides on the front and stays upright while the wheel turns
     this.face = new THREE.Group(); this.face.position.z = 0.56; this.body.add(this.face);
-    // Two toy googly eyes, deliberately mismatched: a black plastic case, a
-    // white backing, a loose black disc inside, and a clear domed lens over it.
-    this.eyes = [];
-    // Deliberately, aggressively mismatched: one big one, one small one, stuck
-    // on crooked by somebody who was not paying attention.
-    const EYE = [
-      { x: -0.27, y: 0.16, r: 0.35, pr: 0.15, tilt: 0.26 },
-      { x: 0.26, y: -0.04, r: 0.21, pr: 0.12, tilt: -0.19 },
-    ];
-    for (const cfg of EYE) {
-      const socket = new THREE.Group(); socket.position.set(cfg.x, cfg.y, 0); socket.rotation.z = cfg.tilt;
-      // the plastic case
-      socket.add(new THREE.Mesh(new THREE.CircleGeometry(cfg.r, 22), new THREE.MeshBasicMaterial({ color: 0x1a1016 })));
-      const white = new THREE.Mesh(new THREE.CircleGeometry(cfg.r - 0.04, 22), new THREE.MeshBasicMaterial({ color: 0xf6f6f8 }));
-      white.position.z = 0.012; socket.add(white);
-      // the loose disc that rattles around inside it
-      const pupil = new THREE.Mesh(new THREE.CircleGeometry(cfg.pr, 18), new THREE.MeshBasicMaterial({ color: 0x0e0a0c }));
-      pupil.position.z = 0.026; socket.add(pupil);
-      // a domed lens over the top, with the highlight glass always has
-      const dome = new THREE.Mesh(new THREE.SphereGeometry(cfg.r - 0.02, 14, 10, 0, Math.PI * 2, 0, Math.PI / 2.6),
-        new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.14 }));
-      dome.rotation.x = Math.PI / 2; dome.position.z = 0.03; socket.add(dome);
-      const gleam = new THREE.Mesh(new THREE.CircleGeometry(cfg.r * 0.26, 10), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.85 }));
-      gleam.position.set(-cfg.r * 0.38, cfg.r * 0.4, 0.06); socket.add(gleam);
-      const gleam2 = new THREE.Mesh(new THREE.CircleGeometry(cfg.r * 0.1, 8), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.7 }));
-      gleam2.position.set(-cfg.r * 0.12, cfg.r * 0.56, 0.06); socket.add(gleam2);
-      this.face.add(socket);
-      this.eyes.push({ socket, pupil, px: 0, py: -0.05, vx: 0, vy: 0, tilt: cfg.tilt, baseY: cfg.y,
-        R: cfg.r - cfg.pr - 0.03, wob: CZ.rand(0.9, 1.2), phase: CZ.rand(0, 6.3) });
+    // The whole face is one smile. No eyes: a wheel of cheese has no business
+    // having eyes, and a mouth that can bend from a grin to a grimace to a
+    // wobbling line carries every expression this thing needs.
+    this.mouth = new THREE.Group(); this.mouth.position.set(0, 0.06, 0); this.face.add(this.mouth);
+    // the dark inside, a half-disc that opens under the smile line
+    this.maw = new THREE.Mesh(new THREE.CircleGeometry(1, 18, Math.PI, Math.PI), flat(0x5c1220));
+    this.maw.position.z = -0.01; this.mouth.add(this.maw);
+    // the smile itself: a row of chunky pixels that trace the curve
+    this.lip = [];
+    const LIPS = 13;
+    for (let i = 0; i < LIPS; i++) {
+      const m = new THREE.Mesh(new THREE.BoxGeometry(0.085, 0.085, 0.03), flat(0x22131a));
+      this.mouth.add(m); this.lip.push(m);
     }
     // A stupid little tongue that flops out whenever this is going badly or
     // extremely well, which is most of the time.
-    this.tongue = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.34, 0.06), flat(0xff7a9a));
-    this.tongue.position.set(0.06, -0.42, 0.05); this.tongue.visible = false; this.face.add(this.tongue);
+    this.tongue = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.3, 0.06), flat(0xff7a9a));
+    this.tongue.position.set(0.04, -0.3, 0.02); this.tongue.visible = false; this.mouth.add(this.tongue);
+    // how the smile is sitting right now, damped toward whatever the mood wants
+    this.sm = { curve: 0.16, open: 0.06, wob: 0, wide: 1 };
 
     // mech parts, revealed as they are installed
     this.parts = {};
@@ -97,7 +83,6 @@ CZ.Player = class Player {
     this.rope = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 1, 6), new THREE.MeshBasicMaterial({ color: 0x43b8ff }));
     this.rope.visible = false; this.game.scene.add(this.rope);
     this.ghostMat = new THREE.MeshBasicMaterial({ color: 0x39ff88, transparent: true, opacity: 0.5 });
-    this.blinkT = 2;
   }
 
   // The wheel is drawn as a partial cylinder: missing wedges are damage.
@@ -263,15 +248,6 @@ CZ.Player = class Player {
     this.face.scale.set(fs / Math.max(0.2, b.scale.x), fs / Math.max(0.2, b.scale.y), 1);
     this.updateFace(dt);
 
-    // the tongue: out at speed, out while flat, out while dizzy. Always stupid.
-    const lolling = this.dizzy > 0 || this.squish > 0.4 || mo > 20 || this.heat > 0.5;
-    this.tongue.visible = lolling;
-    if (lolling) {
-      this.tongue.scale.y = 1 + Math.sin(this.time * 17) * 0.35;
-      this.tongue.rotation.z = Math.sin(this.time * 11) * 0.5 - this.vx * 0.02;
-      this.tongue.position.x = 0.06 + Math.sin(this.time * 9) * 0.05;
-    }
-
     // parts
     for (const id in this.parts) {
       const on = id === 'cockpit' ? this.partCount() >= 4 : this.has(id);
@@ -297,45 +273,55 @@ CZ.Player = class Player {
     }
   }
 
-  // Only eyes. No brows, no mouth: the googly pupils carry the whole performance.
+  // One mouth, no eyes, and it has to act. Everything the cheese is feeling is
+  // in how far the smile bends, how far it opens, and how badly it wobbles.
+  //
+  // `curve` is the bend: positive is a smile, negative a grimace. `open` is how
+  // much of the space between the corners and the bend is dark inside, so the
+  // lip always lands exactly on the rim of the hole instead of cutting across
+  // it. `wide` stretches the whole thing sideways.
   updateFace(dt) {
-    const mood = this.mood();
-    for (const e of this.eyes) {
-      // A real googly eye has no centring spring: the disc is a weight on a
-      // slippery floor. Gravity pulls it down, the case dragging it around
-      // throws it about, and the rim it slides along takes the edge off.
-      const R = e.R;
-      e.vx += (-this.accelX * 0.055 * e.wob) * dt;
-      e.vy += (-14 * e.wob - (this.vy > 6 ? 7 : 0)) * dt;
-      e.vx *= Math.exp(-dt * 1.1); e.vy *= Math.exp(-dt * 1.1);
-      e.px += e.vx * dt; e.py += e.vy * dt;
-      const d = Math.hypot(e.px, e.py);
-      if (d > R) {
-        const nx = e.px / d, ny = e.py / d;
-        e.px = nx * R; e.py = ny * R;
-        const vn = e.vx * nx + e.vy * ny;          // radial part bounces, the
-        e.vx -= nx * vn * 1.45; e.vy -= ny * vn * 1.45;   // tangential part slides on
-        e.vx *= 0.86; e.vy *= 0.86;
-      }
-      if (this.charge > 0.05) {                     // winding up spins them
-        const a = this.time * (10 + this.charge * 40) * e.wob + e.phase;
-        e.px = Math.cos(a) * R; e.py = Math.sin(a) * R; e.vx = e.vy = 0;
-      } else if (this.spinning()) {
-        const a = this.time * 24 * e.wob + e.phase;
-        e.px = Math.cos(a) * R; e.py = Math.sin(a) * R; e.vx = e.vy = 0;
-      } else if (mood === 'squish') {   // squashed flat: the discs slide to the sides
-        e.px = CZ.damp(e.px, (e === this.eyes[0] ? -1 : 1) * R, 16, dt); e.py = CZ.damp(e.py, 0, 16, dt); e.vy *= 0.5;
-      }
-      e.pupil.position.set(e.px, e.py, 0.026);
-      e.pupil.scale.setScalar(mood === 'scared' ? 0.55 : mood === 'melting' ? 1.35 : mood === 'hurt' ? 1.25 : 1);
-      // the whole eye wobbles on its glue, harder the faster you are going
-      e.socket.rotation.z = e.tilt + Math.sin(this.time * 3.2 + e.phase) * (0.06 + Math.abs(this.vx) * 0.012);
-      e.socket.position.y = e.baseY + Math.sin(this.time * 9 + e.phase) * Math.min(0.05, Math.abs(this.vx) * 0.004);
+    const mood = this.mood(), S = this.sm;
+    let curve = 0.27, open = 0, wob = 0, wide = 1;
+    if (mood === 'happy') { curve = 0.5; open = 1; }
+    else if (mood === 'determined') { curve = 0.2; open = 0.78; wide = 1.2; }
+    else if (mood === 'squish') { curve = 0.12; open = 0; wide = 1.6; }
+    else if (mood === 'scared') { curve = -0.42; open = 0.92; wide = 0.55; }
+    else if (mood === 'hurt') { curve = -0.34; open = 0.72; wob = 0.05; wide = 0.85; }
+    else if (mood === 'melting') { curve = -0.14; open = 0.5; wob = 0.02; wide = 1.15; }
+    else if (mood === 'strain') { curve = -0.22; open = 0.45; wide = 0.75; }
+    if (this.charge > 0.05) { curve = -0.08 - this.charge * 0.14; open = 0.75; wide = 0.75; }
+    if (this.dizzy > 0) { curve = 0.04; open = 0.95; wob = 0.06; }
+    // a grin spreads; a wince snaps on
+    S.curve = CZ.damp(S.curve, curve, curve < S.curve ? 30 : 15, dt);
+    S.open = CZ.damp(S.open, open, 18, dt);
+    S.wob = CZ.damp(S.wob, wob, 18, dt);
+    S.wide = CZ.damp(S.wide, wide, 16, dt);
+
+    const bow = S.curve, halfW = 0.4 * S.wide, N = this.lip.length;
+    for (let i = 0; i < N; i++) {
+      const u = (i / (N - 1)) * 2 - 1;
+      const m = this.lip[i];
+      m.position.set(u * halfW, -bow * (1 - u * u) + Math.sin(this.time * 15 + i * 1.3) * S.wob, 0);
+      m.rotation.z = Math.atan2(2 * bow * u, 1.7);          // follow the slope
+      m.scale.set(1.15, 1.05, 1);
     }
-    this.blinkT -= dt; if (this.blinkT < 0) this.blinkT = 1.6 + Math.random() * 3.4;
-    const open = this.blinkT < 0.11 ? 0.08 : mood === 'determined' ? 0.58
-      : mood === 'squish' ? 0.35 : mood === 'melting' ? 0.45 : mood === 'scared' ? 1.25 : 1;
-    for (const e of this.eyes) e.socket.scale.y = CZ.damp(e.socket.scale.y, open, 34, dt);
+    // the hole, sized so its rim is exactly where the lip runs
+    const h = Math.abs(bow) * S.open;
+    this.maw.visible = h > 0.022;
+    this.maw.scale.set(halfW * 0.94, Math.max(0.02, h), 1);
+    this.maw.rotation.z = bow < 0 ? Math.PI : 0;            // a grimace opens upward
+    this.maw.position.y = 0;
+    this.mouth.position.y = -0.07 + Math.abs(bow) * 0.25 + this.heat * 0.02;
+    // the tongue lolls out of an open mouth, never out of a closed one
+    const lolling = (this.dizzy > 0 || this.squish > 0.4 || this.heat > 0.5
+      || Math.abs(this.vx) > 20) && h > 0.07;
+    this.tongue.visible = lolling;
+    if (lolling) {
+      this.tongue.scale.y = 1 + Math.sin(this.time * 17) * 0.3;
+      this.tongue.position.set(0.04 + Math.sin(this.time * 9) * 0.05, -h * 0.9, 0.02);
+      this.tongue.rotation.z = Math.sin(this.time * 11) * 0.45 - this.vx * 0.015;
+    }
   }
 
   partCount() { return CZ.ABILITY_ORDER.filter(id => this.has(id)).length; }

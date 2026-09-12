@@ -99,7 +99,7 @@ CZ.Cinematic = class Cinematic {
     this.door.position.set(13, -6.2, -3); S.add(this.door);
   }
 
-  // A cheese wheel: rind, holes, and - if it is you - a pair of googly eyes.
+  // A cheese wheel: rind, holes, and - if it is you - a smile.
   makeWheel(r, rotten, eyes) {
     const g = new THREE.Group();
     const body = new THREE.Mesh(new THREE.CylinderGeometry(r, r, r * 1.05, 20),
@@ -117,16 +117,19 @@ CZ.Cinematic = class Cinematic {
       }
     }
     if (eyes) {
-      this.eyes = [];
-      for (const [ex, ey, er, pr] of [[-0.82, 0.5, 0.95, 0.44], [0.74, 0.16, 0.74, 0.4]]) {
-        const rim = new THREE.Mesh(new THREE.CircleGeometry(er, 16), new THREE.MeshBasicMaterial({ color: 0x2a1a0e }));
-        rim.position.set(ex, ey, r * 0.54); g.add(rim);
-        const white = new THREE.Mesh(new THREE.CircleGeometry(er - 0.12, 16), new THREE.MeshBasicMaterial({ color: 0xffffff }));
-        white.position.z = 0.02; rim.add(white);
-        const pup = new THREE.Mesh(new THREE.CircleGeometry(pr, 12), new THREE.MeshBasicMaterial({ color: 0x140c06 }));
-        pup.position.z = 0.04; white.add(pup);
-        this.eyes.push({ pup, R: er - pr - 0.16, p: CZ.rand(0, 6.3), w: CZ.rand(0.8, 1.4) });
+      // The same face the game gives you: one smile, and nothing else.
+      const mouth = new THREE.Group(); mouth.position.set(0, -r * 0.04, r * 0.54); g.add(mouth);
+      const maw = new THREE.Mesh(new THREE.CircleGeometry(1, 16, Math.PI, Math.PI),
+        new THREE.MeshBasicMaterial({ color: 0x5c1220 }));
+      maw.position.z = -0.01; mouth.add(maw);
+      const lip = [];
+      for (let i = 0; i < 11; i++) {
+        const m = new THREE.Mesh(new THREE.BoxGeometry(r * 0.1, r * 0.1, 0.04),
+          new THREE.MeshBasicMaterial({ color: 0x22131a }));
+        mouth.add(m); lip.push(m);
       }
+      this.smile = { mouth, maw, lip, halfW: r * 0.56, curve: 0.16, open: 0.06 };
+      this.setSmile(0.16, 0.06);
     }
     return g;
   }
@@ -162,12 +165,37 @@ CZ.Cinematic = class Cinematic {
   }
   once(id, fn) { if (this.said[id]) return; this.said[id] = true; fn(); }
   heroAnchor(dy = 3.4, dx = 0) { return () => [this.hero.position.x + dx, this.hero.position.y + dy, this.hero.position.z]; }
-  // the googly eyes swing on their own, out of step with each other
-  wobbleEyes(k = 1) {
-    for (const e of this.eyes) {
-      const a = Math.sin(this.t * 3.1 * e.w + e.p) * 1.1 * k - Math.PI / 2;
-      e.pup.position.set(Math.cos(a) * e.R, Math.sin(a) * e.R, 0.04);
+  // Bend the cutscene smile. curve: + is a grin, - is a grimace.
+  setSmile(curve, open, wob = 0) {
+    const S = this.smile; if (!S) return;
+    S.curve = curve; S.open = open;
+    const k = S.halfW * 2, N = S.lip.length;
+    for (let i = 0; i < N; i++) {
+      const u = (i / (N - 1)) * 2 - 1;
+      const m = S.lip[i];
+      m.position.set(u * S.halfW, (-curve * (1 - u * u) + Math.sin(this.t * 15 + i * 1.3) * wob) * k, 0);
+      m.rotation.z = Math.atan2(2 * curve * u, 1.9);
+      m.scale.set(1.25, 1.1, 1);
     }
+    const rr = Math.abs(curve) * open * k;
+    S.maw.visible = rr > 0.05;
+    S.maw.scale.set(S.halfW * 0.94, Math.max(0.03, rr), 1);
+    S.maw.rotation.z = curve < 0 ? Math.PI : 0;
+  }
+  // The cutscene has four beats and the mouth plays all of them: bored on the
+  // shelf, appalled by the mould, wide open on the way down, set on the way out.
+  faceBeat(dt) {
+    if (!this.smile) return;
+    const S = this.smile;
+    let curve = 0.14, open = 0.1, wob = 0;
+    if (this.phase === 'shelf') { curve = 0.13; open = 0.1 + Math.sin(this.t * 1.4) * 0.04; }
+    else if (this.phase === 'mould') { curve = -0.44; open = 0.9; wob = 0.05; }
+    else if (this.phase === 'fall') { curve = -0.24; open = 1; wob = 0.03; }
+    else if (this.phase === 'out') { curve = 0.52; open = 0.85; }
+    S.tc = CZ.damp(S.tc === undefined ? curve : S.tc, curve, 7, dt);
+    S.to = CZ.damp(S.to === undefined ? open : S.to, open, 7, dt);
+    S.tw = CZ.damp(S.tw === undefined ? wob : S.tw, wob, 7, dt);
+    this.setSmile(S.tc, S.to, S.tw);
   }
 
   // ---------- timeline ----------
@@ -186,7 +214,7 @@ CZ.Cinematic = class Cinematic {
       if (d.m.position.y > 9) d.m.position.y = -6;
     }
     this.doorGlow.material.opacity = 1;
-    this.wobbleEyes();
+    this.faceBeat(dt);
 
     if (this.phase === 'shelf') this.phaseShelf(dt);
     else if (this.phase === 'mould') this.phaseMould(dt);
