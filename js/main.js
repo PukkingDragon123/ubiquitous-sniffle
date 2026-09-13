@@ -82,14 +82,8 @@ CZ.Game = class Game {
     const U = CZ.UI, $ = U.$;
     const gesture = () => CZ.Audio.resume();
     window.addEventListener('pointerdown', gesture, { once: true }); window.addEventListener('keydown', gesture, { once: true });
-    $('btn-play').onclick = () => {
-      // straight back into the furthest world you have reached
-      const i = CZ.clamp(this.save.level | 0, 0, CZ.LEVELS.length - 1);
-      this.wipeTo(() => { U.show('title', false); this.startLevel(i, false); });
-    };
-    $('btn-worlds').onclick = () => { U.show('title', false); this.showWorlds(); };
-    $('btn-controls').onclick = () => { U.show('title', false); U.show('controls', true); };
-    $('btn-settings').onclick = () => { U.show('title', false); this.openSettings(false); };
+    $('btn-controls').onclick = () => { U.show('levelselect', false); U.show('controls', true); };
+    $('btn-settings').onclick = () => { U.show('levelselect', false); this.openSettings(false); };
     $('btn-pause-settings').onclick = () => { U.show('pause', false); this.openSettings(true); };
     $('btn-erase').onclick = () => {
       if (this._eraseArmed) {
@@ -105,7 +99,7 @@ CZ.Game = class Game {
     };
     $('btn-replay-intro').onclick = () => this.startIntro();
     document.querySelectorAll('[data-back]').forEach(b => b.onclick = () => {
-      U.show('controls', false); U.show('settings', false); U.show('levelselect', false);
+      U.show('controls', false); U.show('settings', false);
       if (this._settingsFromPause) { this._settingsFromPause = false; U.show('pause', true); this.state = 'paused'; CZ.Touch.setVisible(false); }
       else this.showMenu();
     });
@@ -150,8 +144,8 @@ CZ.Game = class Game {
     if (this.screenMat) this.screenMat.uniforms.levels.value = o.palette ? CZ.COLOR_LEVELS : 64;
   }
 
-  // The main menu: a title, a PLAY button that puts you back where you were,
-  // and the doors to everything else.
+  // There is no title screen. The world picker is where you land, over a
+  // rendered shelf in the wine cellar with you sitting on it.
   showMenu() {
     const U = CZ.UI;
     this.unloadLevel();
@@ -159,21 +153,14 @@ CZ.Game = class Game {
     if (this.cine) { this.cine.dispose(); this.cine = null; }
     U.cineShow(false); U.cineFx(0, 0); CZ.Comic.show(false);
     U.show('hud', false); U.show('complete', false); U.show('ending', false); U.show('unlock', false);
-    U.show('controls', false); U.show('settings', false); U.show('levelselect', false);
+    U.show('controls', false); U.show('settings', false);
     U.sign(null); CZ.Touch.setMode('play'); CZ.Touch.setVisible(false);
-    U.$('btn-play').textContent = this.save.level > 0 ? 'CONTINUE' : 'PLAY';
-    U.show('title', true);
-    // the menu is a place, not a colour: a shelf in the cellar with you on it
+    U.levelList(CZ.LEVELS, this.save, i => this.wipeTo(() => { U.show('levelselect', false); this.startLevel(i, false); }));
+    U.show('levelselect', true);
     if (!this.menuScene) this.menuScene = new CZ.MenuScene();
     this.menuScene.camera.aspect = this.camera.aspect; this.menuScene.camera.updateProjectionMatrix();
     this.state = 'menu';
     CZ.Audio.playMusic('factory');
-  }
-  // The world picker, one step in from the menu.
-  showWorlds() {
-    const U = CZ.UI;
-    U.levelList(CZ.LEVELS, this.save, i => this.wipeTo(() => { U.show('levelselect', false); this.startLevel(i, false); }));
-    U.show('levelselect', true);
   }
 
   // ---------- opening cinematic ----------
@@ -182,7 +169,7 @@ CZ.Game = class Game {
     if (this.cine) { this.cine.dispose(); this.cine = null; }
     const U = CZ.UI;
     U.show('hud', false); U.show('complete', false); U.show('ending', false);
-    U.show('levelselect', false); U.show('title', false);
+    U.show('levelselect', false);
     U.cineShow(true); CZ.Comic.show(true);
     this.cine = new CZ.Cinematic(this);
     this.cine.camera.aspect = this.camera.aspect; this.cine.camera.updateProjectionMatrix();
@@ -243,7 +230,7 @@ CZ.Game = class Game {
     this.checkpoint = { x: data.spawn[0], y: data.spawn[1] }; this.player.respawn(this.checkpoint.x, this.checkpoint.y);
     this.spawnEnemies();
     this.camX = this.player.cx(); this.camY = this.player.cy() + 2; this.camZ = 19;
-    U.show('levelselect', false); U.show('title', false); U.show('complete', false); U.show('hud', true); U.levelName(data.name, data.sub); U.bossBar(null); U.sign(null);
+    U.show('levelselect', false); U.show('complete', false); U.show('hud', true); U.levelName(data.name, data.sub); U.bossBar(null); U.sign(null);
     U.parts(this.abilities); U.wrecked(0);
     CZ.Spr.paint();
     CZ.Audio.playMusic(data.song);
@@ -344,7 +331,6 @@ CZ.Game = class Game {
     this.state = 'playing';
     const p = this.player;
     p.vx = -p.facing * 11; p.vy = 6; p.squash = 1.3;
-    CZ.Effects.pop(p.cx(), p.cy(), { color: 0xff7a9a, to: 2, life: 0.3 });
     CZ.Effects.stars(p.cx(), p.cy() + 0.6, 5, { colors: [0xff7a9a, 0xffffff], spread: 5 });
   }
 
@@ -374,7 +360,6 @@ CZ.Game = class Game {
   bossDefeated(boss) {
     this.boss = null; CZ.UI.bossBar(null); CZ.Effects.shake(1.5); this.flash('rgba(255,255,255,.8)');
     CZ.Audio.playMusic(this.level.data.song);
-    CZ.Effects.pop(this.player.cx(), this.player.cy() + 1, { color: 0xffffff, to: 8, life: 0.7, rings: 3 });
     CZ.Effects.stars(this.player.cx(), this.player.cy() + 1, 16, { spread: 13, size: 0.8, life: 1.2 });
     const lines = {
       ratking: ['Tell no one a cheese did this.'],
@@ -463,7 +448,6 @@ CZ.Game = class Game {
       CZ.Audio.sfx.unlock();
       CZ.Effects.burst(a.x, a.y + 0.8, 0x9fd4ff, 34, { spread: 10, up: 6, life: 1.2, size: 1.4 });
       CZ.Effects.shake(0.6);
-      CZ.Effects.pop(a.x, a.y + 1, { color: 0x9fd4ff, to: 5, life: 0.5, rings: 2 });
       CZ.Effects.stars(a.x, a.y + 1, 12, { colors: [0x9fd4ff, 0xffffff, 0x39ff88], spread: 9, life: 1 });
       this.state = 'unlock'; U.unlock(a.id); U.parts(this.abilities);
       CZ.Touch.syncAbilities(this.abilities);
@@ -475,7 +459,6 @@ CZ.Game = class Game {
       if (!CZ.overlapPad(box, { x: lv.x - 0.8, y: lv.y, w: 1.6, h: 1.8 }, 0.3)) continue;
       lv.on = true; lv.handle.rotation.z = -0.9;
       CZ.Audio.sfx.checkpoint(); CZ.Effects.shake(0.4);
-      CZ.Effects.pop(lv.x, lv.y + 1.2, { color: 0x39ff88, to: 2.4, life: 0.32 });
       CZ.Effects.stars(lv.x, lv.y + 1.2, 5, { colors: [0x39ff88, 0xffffff], spread: 5 });
       for (const g of L.solids) if (g.gate && g.gate === lv.opens) {
         g.broken = true; g.mesh.visible = false;
@@ -507,8 +490,9 @@ CZ.Game = class Game {
     // enemies
     for (const e of this.enemies) {
       if (e.dead || !CZ.overlap(box, e.aabb())) continue;
+      if (e.onHitBy && e.onHitBy(p)) continue;        // armoured things answer for themselves
       if (p.dashing && e.dashKill) { e.kill('dash'); CZ.Effects.shake(0.3); continue; }
-      if (p.spinning()) { e.kill('dash'); CZ.Effects.pop(e.cx(), e.cy(), { to: 2.6, life: 0.3 }); CZ.Effects.stars(e.cx(), e.cy(), 6, { spread: 8 }); continue; }
+      if (p.spinning()) { e.kill('dash'); CZ.Effects.stars(e.cx(), e.cy(), 6, { spread: 8 }); continue; }
       if (p.pounding) { e.kill('stomp'); p.vy = CZ.P.POUND_BOUNCE; p.pounding = false; p.jumpsUsed = 1; p.canDash = true; p.squash = 1.4; continue; }
       if (p.vy < 0 && p.y > e.y + e.h * 0.45 && e.stompable) { e.kill('stomp'); p.vy = 12.5; p.jumpsUsed = 1; p.canDash = true; p.squash = 1.35; CZ.Effects.shake(0.2); continue; }
       if (e.hurts && p.iframes <= 0) p.damage(e.cx());
@@ -571,7 +555,7 @@ CZ.Game = class Game {
   render() {
     if (this.state === 'ending') { this.renderer.setRenderTarget(null); this.renderer.setClearColor(0x140d1c); this.renderer.clear(); return; }
     // the menu, the cutscene and the game all go through the same pixel pipe,
-    // so the title screen is made of the same pixels as everything else
+    // so the menu is made of the same pixels as everything else
     let scene = this.scene, cam = this.camera;
     if (this.state === 'menu' && this.menuScene) { scene = this.menuScene.scene; cam = this.menuScene.camera; }
     else if (this.state === 'intro' && this.cine) { scene = this.cine.scene; cam = this.cine.camera; }

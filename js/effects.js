@@ -11,10 +11,10 @@ CZ.Effects = (() => {
   // Dust: soft billboards that bloom and fade where something came apart.
   const dust = [];
   let dustGeo = null, dustTex = null, dustPool = [];
-  // The cartoon layer: impact rings, spinning stars, thrown cheese.
-  const rings = [], starList = [], blobs = [];
-  let ringGeo = null, starGeo = null, blobGeo = null;
-  let ringPool = [], starPool = [], blobPool = [];
+  // The cartoon layer: spinning stars and thrown cheese.
+  const starList = [], blobs = [];
+  let starGeo = null, blobGeo = null;
+  let starPool = [], blobPool = [];
   // Debris asks the level what is underneath it, so a heap lands on the ledge
   // it was knocked off rather than on one imaginary plane.
   let level = null;
@@ -30,11 +30,10 @@ CZ.Effects = (() => {
     chunkGeo = new THREE.BoxGeometry(1, 1, 1);
     dustGeo = new THREE.PlaneGeometry(1, 1);
     dustTex = dustTex || makeDustTex();
-    ringGeo = new THREE.RingGeometry(0.78, 1, 18);
     starGeo = makeStarGeo();
     blobGeo = new THREE.SphereGeometry(1, 7, 5);
-    for (const a of [rings, starList, blobs]) { for (const m of a) scene.remove(m); a.length = 0; }
-    ringPool = []; starPool = []; blobPool = [];
+    for (const a of [starList, blobs]) { for (const m of a) scene.remove(m); a.length = 0; }
+    starPool = []; blobPool = [];
     particles.length = 0; pool = [];
     for (const c of chunks) scene.remove(c);
     for (const d of dust) scene.remove(d);
@@ -103,45 +102,8 @@ CZ.Effects = (() => {
     }
   }
   // ── the cartoon vocabulary ───────────────────────────────────────────
-  // These are what a hit looks like now that there are no words on the screen:
-  // a ring that snaps outward, stars that spin off it, and a splat of cheese.
-
-  // A flat ring that flashes out from a point and thins as it goes. One of
-  // these reads as an impact faster than any amount of writing.
-  function pop(x, y, opts = {}) {
-    if (!scene) return;
-    const n = opts.rings ?? 1;
-    for (let i = 0; i < n; i++) {
-      let m = ringPool.pop();
-      if (!m) m = new THREE.Mesh(ringGeo, new THREE.MeshBasicMaterial({
-        color: 0xffffff, transparent: true, side: THREE.DoubleSide, depthWrite: false }));
-      m.material.color.set(opts.color ?? 0xfff3c0);
-      m.material.opacity = opts.opacity ?? 0.95;
-      m.position.set(x, y, (opts.z ?? 0.9) + i * 0.05);
-      m.rotation.z = CZ.rand(0, 6.3);
-      const r0 = (opts.from ?? 0.25) * (1 + i * 0.3);
-      m.scale.set(r0, r0 * (opts.squash ?? 1), 1);
-      m.userData = {
-        life: (opts.life ?? 0.34) * (1 + i * 0.25), max: 0,
-        to: (opts.to ?? 2.6) * (1 + i * 0.35), from: r0,
-        squash: opts.squash ?? 1, o0: m.material.opacity, spin: CZ.rand(-3, 3),
-      };
-      m.userData.max = m.userData.life;
-      scene.add(m); rings.push(m);
-    }
-  }
-  function stepRings(dt) {
-    for (let i = rings.length - 1; i >= 0; i--) {
-      const m = rings[i], u = m.userData;
-      u.life -= dt;
-      if (u.life <= 0) { scene.remove(m); rings.splice(i, 1); ringPool.push(m); continue; }
-      const k = 1 - u.life / u.max;             // 0 at the flash, 1 when gone
-      const r = CZ.lerp(u.from, u.to, 1 - Math.pow(1 - k, 2.2));
-      m.scale.set(r, r * u.squash, 1);
-      m.rotation.z += u.spin * dt;
-      m.material.opacity = u.o0 * (1 - k) * (1 - k);
-    }
-  }
+  // What a hit looks like now that there are no words on the screen: stars
+  // that spin off it, and a splat of cheese.
 
   // Four-pointed stars that fly off a hit and tumble. Pure cartoon.
   function stars(x, y, n = 5, opts = {}) {
@@ -402,7 +364,7 @@ CZ.Effects = (() => {
   function update(dt) {
     stepChunks(dt);
     stepDust(dt);
-    stepRings(dt); stepStars(dt); stepBlobs(dt);
+    stepStars(dt); stepBlobs(dt);
     for (let i = particles.length - 1; i >= 0; i--) {
       const p = particles[i], u = p.userData;
       u.life -= dt;
@@ -423,7 +385,7 @@ CZ.Effects = (() => {
     for (const p of particles) scene.remove(p); particles.length = 0;
     for (const c of chunks) scene.remove(c); chunks.length = 0;
     for (const d of dust) scene.remove(d); dust.length = 0;
-    for (const a of [rings, starList, blobs]) { for (const m of a) scene.remove(m); a.length = 0; }
+    for (const a of [starList, blobs]) { for (const m of a) scene.remove(m); a.length = 0; }
     level = null;
   }
   // Release the GPU geometry under an object tree. Materials and textures are
@@ -435,6 +397,6 @@ CZ.Effects = (() => {
   }
   const getShake = () => ({ x: shakeX, y: shakeY });
 
-  return { init, toon, basic, outline, edges, box, burst, smash, puff, pop, stars, splat,
+  return { init, toon, basic, outline, edges, box, burst, smash, puff, stars, splat,
     setLevel, shake, update, clear, disposeTree, getShake };
 })();

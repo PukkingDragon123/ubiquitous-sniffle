@@ -61,6 +61,7 @@ CZ.LEVELS = (() => {
       deco('bottle', 12.4, 0), deco('bottle', 13.2, 0), deco('knifeblock', 17, 0),
       ramp(20, 0, 7, 4, 1), solid(27, 0, 6, 4), ramp(33, 0, 7, 4, -1),
       deco('crate', 29, 4), deco('cheesewheel', 43, 0), deco('bottle', 45.6, 0),
+      enemy('fly', 57, 11, { amp: 3, speed: 1.3 }),
       wood(39, 0, 2, 2, { crate: true }),
 
       // ── two ways past the crate wall: smash it, or squish under the shelf ──
@@ -81,7 +82,9 @@ CZ.LEVELS = (() => {
 
       // ── the lever gate, and the vent that skips it entirely ──
       ramp(98, 0, 7, 4, 1), solid(105, 0, 5, 4), ramp(110, 0, 6, 4, -1),
+      enemy('mites', 107, 5.6, { range: 8, speed: 1.7 }),
       enemy('bugcrawl', 114, 0, { min: 110, max: 120 }),
+      enemy('trap', 118.5, 0),
       lever(122, 0, 'g1'),
       gate(128, 0, 2, 9, 'g1'),
       // ...or climb the crates and crawl the duct clean over the top of it
@@ -96,6 +99,7 @@ CZ.LEVELS = (() => {
       ability(143, 3, 'doubleJump'),
       deco('cheesewheel', 150, 0), deco('cheesewheel', 152.4, 0),
       enemy('spider', 151, 13.6, { drop: 3.6, speed: 1.8 }),
+      enemy('weevil', 158, 0, { min: 146, max: 161 }),
 
       // ── the drain: get a run at it ──
       ramp(162, 0, 8, 4, 1),
@@ -127,16 +131,18 @@ CZ.LEVELS = (() => {
       solid(80, 0, 22, 4), // deck top y=4
       grater(88, 4), grater(95, 4),
       enemy('spore', 92, 7.5, { amp: 1.2, speed: 2 }),
+      enemy('fly', 96, 10, { amp: 5, speed: 1.5 }),
       conveyor(102, 120, 4, -7), solid(102, 0, 18, 3),
       grater(112, 4),
       solid(120, 0, 22, 4), check(122, 4), 
       // drop to y=0 and moving platforms over goo
-      floor(142, 152), deco('shelf', 146, 0),
+      floor(142, 152), deco('shelf', 146, 0), enemy('trap', 149, 0),
       goo(152, 172, -2), solid(152, -6, 20, 3),
       mplat(153, 1, 3, 0, 3, 2.6),
       mplat(160, 2, 3, 4, 0, 3, 1.5),
       floor(172, 194),
       enemy('rat', 178, 0, { min: 173, max: 192 }),
+      enemy('weevil', 186, 0, { min: 173, max: 193 }),
       deco('crate', 190, 0, { stack: 3 }), deco('cheesewheel', 176, 0),
       ability(184, 1, 'dash'),
       glitch(194, 0, 3, 6), floor(194, 206),
@@ -145,6 +151,7 @@ CZ.LEVELS = (() => {
       glitch(222, 0, 2, 5),
       enemy('rat', 230, 0, { min: 224, max: 236 }),
       enemy('rat', 240, 0, { min: 236, max: 248 }),
+      enemy('mites', 246, 1.4, { range: 10 }),
       // hidden pit under a glitch floor
       glitch(238, -3, 5, 3), solid(238, -10, 5, 1), bounce(238.5, -9, 1.6),
       solid(233, -9, 5, 6), solid(243, -9, 5, 6),
@@ -165,10 +172,12 @@ CZ.LEVELS = (() => {
       solid(29, -3, 2, 3), solid(34.5, -3, 2, 3),
       floor(40, 60),
       enemy('blob', 46, 0, { min: 41, max: 58 }), enemy('blob', 54, 0, { min: 41, max: 58 }),
+      enemy('fly', 50, 7.5, { amp: 5, speed: 1.7 }),
       plat(50, 3.5, 3), goo(60, 70, -1), solid(60, -5, 10, 3),
       floor(70, 92), deco('knifeblock', 75, 0), deco('crate', 78, 0),
       check(72),
       enemy('turret', 86, 0, { dir: -1, rate: 2.2 }),
+      enemy('weevil', 76, 0, { min: 70, max: 90 }),
       ability(80, 1, 'wallJump'),
       // the shaft: walk under the left wall, climb between x=94 and x=98
       solid(92, 3, 2, 9),           // left wall, y 3..12
@@ -184,6 +193,8 @@ CZ.LEVELS = (() => {
       floor(162, 200), deco('crate', 167, 0, { stack: 3 }), deco('rack', 196, 0),
       check(164),
       enemy('blob', 172, 0, { min: 164, max: 184 }),
+      enemy('mites', 190, 1.5, { range: 12, speed: 2.4 }),
+      enemy('trap', 178, 0),
       enemy('turret', 190, 0, { dir: -1, rate: 1.8 }),
       solid(184, 0, 2, 3), glitch(180, 3, 4, 1), // final climb: alternating walls with goo below
       goo(200, 226, -1), solid(200, -5, 26, 3),
@@ -204,12 +215,15 @@ CZ.LEVELS = (() => {
       ramp(6, 0, 6, 3, 1), ramp(12, 0, 5, 3, -1),
       press(18, 1, 3, 3, 4.5, 2.2, 0), press(30, 1, 3, 3, 4.5, 2.2, 1.1), press(42, 1, 3, 3, 4.5, 2.2, 0.5),
       enemy('rat', 50, 0, { min: 46, max: 58 }),
+      enemy('weevil', 36, 0, { min: 24, max: 45 }),
+      enemy('trap', 54, 0),
       plat(24, 6.5, 3), // belts + knives
       conveyor(60, 80, 0, 8), solid(60, -3, 20, 2),
       knives(80, 0, 4), solid(80, -3, 4, 3),
       floor(84, 110), deco('rack', 88, 0), deco('shelf', 96, 0), deco('knifeblock', 108, 0),
       enemy('turret', 104, 0, { dir: -1, rate: 2 }),
       enemy('rat', 92, 0, { min: 85, max: 100 }),
+      enemy('fly', 98, 8, { amp: 6, speed: 1.6 }),
       check(86),
       mplat(112, 0.5, 4, 0, 5, 3.5),
       solid(118, 0, 20, 5.5),      // deck top 5.5
@@ -222,6 +236,8 @@ CZ.LEVELS = (() => {
       solid(118, -11, 20, 11),      // solid mass under the deck
       enemy('rat', 150, -8, { min: 140, max: 160 }),
       enemy('rat', 165, -8, { min: 160, max: 180 }),
+      enemy('mites', 174, -6.6, { range: 11 }),
+      enemy('weevil', 156, -8, { min: 140, max: 178 }),
       cracked(170, -8, 3, 3), // crack a block guarding a bug? (bug sits on top)
       solid(180, -8, 3, 2), cracked(186, -8, 4, 5), bounce(195, -8, 2.5),
       solid(198, -11, 4, 11),       // wall right of lower floor up to y=0
@@ -250,15 +266,19 @@ CZ.LEVELS = (() => {
       wind(52, -8, 5, 26, 70), solid(52, -9, 5, 1),
       solid(57, 7, 18, 3),                // ledge top y=10
       enemy('rat', 64, 10, { min: 58, max: 74 }),
+      enemy('fly', 70, 16, { amp: 6, speed: 1.4 }),
       plat(78, 6, 4), plat(85, 3, 4), floor(90, 120), deco('rack', 104, 0), deco('shelf', 115, 0),
       ramp(90, 0, 6, 3, 1), ramp(96, 0, 4, 3, -1),
       check(92),
       enemy('turret', 110, 0, { dir: -1, rate: 2 }),
+      enemy('weevil', 100, 0, { min: 90, max: 118 }),
+      enemy('trap', 106, 0),
       ability(100, 1, 'grapple'),
       hook(124, 7), hook(133, 9), hook(142, 7),
       goo(120, 150, -1), solid(120, -5, 30, 3),
       floor(150, 172), deco('crate', 155, 0, { stack: 2 }), deco('cheesewheel', 167, 0),
       enemy('blob', 160, 0, { min: 151, max: 170 }),
+      enemy('mites', 166, 1.5, { range: 10 }),
       // fan + hook combos
       wind(172, -8, 5, 30, 70), solid(172, -9, 5, 1),
       hook(184, 14), hook(196, 12),
@@ -289,6 +309,7 @@ CZ.LEVELS = (() => {
       solid(84, 0, 4, 6), solid(84, 6, 30, 0.6), floor(88, 118),   // tunnel roof y=6
       laser(96, 0, 0.6, 6, 1.6, 0.7, 0), laser(104, 0, 0.6, 6, 1.6, 0.7, 0.8),
       enemy('rat', 110, 0, { min: 106, max: 116 }),
+      enemy('fly', 112, 9, { amp: 5, speed: 1.8 }),
       floor(118, 140), check(120),
       ability(128, 1, 'noclip'),
       corrupt(140, 0, 5, 8), floor(140, 170),
@@ -298,12 +319,14 @@ CZ.LEVELS = (() => {
       corrupt(176, 3, 4, 1),           // corrupt bridge — phase to stand?? (no: can't stand while phasing) → use as a bridge only when NOT noclipping
       floor(186, 210), check(188),
       enemy('turret', 200, 0, { dir: -1, rate: 1.2 }),
+      enemy('weevil', 194, 0, { min: 187, max: 208 }),
       laser(194, 0, 0.6, 8, 1.4, 0.6, 0),
       // corrupt maze
       corrupt(210, 0, 3, 12), floor(210, 250),
       corrupt(216, 0, 6, 2), corrupt(226, 0, 3, 12), corrupt(233, 0, 3, 12),
       solid(229, 4, 4, 0.6),           // rest ledge between the walls (refill meter here)
       enemy('spore', 240, 4, { amp: 2, speed: 3 }),
+      enemy('mites', 234, 1.6, { range: 12, speed: 2.6 }),
       hook(246, 9), goo(250, 262, -1), solid(250, -5, 12, 3),
       floor(262, 330),
       talk(266, ['THE SORTER: UNGRADED ITEM.']),
@@ -330,12 +353,15 @@ CZ.LEVELS = (() => {
       cracked(99, 13, 4, 3), solid(103, 13, 3, 12),
       solid(99, 2, 20, 4),   // landing shelf top y=6 (x 99..119)
       enemy('blob', 110, 6, { min: 100, max: 118 }),
+      enemy('weevil', 104, 6, { min: 100, max: 118 }),
+      enemy('fly', 112, 13, { amp: 6, speed: 1.9 }),
       corrupt(119, 6, 4, 6), solid(123, 2, 14, 4),
       enemy('turret', 132, 6, { dir: -1, rate: 1.3 }),
       laser(128, 6, 0.6, 8, 1.6, 0.7, 0),
       wind(137, -10, 5, 40, 75), solid(137, -11, 5, 1),
       solid(142, 14, 20, 3),   // high ledge y=17
       enemy('rat', 150, 17, { min: 143, max: 160 }),
+      enemy('mites', 156, 18.5, { range: 11 }),
       hook(168, 20), hook(180, 22), hook(192, 20),
       plat(198, 12, 6), check(200, 12),
       mplat(206, 12, 3, 5, -3, 3),

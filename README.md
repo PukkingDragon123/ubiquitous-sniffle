@@ -70,8 +70,8 @@ holes to slip through a wall.
 ## Play
 
 The game opens on a short cutscene and drops you straight into world one. From the pause menu, QUIT takes you to the
-main menu: PLAY (which reads CONTINUE once you are past world one and puts you back at the furthest one you reached),
-WORLDS, CONTROLS, SETTINGS, and a button to watch the opening again.
+world picker - there is no title screen in between. The picker lists every world you have reached, and carries
+CONTROLS, SETTINGS and a button to watch the opening again.
 
 A single-file build is also available: run `node build.js` and open `dist/cheez-it.html`.
 
@@ -143,6 +143,22 @@ fist, winch arm, phase core.
    jump height or along the floor, and it crawls slowly enough that you can read which and get there.
 7. **The Loading Dock** — everything at once, and the door out. **Final boss: THE CHEESEMONGER** (he takes the floor away while you climb).
 
+### Vermin
+
+Every world is crawling with things that were already living in the factory before you were:
+
+- **Rats** patrol a stretch of floor. Stomp them or spin through them.
+- **Spores** bob on a sine, **blobs** ooze along, **turrets** spit, **spiders** drop on a thread, **bugs** scuttle.
+- **Cheese flies** hang in the air on a lazy figure of eight, wings beating, until you come within reach - then they
+  wind up and dive at you and climb back out of the way.
+- **Weevils** wear an armoured dome. A stomp bounces off and a touch cuts you; only real speed gets through, and it
+  does not kill them - it flips them on their back, legs waving, and *then* they are a stomp like anything else.
+- **Mousetraps** are furniture, not animals: nothing you do kills one. A trap sits armed with a lump of cheese on the
+  trigger plate and a blinking red light, and the bar comes down on a bigger box than the trap itself when you get
+  close. Wait it out or get past it while the spring is winching back.
+- **Mite swarms** are a cloud of pale specks that drifts at you when you are near and settles back home when you
+  leave. They never hurry and they never stop.
+
 Progress and installed parts save to `localStorage`.
 
 ## Look and feel
@@ -158,8 +174,8 @@ every icon, portrait and glyph is hand-authored pixel art.
   brick, riveted plate, corrugated cardboard, cracked magma, circuit board, ducting, cloud marble, cheese, belts.
 - **Three depths per world.** A dithered sky, two parallax background layers of themed props, the play plane, and a
   foreground layer of pipes, girders and chains that sweeps past in front of the camera.
-- **A menu that is a place.** The title screen is not a colour behind some
-  buttons: it is a rendered shelf in the wine cellar, drawn through the same pixel pipeline as the game. You are
+- **A menu that is a place.** There is no title screen at all - you land on the world picker, and behind it is a
+  rendered shelf in the wine cellar, drawn through the same pixel pipeline as the game. You are
   sitting on it with a face on, and four other wheels are up there with you - the further from the lamp, the greener
   and further gone they are. Wine racks, bottles, a lamp on a chain that swings and flickers, dust going up through
   it, and a camera that drifts and never quite settles.
@@ -169,10 +185,9 @@ every icon, portrait and glyph is hand-authored pixel art.
   drains away. Nothing is ever seen half-swapped, because the swap only happens at the moment the screen is solid
   cheese.
 - **No words on impacts.** POW / CRUNCH / SMASH read as a comic panel pasted over the game rather than part of it.
-  Every one of them is now something in the world instead: a ring that snaps outward from the point of impact, a
-  shower of four-pointed stars that spin off it and tumble, and a gout of cheese blobs that stretch along their own
-  velocity so they read as thrown rather than scattered. Landing hard rings the floor; a perfect launch, a smashed
-  shelf and a cracked wheel all throw cheese.
+  Every one of them is now something in the world instead: a shower of four-pointed stars that spin off the point of
+  impact and tumble, and a gout of cheese blobs that stretch along their own velocity so they read as thrown rather
+  than scattered. A perfect launch, a smashed shelf and a cracked wheel all throw cheese.
 - **Cloud balloons.** Every line of speech is a pixel-art cloud drawn per balloon, sized to the text, tracking a
   point in the 3D world, and never more than one on screen at a time. The lobes around the rim are deliberately
   uneven and the ink is deliberately uneven with them - a balloon whose every lobe is the same radius looks stamped
@@ -254,7 +269,7 @@ js/levels.js    level data (a tiny DSL: floor/plat/ramp/boost/hazard/mover/glitc
 js/effects.js   toon materials, outlines, particles, chunky debris, dust, screen shake
 js/level.js     level runtime: meshes, animation, collision queries, parallax backgrounds
 js/player.js    the cheese: movement controller + squash/stretch visuals
-js/enemies.js   rat, spore, blob, turret, projectiles
+js/enemies.js   rat, spore, blob, turret, spider, bug, fly, weevil, mousetrap, mites, projectiles
 js/bosses.js    Rat King, Anti-Cheat.exe, God of Games
 js/ui.js        DOM helpers
 js/cinematic.js the opening: a shelf, the mould, the fall, the door

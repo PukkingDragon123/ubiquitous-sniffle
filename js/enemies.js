@@ -38,6 +38,9 @@ CZ.Enemy = class Enemy {
     this.game.addScore && this.game.addScore(1);
   }
   solids() { return this.game.level.blocking({}); }
+  // Answer a collision with the player yourself. Return true and the game's
+  // usual stomp / spin / contact rules are skipped for this one.
+  onHitBy() { return false; }
   update(dt) {}
 };
 
@@ -392,6 +395,259 @@ CZ.BugCrawl = class BugCrawl extends CZ.Enemy {
   }
 };
 
+// ── CHEESE FLY ────────────────────────────────────────────────────────────
+// Hangs in the air on a lazy figure of eight until you get close, then drops
+// on you and climbs back up. The wings are the whole animation.
+CZ.Fly = class Fly extends CZ.Enemy {
+  constructor(game, d) {
+    super(game, d);
+    this.w = 0.8; this.h = 0.64; this.color = 0x6a7080; this.small = true;
+    this.hx = d.x; this.hy = d.y; this.amp = d.amp || 2.2; this.speed = d.speed || 1.6;
+    this.state = 'hover'; this.st = 0; this.range = d.range || 7;
+    const E = CZ.Effects;
+    const body = new THREE.Mesh(new THREE.SphereGeometry(0.3, 8, 6), E.toon(0x5a6270));
+    body.scale.set(1.35, 0.85, 0.9); body.castShadow = true; E.outline(body, 0.06);
+    this.mesh.add(body); this.body = body;
+    const back = new THREE.Mesh(new THREE.SphereGeometry(0.26, 7, 5), E.toon(0x8b93a4));
+    back.scale.set(1.1, 0.7, 0.8); back.position.set(0.2, 0.08, 0); this.mesh.add(back);
+    // two pale bands across the abdomen, the way a blowfly has
+    for (const bx of [0.1, 0.3]) {
+      const band = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.3, 0.34), E.toon(0x3a3f4a));
+      band.position.set(bx, 0.08, 0); this.mesh.add(band);
+    }
+    const head = new THREE.Mesh(new THREE.SphereGeometry(0.21, 7, 6), E.toon(0x3a3f4a));
+    head.position.set(-0.32, 0.02, 0); this.mesh.add(head);
+    // two big red compound eyes, the only bright thing on it
+    for (const s2 of [-1, 1]) {
+      const eye = new THREE.Mesh(new THREE.SphereGeometry(0.15, 7, 6), E.basic(0xe0263a));
+      eye.position.set(-0.07, 0.06, s2 * 0.11); head.add(eye);
+      const glint = new THREE.Mesh(new THREE.CircleGeometry(0.05, 6), E.basic(0xffd8dd));
+      glint.position.set(-0.08, 0.08, s2 * 0.24); head.add(glint);
+      for (let i = 0; i < 3; i++) {
+        const leg = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.22, 0.04), E.toon(0x1a1016));
+        leg.position.set(-0.14 + i * 0.18, -0.26, s2 * 0.13); leg.rotation.z = s2 * 0.3 + i * 0.12;
+        this.mesh.add(leg);
+      }
+    }
+    this.wings = [];
+    for (const s2 of [-1, 1]) {
+      const piv = new THREE.Group(); piv.position.set(0.05, 0.2, s2 * 0.09); this.mesh.add(piv);
+      const w = new THREE.Mesh(new THREE.CircleGeometry(0.4, 10, 0, Math.PI),
+        new THREE.MeshBasicMaterial({ color: 0xeaf2fb, transparent: true, opacity: 0.72, side: THREE.DoubleSide }));
+      w.rotation.x = Math.PI / 2; w.position.z = s2 * 0.2; w.scale.set(0.85, 1.6, 1);
+      piv.add(w); this.wings.push({ piv, s: s2 });
+    }
+  }
+  update(dt) {
+    this.t += dt; this.st += dt;
+    const p = this.game.player, near = Math.abs(p.cx() - this.cx()) < this.range && p.cy() < this.hy;
+    if (this.state === 'hover') {
+      // a figure of eight, which is what a fly looks like it is doing
+      this.x = this.hx + Math.sin(this.t * this.speed) * this.amp;
+      this.y = this.hy + Math.sin(this.t * this.speed * 2) * this.amp * 0.35;
+      if (near && this.st > 1.4) { this.state = 'wind'; this.st = 0; CZ.Audio.sfx.warn(); }
+    } else if (this.state === 'wind') {
+      this.x += Math.sin(this.t * 40) * 0.03;            // buzzing on the spot
+      if (this.st > 0.45) { this.state = 'dive'; this.st = 0; this.dx = p.cx() - this.cx(); }
+    } else if (this.state === 'dive') {
+      this.y -= 17 * dt;
+      this.x += CZ.clamp(this.dx, -4, 4) * dt * 1.6;
+      if (this.st > 0.7 || this.y < (this.game.level.data.deathY || -8) + 1) { this.state = 'climb'; this.st = 0; }
+    } else {
+      this.y = CZ.damp(this.y, this.hy, 3.5, dt);
+      this.x = CZ.damp(this.x, this.hx, 2.5, dt);
+      if (this.st > 1.1) { this.state = 'hover'; this.st = 0; this.t = 0; }
+    }
+    this.facing = CZ.sign(p.cx() - this.cx()) || this.facing;
+    this.place();
+    this.mesh.scale.x = this.facing < 0 ? 1 : -1;
+    this.mesh.rotation.z = this.state === 'dive' ? -0.5 : Math.sin(this.t * 3) * 0.1;
+    const beat = this.state === 'hover' ? 44 : 70;
+    for (const { piv, s } of this.wings) piv.rotation.z = Math.sin(this.t * beat) * 0.9 * s;
+  }
+};
+
+// ── RIND WEEVIL ───────────────────────────────────────────────────────────
+// A beetle in armour. Standing on it does nothing; you have to hit it with
+// real speed, which flips it onto its back and leaves it stompable.
+CZ.Weevil = class Weevil extends CZ.Enemy {
+  constructor(game, d) {
+    super(game, d);
+    this.w = 1.1; this.h = 0.8; this.color = 0x7a5a2a; this.speed = d.speed || 1.9;
+    this.stompable = false; this.dashKill = false; this.flipped = 0;
+    const E = CZ.Effects, box = (w, h, dd, c) => { const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, dd), E.toon(c)); m.castShadow = true; return m; };
+    const under = box(0.9, 0.3, 0.6, 0x4a3418); under.position.y = -0.2; this.mesh.add(under);
+    // the shell: a hard dome with a ridge down it and a rim you cannot stand on
+    this.shell = new THREE.Mesh(new THREE.SphereGeometry(0.52, 10, 7, 0, Math.PI * 2, 0, Math.PI / 2), E.toon(0x8a6a34));
+    this.shell.scale.set(1.05, 0.78, 0.85); this.shell.castShadow = true; E.outline(this.shell, 0.06);
+    this.mesh.add(this.shell);
+    const ridge = box(0.95, 0.08, 0.1, 0x5c4420); ridge.position.y = 0.28; this.mesh.add(ridge);
+    for (const s2 of [-1, 1]) {
+      const band = box(0.12, 0.06, 0.8, 0x5c4420); band.position.set(s2 * 0.22, 0.24, 0); this.mesh.add(band);
+    }
+    const rim = new THREE.Mesh(new THREE.TorusGeometry(0.54, 0.06, 5, 14), E.toon(0x3d2a10));
+    rim.rotation.x = Math.PI / 2; rim.scale.set(1.05, 0.85, 1); this.mesh.add(rim);
+    // a snout with a grumpy face on the end of it
+    const head = box(0.34, 0.26, 0.34, 0x4a3418); head.position.set(-0.5, -0.05, 0); this.mesh.add(head); this.head = head;
+    const snout = box(0.3, 0.1, 0.1, 0x3d2a10); snout.position.set(-0.72, -0.12, 0); this.mesh.add(snout);
+    for (const s2 of [-1, 1]) {
+      const eye = new THREE.Mesh(new THREE.CircleGeometry(0.06, 8), E.basic(0xffd23f));
+      eye.position.set(-0.68, 0.04, s2 * 0.12); eye.rotation.y = s2 > 0 ? 0 : Math.PI; this.mesh.add(eye);
+      const pup = new THREE.Mesh(new THREE.CircleGeometry(0.03, 6), E.basic(0x140c06));
+      pup.position.set(-0.02, 0, 0.01); eye.add(pup);
+    }
+    this.legs = [];
+    for (const s2 of [-1, 1]) for (let i = 0; i < 3; i++) {
+      const leg = box(0.07, 0.3, 0.07, 0x2a1d0c);
+      leg.position.set(-0.32 + i * 0.3, -0.3, s2 * 0.26); this.mesh.add(leg);
+      this.legs.push({ leg, s: s2, i });
+    }
+  }
+  // The shell does nothing for it once it is on its back.
+  update(dt) {
+    this.t += dt; const solids = this.solids();
+    if (this.flipped > 0) {
+      this.flipped -= dt;
+      this.vx = CZ.damp(this.vx, 0, 6, dt);
+      if (this.flipped <= 0) { this.stompable = false; this.dashKill = false; }
+    } else {
+      if (this.d.min !== undefined && this.x < this.d.min) this.facing = 1;
+      if (this.d.max !== undefined && this.x + this.w > this.d.max) this.facing = -1;
+      this.vx = this.facing * this.speed;
+    }
+    this.vy -= 40 * dt;
+    const r = CZ.moveBody(this, dt, solids);
+    if (r.hitX && this.flipped <= 0) this.facing = -r.hitX;
+    if (r.grounded && this.flipped <= 0 && !CZ.groundAhead(this, this.facing, solids)) this.facing *= -1;
+    this.place();
+    this.mesh.scale.x = this.facing < 0 ? 1 : -1;
+    if (this.flipped > 0) {
+      this.mesh.rotation.z = CZ.damp(this.mesh.rotation.z, Math.PI, 9, dt);
+      this.mesh.position.y += 0.18;
+      for (const { leg, i } of this.legs) leg.rotation.z = Math.sin(this.t * 26 + i * 2) * 0.9;   // waving helplessly
+    } else {
+      this.mesh.rotation.z = 0;
+      for (const { leg, s, i } of this.legs) leg.rotation.z = Math.sin(this.t * 13 + i * 2 + (s > 0 ? Math.PI : 0)) * 0.45;
+      this.head.position.y = -0.05 + Math.sin(this.t * 13) * 0.03;
+    }
+  }
+  // Armour is only armour while it is the right way up.
+  onHitBy(p) {
+    if (this.flipped > 0) return false;               // on its back: kill it normally
+    if (p.spinning() || p.momentum() >= CZ.P.SMASH_CRATE) { this.flip(CZ.sign(p.vx) || 1); return true; }
+    if (p.iframes <= 0) p.damage(this.cx());
+    return true;
+  }
+  flip(dir) {
+    this.flipped = 4.5; this.stompable = true; this.dashKill = true;
+    this.vx = dir * 7; this.vy = 7;
+    CZ.Audio.sfx.crack(); CZ.Effects.shake(0.35);
+    CZ.Effects.stars(this.cx(), this.cy() + 0.4, 6, { colors: [0xffd23f, 0xffffff], spread: 6 });
+  }
+};
+
+// ── SNAP TRAP ─────────────────────────────────────────────────────────────
+// Bait on a board. It cannot be killed and it does not move; it sits there
+// armed, and the bar comes down when you are on top of it.
+CZ.Trap = class Trap extends CZ.Enemy {
+  constructor(game, d) {
+    super(game, d);
+    this.w = 2.0; this.h = 0.46; this.color = 0x8a5a2b;
+    this.stompable = false; this.dashKill = false; this.hurts = false;
+    this.state = 'armed'; this.st = 0;
+    const E = CZ.Effects, box = (w, h, dd, c) => { const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, dd), E.toon(c)); m.castShadow = true; return m; };
+    const board = box(2.0, 0.3, 1.2, 0x8a5a2b); board.position.y = -0.1; E.edges(board); this.mesh.add(board);
+    const grain = box(2.02, 0.06, 1.22, 0x6a4522); grain.position.y = 0.04; this.mesh.add(grain);
+    for (const s2 of [-1, 1]) {
+      const stud = box(0.14, 0.12, 0.14, 0x8d95a3); stud.position.set(s2 * 0.86, 0.08, 0.44); this.mesh.add(stud);
+    }
+    // the bar, on a hinge at one end - a proper U of heavy wire
+    this.bar = new THREE.Group(); this.bar.position.set(0.8, 0.06, 0); this.mesh.add(this.bar);
+    const arm = box(1.7, 0.15, 0.15, 0xdfe6ef); arm.position.x = -0.85; this.bar.add(arm);
+    for (const s2 of [-1, 1]) {
+      const rail = box(0.15, 0.15, 0.9, 0xc8d0dc); rail.position.set(-1.7, 0, s2 * 0.26); this.bar.add(rail);
+      const arm2 = box(1.7, 0.13, 0.13, 0xb2bcc9); arm2.position.set(-0.85, 0, s2 * 0.48); this.bar.add(arm2);
+    }
+    const spring = new THREE.Mesh(new THREE.TorusGeometry(0.24, 0.09, 5, 12), E.toon(0x8d95a3));
+    spring.rotation.y = Math.PI / 2; spring.position.set(0.8, 0.06, 0); this.mesh.add(spring);
+    // the trigger plate, in the one colour that means 'do not'
+    this.plate = box(0.5, 0.06, 0.5, 0xc21f2e); this.plate.position.set(-0.42, 0.1, 0); this.mesh.add(this.plate);
+    // the bait, which is of course a lump of cheese
+    this.bait = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 0.14, 10),
+      new THREE.MeshToonMaterial({ map: CZ.Tex.get('cheese', 'stone') }));
+    this.bait.rotation.x = Math.PI / 2; this.bait.position.set(-0.42, 0.22, 0); this.mesh.add(this.bait);
+    this.bar.rotation.z = -1.95;        // cocked before anyone can look at it
+  }
+  // The bar sweeps well above the board, so the box it can catch you in is
+  // taller than the thing itself - but only while it is coming down.
+  aabb() { return { x: this.x, y: this.y, w: this.w, h: this.state === 'snap' ? 1.2 : this.h }; }
+  onHitBy(p) {
+    if (this.state === 'snap' && p.iframes <= 0) p.damage(this.cx());
+    return true;                        // nothing you do kills a mousetrap
+  }
+  update(dt) {
+    this.t += dt; this.st += dt;
+    this.vy -= 40 * dt;
+    CZ.moveBody(this, dt, this.solids());
+    const p = this.game.player;
+    const over = Math.abs(p.cx() - this.cx()) < 1.5 && Math.abs(p.y - this.y) < 2.2;
+    if (this.state === 'armed' && over) { this.state = 'snap'; this.st = 0; CZ.Audio.sfx.crack(); CZ.Effects.shake(0.5); }
+    else if (this.state === 'snap' && this.st > 0.55) { this.state = 'reset'; this.st = 0; }
+    else if (this.state === 'reset' && this.st > 1.3) { this.state = 'armed'; this.st = 0; }
+    // the bar: held back while armed, slammed shut, then winched open again
+    const want = this.state === 'snap' ? 0.06 : -1.95;
+    const k = this.state === 'snap' ? 60 : 5;
+    this.bar.rotation.z = CZ.damp(this.bar.rotation.z, want, k, dt);
+    this.bait.rotation.z += dt * 1.2;
+    this.bait.position.y = 0.22 + Math.sin(this.t * 2.4) * 0.02;
+    // the plate blinks while it is armed and goes dark once it has gone off
+    this.plate.material = CZ.Effects.toon(this.state === 'armed'
+      ? (Math.floor(this.t * 3) % 2 ? 0xff4b5c : 0xc21f2e) : 0x6a1219);
+    this.hurts = this.state === 'snap';
+    this.place();
+  }
+  kill() {}                       // a trap is furniture, not an animal
+};
+
+// ── MITE SWARM ────────────────────────────────────────────────────────────
+// A cloud of specks that drifts toward you and never hurries. One touch from
+// anything scatters the lot.
+CZ.Mites = class Mites extends CZ.Enemy {
+  constructor(game, d) {
+    super(game, d);
+    this.w = 1.3; this.h = 1.3; this.color = 0xd8c4a0; this.small = true;
+    this.speed = d.speed || 2.1; this.home = d.x; this.range = d.range || 11;
+    const E = CZ.Effects;
+    this.dots = [];
+    const SHADE = [0xfff1cf, 0xf2d48a, 0xd8a24e, 0x8a6a3a];
+    for (let i = 0; i < 22; i++) {
+      const sz = 0.1 + (i % 4) * 0.035;
+      const m = new THREE.Mesh(new THREE.BoxGeometry(sz, sz * 0.8, sz), E.toon(SHADE[i % SHADE.length]));
+      this.mesh.add(m);
+      this.dots.push({ m, a: CZ.rand(0, 6.3), r: CZ.rand(0.1, 0.6), s: CZ.rand(1.4, 3.6), p: CZ.rand(0, 6.3) });
+    }
+  }
+  update(dt) {
+    this.t += dt;
+    const p = this.game.player, dx = p.cx() - this.cx(), dy = p.cy() - this.cy();
+    const d = Math.hypot(dx, dy);
+    if (d < this.range && d > 0.2) {
+      this.x += (dx / d) * this.speed * dt;
+      this.y += (dy / d) * this.speed * 0.7 * dt;
+    } else {
+      this.x = CZ.damp(this.x, this.home, 1.2, dt);
+      this.y += Math.sin(this.t * 1.6) * dt * 0.6;
+    }
+    this.place();
+    // every speck on its own little orbit, so the cloud never looks like a grid
+    for (const o of this.dots) {
+      const a = o.a + this.t * o.s;
+      o.m.position.set(Math.cos(a) * o.r, Math.sin(a * 1.3 + o.p) * o.r * 0.8, Math.sin(a * 0.7) * 0.4);
+      o.m.rotation.z = a * 0.6;
+    }
+  }
+};
+
 CZ.createEnemy = (game, d) => {
   switch (d.kind) {
     case 'rat': return new CZ.Rat(game, d);
@@ -400,6 +656,10 @@ CZ.createEnemy = (game, d) => {
     case 'turret': return new CZ.Turret(game, d);
     case 'spider': return new CZ.Spider(game, d);
     case 'bugcrawl': return new CZ.BugCrawl(game, d);
+    case 'fly': return new CZ.Fly(game, d);
+    case 'weevil': return new CZ.Weevil(game, d);
+    case 'trap': return new CZ.Trap(game, d);
+    case 'mites': return new CZ.Mites(game, d);
   }
   return null;
 };

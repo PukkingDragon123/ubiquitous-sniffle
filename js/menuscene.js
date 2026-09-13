@@ -30,38 +30,40 @@ CZ.MenuScene = class MenuScene {
 
     // ── the shelf you are sitting on ──
     const shelf = new THREE.Group(); shelf.position.set(0, -1.6, 0); this.scene.add(shelf);
-    const plank = box(26, 0.9, 6.4, tex('wood', 'timber', 26, 1));
+    const plank = box(40, 0.9, 6.4, tex('wood', 'timber', 40, 1));
     E.edges(plank); shelf.add(plank);
-    const lip = box(26.2, 0.3, 0.5, mat(0xa06a34)); lip.position.set(0, 0.35, 3.2); shelf.add(lip);
-    for (const x of [-9, 0, 9]) {
+    const lip = box(40.2, 0.3, 0.5, mat(0xa06a34)); lip.position.set(0, 0.35, 3.2); shelf.add(lip);
+    for (const x of [-15, -5, 5, 15]) {
       const post = box(1.1, 9, 1.1, tex('wood', 'timber', 1, 9));
       post.position.set(x, -5, -1.6); E.edges(post); shelf.add(post);
       const brace = box(0.7, 3.2, 0.7, mat(0x5c3618));
       brace.position.set(x + 1.4, -2.2, -1.4); brace.rotation.z = 0.6; shelf.add(brace);
     }
     // a second shelf above, out of the light
-    const upper = box(26, 0.8, 5.6, tex('wood', 'timber', 26, 1));
+    const upper = box(40, 0.8, 5.6, tex('wood', 'timber', 40, 1));
     upper.position.set(0, 7.4, -1); this.scene.add(upper);
 
     // ── the other cheeses: older, greener, further along than you ──
     this.mould = [];
     // Further from the lamp, further gone. You are on the end, still yellow.
+    // Spread wide, because the menu panel sits over the middle of the shelf:
+    // what you see is the far ends of the row, down each side of it.
     const WHEELS = [
-      { x: -9.6, r: 1.5, green: 1.0 },
-      { x: -6.4, r: 1.75, green: 0.75 },
-      { x: -3.0, r: 1.4, green: 0.5 },
-      { x: -0.1, r: 1.65, green: 0.3 },
-      { x: 3.0, r: 1.45, green: 0.12 },
+      { x: -14.2, r: 1.6, green: 1.0 },
+      { x: -10.8, r: 1.85, green: 0.8 },
+      { x: -7.4, r: 1.5, green: 0.55 },
+      { x: 8.2, r: 1.5, green: 0.3 },
+      { x: 11.4, r: 1.7, green: 0.15 },
     ];
     for (const w of WHEELS) this.scene.add(this.cheese(w.x, -1.15 + w.r, w.r, w.green));
     // ...and you, off to one side where the menu is not, the only one with a face
-    this.heroY = -1.15 + 1.9;
-    this.hero = this.cheese(7.0, this.heroY, 1.9, 0, true);
+    this.heroY = -1.15 + 2.05;
+    this.hero = this.cheese(14.6, this.heroY, 2.05, 0, true);
     this.hero.position.z = 1.6;
     this.scene.add(this.hero);
 
     // ── the wine ──
-    for (const [rx, rz] of [[-13.5, -3.4], [13.5, -3.4]]) {
+    for (const [rx, rz] of [[-19.5, -3.4], [19.5, -3.4]]) {
       const rack = new THREE.Group(); rack.position.set(rx, -3.2, rz); this.scene.add(rack);
       const frame = box(5.4, 7.4, 2.4, tex('wood', 'timber', 5, 7)); frame.position.y = 3.7;
       E.edges(frame); rack.add(frame);
@@ -72,7 +74,7 @@ CZ.MenuScene = class MenuScene {
         cork.rotation.x = Math.PI / 2; cork.position.set(-1.6 + c * 1.6, 1.5 + r * 2.1, 1.4); rack.add(cork);
       }
     }
-    for (const [bx, bz] of [[-10.6, 2.2], [11.2, 2.0], [-11.8, 1.4]]) {
+    for (const [bx, bz] of [[-16.6, 2.2], [17.2, 2.0], [-17.8, 1.4]]) {
       const b = new THREE.Group(); b.position.set(bx, -5.6, bz); b.rotation.z = CZ.rand(-0.1, 0.1); this.scene.add(b);
       const part = (g, m, y) => { const p = new THREE.Mesh(g, m); p.position.y = y; p.castShadow = true; b.add(p); };
       part(new THREE.CylinderGeometry(0.5, 0.5, 1.9, 9), mat(0x2f5a34), 0.95);
@@ -81,7 +83,7 @@ CZ.MenuScene = class MenuScene {
     }
 
     // ── the lamp, and everything it does to the room ──
-    this.lamp = new THREE.Group(); this.lamp.position.set(-4.5, 11.5, 3.4); this.scene.add(this.lamp);
+    this.lamp = new THREE.Group(); this.lamp.position.set(-11.5, 12.5, 3.4); this.scene.add(this.lamp);
     const chain = box(0.16, 6, 0.16, mat(0x3b3038)); chain.position.y = 3; this.lamp.add(chain);
     const shade = new THREE.Mesh(new THREE.ConeGeometry(1.7, 1.5, 9, 1, true), new THREE.MeshToonMaterial({ color: 0x4a3a2a, side: THREE.DoubleSide }));
     shade.position.y = -0.4; this.lamp.add(shade);
@@ -157,9 +159,9 @@ CZ.MenuScene = class MenuScene {
     this.t += dt;
     const t = this.t;
     // the camera drifts across the shelf and never quite settles
-    const cx = 1.2 + Math.sin(t * 0.11) * 2.2, cy = 3.2 + Math.sin(t * 0.17 + 1) * 0.5;
-    this.camera.position.set(cx, cy, 29 + Math.sin(t * 0.09) * 1.4);
-    this.camera.lookAt(cx * 0.4, 1.4, 0);
+    const cx = Math.sin(t * 0.11) * 2.4, cy = 3.0 + Math.sin(t * 0.17 + 1) * 0.5;
+    this.camera.position.set(cx, cy, 36 + Math.sin(t * 0.09) * 1.6);
+    this.camera.lookAt(cx * 0.4, 1.2, 0);
     // the lamp swings, and the light swings with it
     this.lamp.rotation.z = Math.sin(t * 0.7) * 0.08;
     const f = 0.9 + Math.sin(t * 6.5) * 0.06 + (Math.random() < 0.015 ? -0.28 : 0);

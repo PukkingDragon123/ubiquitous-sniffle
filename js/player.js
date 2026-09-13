@@ -423,7 +423,6 @@ CZ.Player = class Player {
     if (this.perfect) {
       this.iframes = Math.max(this.iframes, 0.5);
       CZ.Audio.sfx.unlock(); CZ.Effects.shake(1.1);
-      CZ.Effects.pop(this.cx(), this.cy(), { color: 0xffffff, to: 5.5, life: 0.45, rings: 3 });
       CZ.Effects.stars(this.cx(), this.cy(), 14, { spread: 11, size: 0.62, life: 0.9 });
       CZ.Effects.splat(this.cx(), this.cy(), 9, { spread: 10, up: 5, size: 0.26 });
       CZ.Effects.burst(this.cx(), this.cy(), 0xffffff, 22, { spread: 9, up: 5, life: 0.6, size: 1.2 });
@@ -436,7 +435,6 @@ CZ.Player = class Player {
     this.charge = 0; this.chargeOver = 0; this.spinT = 0;
     this.spinCd = 0.7; this.vy = Math.max(this.vy, 5); this.dizzy = 0.8;
     CZ.Audio.sfx.hurt();
-    CZ.Effects.pop(this.cx(), this.cy(), { color: 0xd9931f, to: 1.7, life: 0.35, squash: 0.5 });
     CZ.Effects.stars(this.cx(), this.cy() + 0.8, 6, { colors: [0xd9931f, 0xffe98a], spread: 3, up: 4, gravity: 9, life: 1.1 });
     CZ.Effects.burst(this.cx(), this.cy(), 0xd9931f, 10, { spread: 4, up: 2, life: 0.5, size: 0.8 });
   }
@@ -462,7 +460,6 @@ CZ.Player = class Player {
     if (was < 0.4 && this.squish >= 0.4) {
       CZ.Audio.sfx.land(); this.squashV = -6;
       CZ.Effects.burst(this.cx(), this.y, 0xfff0b0, 7, { spread: 5, up: 1.4, life: 0.4, size: 0.7, gravity: 30 });
-      CZ.Effects.pop(this.cx(), this.y + 0.2, { color: 0xffe98a, to: 3.2, life: 0.3, squash: 0.28 });
     }
     if (was >= 0.4 && this.squish < 0.4) { this.squash = 1.3; CZ.Audio.sfx.jump(); }
   }
@@ -495,7 +492,6 @@ CZ.Player = class Player {
     CZ.Audio.sfx.hurt(); CZ.Effects.shake(0.6);
     CZ.Effects.burst(this.cx(), this.cy(), 0xffd23f, 12, { spread: 7, up: 6, size: 1.2 });
     this.game.flash('rgba(255,60,80,.3)');
-    CZ.Effects.pop(this.cx(), this.cy(), { color: 0xffffff, to: 3, life: 0.3, rings: 2 });
     CZ.Effects.splat(this.cx(), this.cy(), 10, { spread: 9, up: 5, size: 0.3 });
     CZ.Effects.stars(this.cx(), this.cy(), 7, { colors: [0xff4b5c, 0xffffff], spread: 7 });
     if (this.hp <= 0) { this.die(); return true; }
@@ -511,7 +507,6 @@ CZ.Player = class Player {
     CZ.Audio.sfx.die(); CZ.Effects.shake(1.2);
     CZ.Effects.burst(this.cx(), this.cy(), 0xffd23f, 30, { spread: 11, up: 8, life: 1.1, size: 1.6 });
     CZ.Effects.burst(this.cx(), this.cy(), 0xe8892a, 12, { spread: 8, up: 6, life: 0.9 });
-    CZ.Effects.pop(this.cx(), this.cy(), { color: 0xffe98a, to: 6, life: 0.5, rings: 3 });
     CZ.Effects.splat(this.cx(), this.cy(), 22, { spread: 12, up: 7, size: 0.38, life: 1.2,
       colors: this.heat > 0.9 ? [0xffb04a, 0xff7a1f, 0xffd23f] : [0xffd23f, 0xffe98a, 0xe8892a] });
     this.releaseGrapple(); this.noclip = false;
@@ -756,7 +751,6 @@ CZ.Player = class Player {
     if (this.pounding) {
       this.pounding = false; CZ.Audio.sfx.poundLand(); CZ.Effects.shake(0.9);
       CZ.Effects.burst(this.cx(), this.y, 0xffffff, 16, { spread: 9, up: 3, life: 0.5 });
-      CZ.Effects.pop(this.cx(), this.y + 0.1, { color: 0xffffff, to: 4.5, life: 0.34, squash: 0.3, rings: 2 });
       CZ.Effects.stars(this.cx(), this.y + 0.3, 8, { spread: 9, up: 3 });
       this.game.shockwave(this.cx(), this.y, 3.2);
       if (s && s.cracked) { this.game.level.breakCracked(s); this.grounded = false; this.vy = -2; this.groundSolid = null; }
@@ -765,7 +759,6 @@ CZ.Player = class Player {
       CZ.Audio.sfx.land(); this.squash = 0.74;
       const hard = CZ.clamp(-this.vy / 22, 0, 1);
       if (hard > 0.1) {
-        CZ.Effects.pop(this.cx(), this.y + 0.05, { color: 0xffe98a, to: 1 + hard * 2.6, life: 0.26, squash: 0.26 });
         CZ.Effects.burst(this.cx(), this.y, 0xffe066, 2 + Math.round(hard * 6),
           { spread: 3 + hard * 5, up: 2 + hard * 3, life: 0.4, size: 0.55 });
       }

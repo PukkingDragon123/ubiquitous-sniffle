@@ -173,25 +173,9 @@ button:disabled{filter:grayscale(.8) brightness(.65) drop-shadow(0 3px 0 rgba(0,
 .panel td{padding:9px 14px;border-bottom:3px dotted rgba(21,13,8,.28);text-align:left}
 .panel td:first-child{font-family:var(--pixel);font-size:11px;line-height:1.7;white-space:nowrap;color:var(--wine-dk)}
 .panel .tip{font-size:22px;max-width:52ch;line-height:1.5;margin:0;color:#4a3218}
-/* ── the main menu ───────────────────────────────────────────────────
-   Not a panel: the title owns the whole screen, over a dark cellar wall, with
-   the game's own frames doing the furniture. */
-/* Transparent: the cellar behind it is a real rendered scene, so the menu only
-   darkens it toward the edges to keep the type readable. */
-#title{position:fixed;inset:0;z-index:50;display:grid;place-items:center;padding:16px;
-  background-image:radial-gradient(ellipse at 50% 44%, rgba(10,6,10,.14) 0%, rgba(10,6,10,.42) 56%, rgba(8,4,8,.74) 100%)}
-#title-inner{display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center;
-  max-height:100%;overflow:auto}
-#title-wheel{width:clamp(56px,9vw,104px);height:clamp(56px,9vw,104px);
-  filter:drop-shadow(0 6px 0 rgba(0,0,0,.6));animation:titleBob 3.4s ease-in-out infinite}
-@keyframes titleBob{0%,100%{transform:translateY(0) rotate(-3deg)}50%{transform:translateY(-8px) rotate(3deg)}}
-#title-name{font-family:var(--graffiti);font-size:clamp(22px,5vw,54px);line-height:1.3;color:var(--cheese);
-  text-shadow:5px 5px 0 var(--ink), 10px 10px 0 var(--wine);margin:2px 0 0}
-#title-sub{font-family:var(--pixel);font-size:clamp(8px,1.15vw,13px);line-height:2;letter-spacing:2px;
-  color:var(--paper);opacity:.72;text-shadow:2px 2px 0 var(--ink);margin:12px 0 6px}
-#title .row{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
-#title .byline{color:#8a6a44;margin-top:6px}
-#title #btn-replay-intro{font-size:10px;padding:8px 14px;border-width:13px;border-image-width:13px}
+/* The world picker is the menu. The cellar is rendered live behind it, so the
+   panel is narrow enough to leave the shelf showing down both sides. */
+#levelselect{min-width:min(600px,90vw)}
 
 /* the settings rows: a label, the current value, and two brass nudge keys */
 #opt-rows{display:flex;flex-direction:column;gap:1px;width:100%;max-width:530px}
@@ -396,8 +380,6 @@ html.touch .mobile-only{display:block}
   .stat{font-size:9px}
   #ending-text{font-size:19px}
   .big-spr{width:52px;height:52px}
-  #title{gap:20px}
-  #title .sub{margin-top:60px;padding:7px 11px}
   .logo-drips i{width:12px}
   #cine-caption{font-size:10px;padding:10px 12px;bottom:12vh}
   #cine-skip{font-size:9px;border-width:14px;border-image-width:14px}
@@ -409,14 +391,6 @@ html.touch .mobile-only{display:block}
 @media (max-height:540px){
   #opt-rows{display:grid;grid-template-columns:1fr 1fr;gap:3px 16px;max-width:none;width:auto}
   #settings{min-width:min(700px,96vw)}
-  /* the title screen has to fit between the notch and the home bar */
-  #title-inner{gap:5px}
-  #title-wheel{width:44px;height:44px}
-  #title-name{font-size:clamp(17px,3.4vw,28px)}
-  #title-sub{font-size:8px;margin:10px 0 2px}
-  #title button.big{font-size:13px;padding:10px 22px;border-width:16px;border-image-width:16px}
-  #title .row button{font-size:9px;padding:7px 12px;border-width:12px;border-image-width:12px}
-  #title #btn-replay-intro{font-size:8px;padding:6px 10px;border-width:11px;border-image-width:11px}
   #settings h2{font-size:11px;margin-bottom:6px}
   .opt{border-bottom-width:2px}
   /* ...and the world picker has to fit on the same screen */
@@ -440,7 +414,6 @@ html.touch .mobile-only{display:block}
   .tc-btn .lbl{font-size:7px}
   .tc-btn.tc-sm{width:66px;height:66px;border-width:18px;border-image-width:18px}
   .tc-btn.tc-sm .lbl{display:none}
-  #title .menu{gap:10px}
 }
 @media (prefers-reduced-motion: reduce){
   *,*::before,*::after{animation-duration:.001ms !important;animation-iteration-count:1 !important;transition-duration:.001ms !important}

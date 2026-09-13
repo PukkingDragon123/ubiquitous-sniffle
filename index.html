@@ -36,28 +36,17 @@
   </div>
 </div>
 
-<!-- Main menu -->
-<div id="title" class="hidden">
-  <div id="title-inner">
-    <i class="spr" id="title-wheel" data-spr="cheese"></i>
-    <h1 class="graffiti" id="title-name">CHEEZ-IT</h1>
-    <p id="title-sub">GET OUT BEFORE YOU ROT</p>
-    <button id="btn-play" class="big">PLAY</button>
-    <div class="row">
-      <button id="btn-worlds">WORLDS</button>
-      <button id="btn-controls">CONTROLS</button>
-      <button id="btn-settings">SETTINGS</button>
-    </div>
-    <button id="btn-replay-intro">REPLAY THE OPENING</button>
-    <p class="byline">MADE BY PUKKING DRAGON</p>
-  </div>
-</div>
-
-<!-- World select -->
+<!-- World select: the game has no title screen, this is where you land -->
 <div id="levelselect" class="panel hidden">
-  <h2 class="graffiti">PICK A WORLD</h2>
+  <h2 class="graffiti">CHEEZ-IT</h2>
+  <p class="tip">One wheel of cheese, one way out. Pick a world.</p>
   <div id="level-list"></div>
-  <button class="back" data-back>BACK</button>
+  <div class="row">
+    <button id="btn-controls">CONTROLS</button>
+    <button id="btn-settings">SETTINGS</button>
+  </div>
+  <button id="btn-replay-intro">REPLAY THE OPENING</button>
+  <p class="byline">MADE BY PUKKING DRAGON</p>
 </div>
 
 <!-- Settings -->
@@ -111,7 +100,7 @@
   <div id="ending-text"></div>
   <div id="ending-stats"></div>
   <p class="byline">CHEEZ-IT &mdash; MADE BY PUKKING DRAGON</p>
-  <button id="btn-ending-title">BACK TO TITLE</button>
+  <button id="btn-ending-title">BACK TO THE CELLAR</button>
 </div>
 
 <!-- Touch controls -->
